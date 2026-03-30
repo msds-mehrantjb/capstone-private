@@ -18,14 +18,13 @@ This project implements a fully local, agent-based AI system that performs autom
 
 ---
 
-<<<<<<< HEAD
+
  React Web GUI
 =======
 ## Architecture Overview
 
 ```
             React Web GUI
->>>>>>> 606cc72f7989e275c0e5d9bf9c5aadb3416c2f1d
                  │
                  ▼
    FastAPI Backend (API + Event Streaming)
@@ -39,10 +38,8 @@ This project implements a fully local, agent-based AI system that performs autom
                  │
                  ▼
      Local Storage (Artifacts, Logs, Reports)
-<<<<<<< HEAD
 =======
 ```
->>>>>>> 606cc72f7989e275c0e5d9bf9c5aadb3416c2f1d
 
 
 ---
@@ -51,18 +48,37 @@ This project implements a fully local, agent-based AI system that performs autom
 
 - Frontend: React + Vite
 - Backend: FastAPI (Python)
-- Agent Orchestration: LangGraph
-- Local LLM Runtime: Ollama or llama.cpp
-- Vector Database: Chroma
-- Data Validation: Pydantic
-- Streaming: Server-Sent Events (SSE)
-
+- ChromaDB for vector storage and RAG memory
+- LangGraph for orchestration and step-based agent execution
+- Ollama for local chat + embeddings
+- JSON/CSV as the authoritative workflow store for now
 ---
 
 ## Project Structure
 app/ <br/>
-├── ui/ # React web interface <br/>
+├── src/ # React web interface <br/>
 ├── api/ # FastAPI backend <br/>
 ├── agent/ # Agent workflows, tools, schemas <br/>
 ├── data/ # Vector database and artifacts <br/>
 └── storage/ # Reports, logs, and run metadata
+
+Capstone-main/ <br/>
+│ <br/>
+├── app/ <br/>
+│   ├── main.py <br/>
+│   ├── agent/  # Agent workflows, tools, schemas <br/>
+│   ├── api/     # FastAPI backend <br/>
+│   ├── chroma_db/  <br/>
+│   ├── llm/    (LLM integration modules) <br/>
+│   ├── rag/ <br/>
+│   ├── reports/    (report generation) <br/>
+│   ├── src/                     ← Frontend  <br/>
+│   │   ├── api/ <br/>
+│   │   ├── components/ <br/>
+│   │   └── pages/    # React web interface <br/>
+│   └── storage/    (persistent runtime storage) <br/>
+├── data/ <br/>
+│   ├── work/     # Working files <br/>
+│   ├── /docs     # Reference files  <br/>
+│   └── raw/      # Json files <br/>
+└── (project root)

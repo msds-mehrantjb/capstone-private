@@ -1,0 +1,10 @@
+{
+  "summary": {
+    "total_controls": 93,
+    "risk_file_treat_mitigate_cves": [],
+    "matched_control_count": 0,
+    "failed_control_count": 0
+  },
+  "matched_controls": [],
+  "failed_controls": []
+}

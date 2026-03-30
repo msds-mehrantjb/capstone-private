@@ -1,0 +1,26 @@
+role,description,typical_departments,software_indicators,ad_group_indicators,job_title_indicators,privilege_level
+Standard Employee Workstation,General employee productivity workstation,General Business;Operations;Sales,Microsoft Office;Teams;Outlook;Browser,Domain Users,Employee;Staff;Associate,Standard User
+Developer Workstation,Used for software development,Engineering;Software Development,VS Code;IntelliJ;Git;Docker;NodeJS,Developers;Git Access,Software Engineer;Developer;Programmer,Standard User
+System Administrator Workstation,Used for infrastructure administration,IT;Infrastructure,PowerShell;RSAT;Server Manager;Putty,Domain Admins;Server Admins,System Administrator;IT Admin,Administrator
+Privileged Access Workstation (PAW),Hardened workstation for privileged admin operations,IT Security;Infrastructure,Admin Tools;PowerShell;Secure Browser,Privileged Access;Domain Admins,Security Admin;Privileged Admin,Privileged
+Security Analyst Workstation,Used for cybersecurity monitoring and analysis,Security;SOC,SIEM Tools;EDR Console;Threat Analysis Tools,Security Analysts;SOC Team,Security Analyst;Cyber Analyst,Standard User
+Finance Workstation,Used for accounting and financial systems,Finance,SAP;QuickBooks;Excel,Finance Users,Accountant;Finance Manager,Standard User
+HR Workstation,Used for human resource management systems,Human Resources,HRIS;Workday;Office Tools,HR Users,HR Specialist;HR Manager,Standard User
+Executive Workstation,Used by executives and senior leadership,Executive Office,Office Suite;Email;Video Conferencing,Executive Users,CEO;CFO;Director;VP,Standard User
+Call Center Workstation,Used by customer support agents,Customer Support,Call Center Software;CRM;Softphone,CallCenter Users,Support Agent;Customer Representative,Standard User
+Healthcare / Medical Workstation,Used in healthcare environments,Healthcare,Electronic Health Records;Medical Imaging,Medical Staff,Doctor;Nurse;Medical Staff,Standard User
+Engineering / CAD Workstation,High performance workstation for engineering design,Engineering,AutoCAD;SolidWorks;CATIA,Engineering Users,Mechanical Engineer;Design Engineer,Standard User
+Research Workstation,Used in R&D environments,Research;R&D,Research Tools;Simulation Software,Research Group,Researcher;Scientist,Standard User
+Data Scientist Workstation,Used for data science and analytics,Data Science;AI;Analytics,Python;R;Jupyter;TensorFlow,Data Science Group,Data Scientist;ML Engineer,Standard User
+SOC Monitoring Workstation,Dedicated SOC monitoring terminal,SOC;Security Operations,SIEM Dashboard;Log Monitoring,SOC Monitoring,SOC Analyst,Standard User
+Kiosk / Public Access Workstation,Public-facing or kiosk system,Public Services,Locked Down Browser;Kiosk Software,Kiosk Systems,Public Terminal,Restricted
+Training Lab Workstation,Used for training classes,Training,Learning Software;Office Tools,Training Lab Users,Trainer;Trainee,Standard User
+Student Lab Workstation,Used in academic labs,Education,Programming Tools;Learning Platforms,Student Users,Student,Restricted
+Manufacturing Floor Workstation,Used on manufacturing floors,Manufacturing,MES Software;Production Tools,Manufacturing Users,Operator;Production Technician,Restricted
+Industrial Control Workstation,Used for industrial control systems,Industrial Control,SCADA;PLC Tools,ICS Operators,Control Engineer,Restricted
+POS Terminal Workstation,Point-of-sale terminal,Retail,POS Software;Payment Systems,POS Users,Cashier;Retail Associate,Restricted
+VDI Client Workstation,Thin client accessing virtual desktop infrastructure,General,VDI Client;Remote Desktop,VDI Users,Various,Restricted
+Remote Worker Laptop,Laptop used by remote employees,Remote Workforce,VPN Client;Office Tools,Remote Users,Remote Employee,Standard User
+Contractor Workstation,Temporary worker workstation,Contractors,Standard Productivity Tools,Contractor Accounts,Contractor,Restricted
+Testing / QA Workstation,Used for software testing,Quality Assurance,Testing Tools;Automation Frameworks,QA Team,QA Engineer;Tester,Standard User
+Build Engineering Workstation,Used for build and CI/CD engineering,DevOps,CI Tools;Docker;Build Systems,Build Engineers,Build Engineer;DevOps Engineer,Standard User

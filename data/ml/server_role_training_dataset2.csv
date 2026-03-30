@@ -1,0 +1,1001 @@
+hostname,os_family,os_version,cpu_cores,memory_gb,gpu_present,domain_joined,virtualization,open_ports,running_services,server_role,confidentiality,integrity,availability,record_source,confidence,is_synthetic
+srv-0001,Ubuntu Server,22.04,4,8,False,True,KVM,[  22   80  443 1935 3389],['winrm'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0002,Windows Server,2016,32,8,False,True,VMware,[ 443 3389],['exchange'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.87,True
+srv-0003,Windows Server,2019,2,64,False,True,Hyper-V,[   22   443  3389 10000],['gitlab' 'puppetserver'],Backup Server,High,High,High,synthetic_hybrid,0.75,True
+srv-0004,Ubuntu Server,22.04,16,128,False,False,VMware,[8081],['veeam'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0005,Windows Server,2019,4,64,False,True,VMware,[  22 3389],['dhcp' 'kubelet'],Bastion Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.74,True
+srv-0006,Windows Server,2016,32,4,False,True,VMware,[ 443 5986 8888],['winrm'],Analytics Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.87,True
+srv-0007,RHEL,8,2,16,False,False,Container,[ 443 9000],['vault'],HSM Management Server,High,High,Moderate,synthetic_rules,0.7,True
+srv-0008,Windows Server,2019,4,4,False,True,Hyper-V,[514],['winrm'],Syslog Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0009,Ubuntu Server,20.04,8,128,False,False,VMware,[ 443 3260],['sshd'],SAN Management Server,High,High,High,synthetic_ml_seed,0.77,True
+srv-0010,Windows Server,2019,2,64,False,True,KVM,[110 587],['exchange'],Mail Server,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0011,Debian,11,32,128,False,False,Hyper-V,[8080],['jenkins'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0012,Debian,12,2,4,False,False,Physical,[3128 5985],['winrm'],Proxy Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0013,Debian,12,16,128,False,True,VMware,[  80 6080],['winrm'],GIS Server,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0014,Ubuntu Server,20.04,8,4,False,False,Hyper-V,[ 22 587],['sharepoint'],Mail Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0015,Ubuntu Server,22.04,8,16,False,False,Physical,[ 161 5985],['grafana' 'veeam'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.92,True
+srv-0016,Debian,12,2,128,False,True,KVM,[443],['winrm'],Remote Desktop Services,Moderate,Moderate,Moderate,synthetic_ml_seed,0.78,True
+srv-0017,RHEL,9,32,16,False,True,Physical,[ 443 3389 8080],['winrm'],Application Server,Moderate,Moderate,High,synthetic_hybrid,0.88,True
+srv-0018,Windows Server,2022,2,16,False,True,Cloud VM,[8080],['apache2'],Wiki Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0019,Windows Server,2016,4,128,False,True,KVM,[443 903],['kubelet' 'ntp'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0020,Ubuntu Server,20.04,8,16,False,True,KVM,[443 514],['vault'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0021,Debian,12,2,32,False,True,Physical,[  22   80 3389],['kubelet' 'winrm'],Bastion Host,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0022,Windows Server,2022,4,32,False,True,VMware,[443],['sshd'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0023,Windows Server,2022,16,4,False,True,KVM,[  80  443 3389 8080],['tomcat'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.9,True
+srv-0024,RHEL,9,8,32,False,False,Physical,[443],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0025,Debian,12,8,16,False,False,Hyper-V,[ 80 443],['apache2' 'ossec' 'tomcat' 'wazuh-manager'],Web Application Firewall,High,High,High,synthetic_rules,0.8,True
+srv-0026,Windows Server,2016,4,8,False,True,KVM,[  22 3389],['docker'],Bastion Host,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0027,RHEL,9,8,128,False,False,Cloud VM,[  80  443 3389],['ntp' 'winrm'],Remote Desktop Services,Moderate,Moderate,Moderate,synthetic_ml_seed,0.99,True
+srv-0028,Windows Server,2016,2,128,False,True,Cloud VM,[443],['ansible' 'jenkins'],Automation Orchestration Server,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0029,RHEL,8,4,128,False,False,Physical,[ 80 443],['sshd'],Privileged Access Management,High,High,Moderate,synthetic_ml_seed,0.94,True
+srv-0030,Windows Server,2019,32,8,False,True,Physical,[443],['prometheus'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_ml_seed,0.79,True
+srv-0031,Windows Server,2019,32,64,False,True,VMware,[  22  443 8080],['iis' 'tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0032,Ubuntu Server,22.04,8,64,False,False,Cloud VM,[  80  443 3391],['dns' 'kubelet'],Remote Access Gateway,Moderate,Moderate,High,synthetic_rules,0.8,True
+srv-0033,RHEL,8,32,16,False,False,KVM,[  22 2376],['containerd' 'sshd'],Container Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0034,Ubuntu Server,20.04,4,128,False,False,Hyper-V,[ 80 443],['apache2' 'teams-gateway'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.78,True
+srv-0035,Debian,12,8,16,False,False,VMware,[  22 1521 5432],['mssql'],Geospatial Database,Moderate,Moderate,Moderate,synthetic_ml_seed,0.94,True
+srv-0036,Windows Server,2016,8,16,False,True,VMware,[ 443 3389],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0037,Windows Server,2016,4,4,False,True,VMware,[8080],['apache2' 'teams-gateway'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0038,Debian,12,2,8,True,False,Hyper-V,[ 443  903 3389],['docker'],Virtualization Host,Moderate,Moderate,High,synthetic_rules,0.77,True
+srv-0039,Ubuntu Server,22.04,32,8,False,True,VMware,[ 1433 44818],['winrm'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0040,Ubuntu Server,20.04,4,128,False,False,Container,[ 443 8200],['elastic-agent' 'wazuh-manager'],Secrets Management Server,High,High,Moderate,synthetic_rules,0.8,True
+srv-0041,RHEL,8,8,128,False,False,VMware,[ 22 443],['radiusd'],Secrets Management Server,High,High,Moderate,synthetic_hybrid,0.84,True
+srv-0042,Debian,12,4,64,False,False,KVM,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0043,Debian,12,8,4,False,False,Physical,[22],['containerd'],Jump Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0044,Debian,12,4,4,False,False,VMware,[2379 2380 6443],['docker' 'sshd'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_hybrid,0.97,True
+srv-0045,Debian,11,8,8,False,False,VMware,[ 2379  2380  6443 10250],['containerd'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_rules,0.74,True
+srv-0046,Windows Server,2016,2,32,False,True,VMware,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.71,True
+srv-0047,Ubuntu Server,22.04,4,128,False,False,KVM,[ 443 5985],['sshd'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0048,Windows Server,2022,4,8,False,True,Cloud VM,[5986 8080],['confluence' 'iis' 'tomcat'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0049,Windows Server,2019,16,32,False,True,Hyper-V,[389 443],['sshd'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0050,Windows Server,2016,8,128,False,True,Cloud VM,[ 443 3478],['teams-gateway'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.98,True
+srv-0051,Ubuntu Server,22.04,32,32,False,False,Physical,[443 445],['winrm'],Archive Server,High,High,High,synthetic_rules,0.96,True
+srv-0052,Windows Server,2019,16,16,False,True,Hyper-V,[443],['apache2' 'nginx'],HRIS Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0053,Ubuntu Server,22.04,8,32,False,False,Physical,[  22  443 5986],['gitlab' 'jenkins'],Backup Server,High,High,High,synthetic_rules,0.74,True
+srv-0054,Windows Server,2019,8,4,False,True,Cloud VM,[443],['tomcat'],Web Server,Moderate,Moderate,High,synthetic_ml_seed,0.96,True
+srv-0055,Ubuntu Server,22.04,2,128,False,False,Container,[ 443 8088],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0056,Windows Server,2016,2,16,False,True,Physical,[  80  443 8080],['apache2' 'nginx'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_ml_seed,0.95,True
+srv-0057,Windows Server,2016,4,4,False,True,KVM,[ 443  902  903 5985],['dhcp' 'sshd'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.89,True
+srv-0058,Debian,12,4,32,False,True,Container,[  80  443 3389 5986],['apache2' 'iis'],Web Server,Moderate,Moderate,High,synthetic_hybrid,0.86,True
+srv-0059,RHEL,9,2,128,False,False,Cloud VM,[ 443 5986],['iis' 'sharepoint' 'tomcat'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0060,Windows Server,2016,2,4,False,True,Physical,[  80  443 8080],['apache2' 'nginx'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_ml_seed,0.81,True
+srv-0061,Ubuntu Server,20.04,4,128,False,False,VMware,[ 443  514 5601],['vault'],SIEM Server,High,High,Moderate,synthetic_hybrid,0.96,True
+srv-0062,Windows Server,2022,4,128,False,True,Cloud VM,[1433 3306 5986],['mssql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0063,Ubuntu Server,22.04,16,16,False,False,Physical,[443],['sshd'],SSO Server,High,High,Moderate,synthetic_rules,0.94,True
+srv-0064,RHEL,9,2,16,False,False,Hyper-V,[ 443 8888],['sshd'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0065,Windows Server,2022,4,32,False,True,VMware,[1433 1521 5432 5985],['oracle'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0066,Windows Server,2019,8,4,False,True,VMware,[  80  443 1935 5985],['winrm'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0067,Windows Server,2019,8,64,False,True,KVM,[ 135 2179],['containerd'],Hyper-V Host,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0068,RHEL,8,32,128,False,False,Hyper-V,[  80  443 3389 5696],['vault'],Key Management Server,High,High,Moderate,synthetic_ml_seed,0.82,True
+srv-0069,Windows Server,2016,8,64,False,True,VMware,[ 443 5985 8000],['apache2'],ERP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0070,RHEL,8,4,16,False,False,KVM,[  80  443 9092],['winrm'],Message Queue Server,Moderate,Moderate,High,synthetic_hybrid,0.97,True
+srv-0071,Windows Server,2022,4,16,False,True,KVM,[ 443 8443],['ansible'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.7,True
+srv-0072,Ubuntu Server,20.04,4,32,False,False,VMware,[ 22 443],['puppetserver'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0073,Debian,11,8,16,False,False,VMware,[443],['elastic-agent' 'ossec'],Email Security Gateway,High,High,High,synthetic_hybrid,0.86,True
+srv-0074,Ubuntu Server,22.04,32,64,False,True,Hyper-V,[3389 5672 9092],['winrm'],Message Queue Server,Moderate,Moderate,High,synthetic_hybrid,0.72,True
+srv-0075,RHEL,8,2,32,False,False,VMware,[ 22 443],['ossec'],Firewall Management Server,High,High,High,synthetic_hybrid,0.85,True
+srv-0076,Debian,11,8,64,True,True,VMware,[ 443 3389],['sshd'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0077,Windows Server,2016,16,64,False,True,KVM,[1521 5432 5985],['postgresql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.87,True
+srv-0078,Debian,12,8,4,False,False,Hyper-V,[  80  443 8080],['winrm'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0079,Debian,12,8,128,False,True,Physical,[5601 9200 9300],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0080,Ubuntu Server,22.04,4,4,False,True,Physical,[ 443 9000],['elastic-agent' 'wazuh-manager'],HSM Management Server,High,High,Moderate,synthetic_rules,0.89,True
+srv-0081,RHEL,8,2,4,False,True,VMware,[  22   80 2375 2376],['dhcp'],Container Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0082,Windows Server,2022,2,8,False,True,KVM,[ 22 443],['gitlab' 'grafana'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0083,RHEL,8,8,16,False,True,Physical,[443],['winrm'],CMDB Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.85,True
+srv-0084,RHEL,9,4,128,False,True,KVM,[30000 30001],['kubelet'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_ml_seed,0.73,True
+srv-0085,Ubuntu Server,20.04,32,32,True,False,VMware,[10250 30000 30001],['ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0086,Debian,12,4,8,False,False,Hyper-V,[ 443 3128],['sshd'],Proxy Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0087,Windows Server,2016,4,8,True,True,Hyper-V,[6006],['winrm'],Machine Learning Platform,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0088,Windows Server,2016,32,4,False,True,Cloud VM,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_rules,0.95,True
+srv-0089,Debian,11,2,128,False,False,Hyper-V,[443],['iis'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_ml_seed,0.73,True
+srv-0090,Windows Server,2019,4,32,False,True,Physical,[  22 3389],['containerd'],Bastion Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0091,Windows Server,2019,2,4,False,True,Hyper-V,[  80 5432],['mysql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.97,True
+srv-0092,Ubuntu Server,22.04,16,16,False,False,VMware,[5601 9200],['suricata'],SIEM Server,High,High,Moderate,synthetic_hybrid,0.82,True
+srv-0093,RHEL,8,8,16,False,True,Hyper-V,[  22 8081],['gitlab'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0094,Ubuntu Server,22.04,8,16,False,False,Hyper-V,[443 902 903],['containerd'],Virtualization Host,Moderate,Moderate,High,synthetic_rules,0.9,True
+srv-0095,Ubuntu Server,20.04,16,4,False,True,Hyper-V,[443],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0096,Debian,11,32,128,False,False,Hyper-V,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0097,Debian,11,4,8,False,True,Cloud VM,[3306 5432],['mysql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0098,RHEL,9,32,16,False,False,VMware,[5601 9200],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.74,True
+srv-0099,Ubuntu Server,20.04,4,4,False,False,Hyper-V,[ 443 5985],['elastic-agent'],SIEM Server,High,High,Moderate,synthetic_ml_seed,0.98,True
+srv-0100,Ubuntu Server,20.04,32,16,False,False,Cloud VM,[443],['nginx'],CRM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0101,Ubuntu Server,22.04,2,4,False,False,Cloud VM,[1433 1521],['mssql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0102,Ubuntu Server,22.04,16,8,True,True,VMware,[443 902 903],['dns' 'sshd'],Virtualization Host,Moderate,Moderate,High,synthetic_rules,0.77,True
+srv-0103,RHEL,8,4,64,False,True,KVM,[27000],['winrm'],License Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.9,True
+srv-0104,Ubuntu Server,20.04,4,8,False,False,Container,[ 80 443],['confluence' 'tomcat'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0105,Debian,12,8,8,False,True,VMware,[ 443 5985 8080],['exchange' 'iis' 'tomcat'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.91,True
+srv-0106,RHEL,9,4,4,False,False,Physical,[  22   80 3389],['kubelet' 'sshd'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0107,Debian,12,4,128,False,True,Container,[  22  443 3389 7990],['ansible' 'puppetserver'],Source Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0108,Ubuntu Server,20.04,16,4,False,False,Hyper-V,[ 443 5986],['winrm'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0109,Ubuntu Server,22.04,8,16,False,False,Hyper-V,[5601 5986 9200 9300],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0110,RHEL,9,8,32,False,True,Hyper-V,[902 903],['winrm'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.74,True
+srv-0111,Windows Server,2022,8,32,False,True,Physical,[5985 8000],['nginx'],ERP Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0112,Windows Server,2019,4,64,False,True,Hyper-V,[ 443 3260],['winrm'],SAN Management Server,High,High,High,synthetic_hybrid,0.92,True
+srv-0113,RHEL,9,4,64,False,True,Hyper-V,[ 443 3260],['sshd'],SAN Management Server,High,High,High,synthetic_rules,0.8,True
+srv-0114,Ubuntu Server,20.04,16,8,True,False,Hyper-V,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0115,Windows Server,2022,16,32,False,True,KVM,[ 443 5986 8088],['sshd'],BI Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0116,Windows Server,2016,8,8,False,True,VMware,[ 80 443],['nginx' 'radiusd' 'tomcat' 'wazuh-manager'],Web Application Firewall,High,High,High,synthetic_ml_seed,0.78,True
+srv-0117,Windows Server,2016,8,128,False,True,Cloud VM,[443],['apache2' 'nginx'],API Gateway,Moderate,Moderate,High,synthetic_hybrid,0.84,True
+srv-0118,Ubuntu Server,20.04,4,128,False,True,Container,[ 443 5986],['exchange' 'iis' 'tomcat'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0119,Debian,11,4,4,False,False,VMware,[80],['apache2' 'nginx'],Web Server,Moderate,Moderate,High,synthetic_rules,0.77,True
+srv-0120,RHEL,9,16,64,False,False,Physical,[  22 8080],['iis' 'nginx' 'sharepoint'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0121,Debian,12,8,32,False,False,VMware,[  22  443 8088],['sshd'],BI Server,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0122,Ubuntu Server,22.04,2,8,False,False,Hyper-V,[  22  443 2195 5986],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0123,Windows Server,2016,8,64,False,True,VMware,[ 443 8080],['iis' 'sharepoint'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0124,Ubuntu Server,20.04,8,4,False,True,VMware,[443 445],['winrm'],Archive Server,High,High,High,synthetic_rules,0.8,True
+srv-0125,Windows Server,2019,4,128,False,True,Hyper-V,[443 902 903],['dns'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0126,Ubuntu Server,22.04,32,128,False,False,KVM,[ 443 5986],['winrm'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0127,RHEL,9,8,4,False,False,Cloud VM,[ 443 5985],['apache2' 'iis'],API Gateway,Moderate,Moderate,High,synthetic_rules,0.73,True
+srv-0128,Debian,12,8,64,False,True,VMware,[ 80 123],['kubelet'],NTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0129,RHEL,8,8,4,False,False,VMware,[ 22  80 443],['winrm'],Load Balancer,Moderate,Moderate,High,synthetic_ml_seed,0.8,True
+srv-0130,Debian,11,4,32,False,True,KVM,[ 443 8080],['confluence' 'nginx'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0131,Ubuntu Server,22.04,16,32,False,False,Hyper-V,[10250 30000 30001],['ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0132,RHEL,8,16,8,False,False,Physical,[  22 3389],['dhcp' 'ntp'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0133,RHEL,8,2,32,False,False,Container,[ 443 5985 5986],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0134,Windows Server,2022,32,32,False,True,KVM,[ 22 443],['suricata' 'vault'],Firewall Management Server,High,High,High,synthetic_hybrid,0.73,True
+srv-0135,Ubuntu Server,20.04,4,4,False,True,Cloud VM,[443],['suricata' 'vault'],Identity Governance Server,High,High,Moderate,synthetic_rules,0.76,True
+srv-0136,RHEL,8,8,16,False,True,Container,[ 80 443],['sshd'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.78,True
+srv-0137,Windows Server,2022,4,8,False,True,Cloud VM,[443 502],['sshd'],OT Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.78,True
+srv-0138,Windows Server,2019,8,32,False,True,Physical,[1433 3306 5432],['mysql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0139,Debian,11,32,16,False,False,Physical,[ 443 8080],['iis'],Wiki Server,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0140,RHEL,8,4,4,False,False,VMware,[  80  443 3478 5985],['confluence'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.7,True
+srv-0141,Windows Server,2019,32,32,False,True,Hyper-V,[22 53],['ntp'],DNS Server,Moderate,Moderate,High,synthetic_rules,0.88,True
+srv-0142,Windows Server,2022,8,16,False,True,Hyper-V,[53],['kubelet' 'sshd'],DNS Server,Moderate,Moderate,High,synthetic_rules,0.74,True
+srv-0143,Windows Server,2019,4,64,False,True,KVM,[22],['sshd'],SFTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0144,Windows Server,2019,4,32,False,True,Physical,[1812],['winrm'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.94,True
+srv-0145,Windows Server,2019,2,16,False,True,Cloud VM,[3128 5986 8080],['sshd'],Proxy Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0146,RHEL,9,8,128,False,False,Hyper-V,[  22   80  443 8443],['prometheus'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0147,Debian,11,4,64,False,False,VMware,[ 23 443],['sshd'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0148,Debian,12,4,4,False,False,VMware,[ 443 3128 8080],['sshd'],Proxy Server,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0149,RHEL,9,4,16,False,False,VMware,[9100],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0150,Ubuntu Server,22.04,4,4,False,True,VMware,[ 443 5222],['teams-gateway'],Collaboration Server,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0151,Debian,12,4,128,False,False,Container,[443],['sshd'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.92,True
+srv-0152,Ubuntu Server,20.04,32,64,False,False,Hyper-V,[ 443 5985],['teams-gateway'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0153,Windows Server,2019,16,128,False,True,Hyper-V,[22],['dns' 'docker'],Bastion Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.94,True
+srv-0154,Debian,11,4,4,False,False,VMware,[ 80 443],['winrm'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.75,True
+srv-0155,Windows Server,2019,8,128,False,True,Physical,[ 80 139],['winrm'],File Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0156,Windows Server,2019,2,4,False,True,Hyper-V,[ 443 3389],['winrm'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0157,RHEL,9,4,16,False,True,VMware,[5432],['postgresql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0158,Debian,12,4,128,False,False,Physical,[ 443 8834],['sshd'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0159,Debian,11,8,16,False,False,Container,[ 443 5985],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0160,Windows Server,2022,4,8,False,True,Cloud VM,[ 443 8140],['jenkins' 'prometheus'],Configuration Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0161,Ubuntu Server,20.04,2,64,False,True,Hyper-V,[1521 3389 5432],['mssql'],Database Server,High,High,High,synthetic_hybrid,0.97,True
+srv-0162,RHEL,8,16,128,False,True,VMware,[5672],['winrm'],Message Queue Server,Moderate,Moderate,High,synthetic_hybrid,0.89,True
+srv-0163,Windows Server,2022,8,16,False,True,VMware,[ 22 443],['gitlab'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0164,Windows Server,2019,8,8,False,True,Physical,[ 22 443],['ossec'],Firewall Management Server,High,High,High,synthetic_rules,0.92,True
+srv-0165,Windows Server,2019,16,4,False,True,VMware,[110 465 587 993],['teams-gateway'],Mail Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0166,RHEL,8,4,4,False,True,VMware,[ 515  631 3389 9100],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0167,Ubuntu Server,20.04,8,128,False,False,Hyper-V,[ 80 443],['ossec' 'wazuh-manager'],Identity Federation Server,High,High,Moderate,synthetic_hybrid,0.9,True
+srv-0168,Windows Server,2019,2,8,False,True,VMware,[ 111 5986],['winrm'],NAS Server,High,High,High,synthetic_rules,0.98,True
+srv-0169,Debian,11,2,16,False,True,Cloud VM,[  22  443 7990],['ansible' 'jenkins'],Source Control Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.99,True
+srv-0170,Ubuntu Server,20.04,8,16,False,False,KVM,[443],['tomcat'],CRM Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0171,Windows Server,2022,32,64,False,True,Cloud VM,[443],['elastic-agent' 'wazuh-manager'],DLP Management Server,High,High,High,synthetic_rules,0.88,True
+srv-0172,Windows Server,2019,2,64,False,True,KVM,[ 111  445 2049 3389],['winrm'],Storage Server,High,High,High,synthetic_ml_seed,0.71,True
+srv-0173,Windows Server,2019,16,8,False,True,Hyper-V,[ 443 5985],['grafana'],Automation Orchestration Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0174,RHEL,8,4,128,False,False,VMware,[2195],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.74,True
+srv-0175,Windows Server,2022,2,8,False,True,Cloud VM,[ 22  80 443],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.91,True
+srv-0176,Debian,11,8,32,False,False,Hyper-V,[ 139  445 3389 5985 5986],['winrm'],File Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.76,True
+srv-0177,Ubuntu Server,20.04,4,128,False,True,KVM,[  22 3389],['ossec' 'radiusd'],Firewall Management Server,High,High,High,synthetic_rules,0.82,True
+srv-0178,Ubuntu Server,20.04,8,16,False,False,VMware,[443],['sshd'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0179,Windows Server,2022,4,16,False,True,KVM,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_ml_seed,0.93,True
+srv-0180,Ubuntu Server,22.04,4,32,False,False,Hyper-V,[445],['winrm'],File Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0181,Windows Server,2016,4,4,False,True,KVM,[ 443 1883 8883],['sshd'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_ml_seed,0.84,True
+srv-0182,Windows Server,2019,8,8,False,True,Cloud VM,[   22   443 10000],['grafana' 'puppetserver'],Backup Server,High,High,High,synthetic_hybrid,0.75,True
+srv-0183,RHEL,8,16,8,False,True,Hyper-V,[443],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0184,Debian,12,4,128,False,True,VMware,[443],['jenkins' 'prometheus'],Configuration Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0185,Windows Server,2019,16,64,False,True,VMware,[443],['sshd'],Remote Desktop Services,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0186,Debian,12,4,4,False,False,Physical,[  80  443 8080],['iis' 'tomcat'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.92,True
+srv-0187,Ubuntu Server,22.04,8,128,False,False,Hyper-V,[  80  443 8080],['apache2' 'tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.79,True
+srv-0188,Debian,11,4,128,False,True,Physical,[ 80 443 902 903],['containerd'],Virtualization Host,Moderate,Moderate,High,synthetic_hybrid,0.79,True
+srv-0189,Windows Server,2019,32,8,False,True,Cloud VM,[ 123 5985],['kubelet'],NTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0190,Windows Server,2019,4,16,False,True,VMware,[443],['sshd'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0191,Debian,11,32,64,False,True,VMware,[443 903],['containerd' 'dns'],Virtualization Host,Moderate,Moderate,High,synthetic_rules,0.9,True
+srv-0192,Debian,12,32,128,False,False,Container,[  22 3389],['dns'],Bastion Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.75,True
+srv-0193,Debian,11,32,8,False,False,VMware,[ 443 3389 8080],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0194,Windows Server,2022,16,4,False,True,VMware,[10000],['gitlab' 'grafana'],Backup Server,High,High,High,synthetic_hybrid,0.96,True
+srv-0195,RHEL,8,8,64,False,False,VMware,[ 22 443],['radiusd' 'wazuh-manager'],Firewall Management Server,High,High,High,synthetic_rules,0.75,True
+srv-0196,RHEL,9,2,16,False,True,Cloud VM,[1521 5432 5985],['postgresql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0197,Debian,12,4,32,True,False,Hyper-V,[6080 6443],['sshd'],GIS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.83,True
+srv-0198,Windows Server,2016,4,32,False,True,Container,[ 443 3260],['winrm'],SAN Management Server,High,High,High,synthetic_hybrid,0.9,True
+srv-0199,Ubuntu Server,22.04,16,16,False,True,KVM,[8080],['apache2' 'iis'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.86,True
+srv-0200,Windows Server,2022,2,128,False,True,VMware,[5601 5986 9200],['vault' 'wazuh-manager'],SIEM Server,High,High,Moderate,synthetic_hybrid,0.93,True
+srv-0201,Windows Server,2022,16,64,False,True,Hyper-V,[ 443 5986 8080],['apache2' 'iis' 'jira'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0202,RHEL,8,32,64,False,False,KVM,[443],['sshd'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0203,Ubuntu Server,22.04,2,16,False,False,Physical,[161 162 443],['prometheus'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.75,True
+srv-0204,RHEL,9,2,16,False,True,VMware,[ 443 8834],['sshd'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0205,Ubuntu Server,20.04,2,128,False,False,KVM,[  443 44818],['winrm'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0206,Debian,12,2,4,False,False,Hyper-V,[443],['winrm'],OT Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0207,Windows Server,2019,16,128,False,True,Hyper-V,[ 22  80 443],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.9,True
+srv-0208,Windows Server,2016,8,128,False,True,Physical,[  80  514 5601 9200],['jenkins'],Log Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0209,Windows Server,2016,8,8,False,True,Physical,[ 443 7990],['jenkins' 'zabbix-server'],Source Control Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.74,True
+srv-0210,RHEL,9,8,64,False,True,KVM,[  443 10000],['grafana'],Backup Server,High,High,High,synthetic_ml_seed,0.88,True
+srv-0211,Windows Server,2022,8,128,False,True,VMware,[  22 8080],['sshd'],Application Server,Moderate,Moderate,High,synthetic_ml_seed,0.98,True
+srv-0212,Debian,11,4,64,False,False,VMware,[  22 2379 2380 6443],['kubelet'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_hybrid,0.84,True
+srv-0213,Ubuntu Server,22.04,8,64,False,False,Physical,[  443  3389  5985 27000 27001],['sshd'],License Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0214,Windows Server,2016,8,16,False,True,Container,[443],['winrm'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0215,Windows Server,2022,32,64,False,True,VMware,[53 80],['kubelet'],DNS Server,Moderate,Moderate,High,synthetic_rules,0.99,True
+srv-0216,Windows Server,2016,16,16,False,True,Container,[5985 6080 6443],['winrm'],GIS Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0217,RHEL,8,8,32,False,True,Cloud VM,[ 22 443],['veeam'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0218,Debian,11,8,8,False,False,VMware,[5432],['mssql'],Geospatial Database,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0219,Windows Server,2022,8,128,True,True,KVM,[ 443 6006 8888],['winrm'],Machine Learning Platform,Moderate,Moderate,Moderate,synthetic_hybrid,0.75,True
+srv-0220,Ubuntu Server,22.04,4,128,False,False,Hyper-V,[443],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_ml_seed,0.75,True
+srv-0221,Windows Server,2022,2,64,False,True,Physical,[ 443 5986 8080],['apache2' 'tomcat'],CRM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0222,Windows Server,2019,8,8,False,True,KVM,[ 389 3389 5986],['winrm'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0223,RHEL,8,8,16,False,False,Hyper-V,[443 502],['sshd'],OT Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.85,True
+srv-0224,Windows Server,2022,4,128,False,True,Physical,[21],['winrm'],FTP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0225,Windows Server,2016,32,4,False,True,Hyper-V,[ 443 8080 8443],['winrm'],Application Server,Moderate,Moderate,High,synthetic_rules,0.89,True
+srv-0226,Windows Server,2016,16,32,False,True,VMware,[1433 3306 5432 5986],['mysql'],Database Server,High,High,High,synthetic_hybrid,0.81,True
+srv-0227,Ubuntu Server,20.04,8,4,False,True,Physical,[ 80 443],['apache2' 'tomcat' 'vault'],Web Application Firewall,High,High,High,synthetic_rules,0.79,True
+srv-0228,Windows Server,2022,4,64,False,True,Hyper-V,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_rules,0.73,True
+srv-0229,Ubuntu Server,20.04,16,128,False,True,Container,[  80  123 5985],['kubelet' 'ntp'],NTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0230,Ubuntu Server,20.04,8,128,False,False,Cloud VM,[5060],['winrm'],VoIP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.89,True
+srv-0231,Debian,12,2,32,False,True,Cloud VM,[  88  445 3268 3389],['winrm'],Active Directory Domain Services,High,High,High,synthetic_ml_seed,0.82,True
+srv-0232,Debian,11,2,128,False,True,Physical,[  80  443 8080],['iis' 'nginx'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0233,RHEL,8,4,32,False,True,Physical,[443],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0234,Windows Server,2022,32,128,False,True,KVM,[ 902  903 5985],['dhcp' 'sshd'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.78,True
+srv-0235,Debian,12,32,16,False,False,VMware,[22],['ansible'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_ml_seed,0.84,True
+srv-0236,Windows Server,2016,16,16,False,True,Hyper-V,[443 445],['sshd'],Archive Server,High,High,High,synthetic_rules,0.97,True
+srv-0237,Debian,12,8,32,False,False,Physical,[ 443 5986],['puppetserver' 'zabbix-server'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_hybrid,0.86,True
+srv-0238,Windows Server,2016,4,64,False,True,KVM,[ 443 5696 5986],['elastic-agent' 'ossec'],Key Management Server,High,High,Moderate,synthetic_rules,0.97,True
+srv-0239,RHEL,9,4,128,False,False,Hyper-V,[3389 5601 9200 9300],['sshd'],Search Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0240,RHEL,8,4,32,False,False,Hyper-V,[ 443 5696],['elastic-agent' 'suricata'],Key Management Server,High,High,Moderate,synthetic_rules,0.93,True
+srv-0241,RHEL,9,4,16,False,False,Hyper-V,[ 1433 44818],['sshd'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_ml_seed,0.76,True
+srv-0242,Debian,11,2,8,False,True,Physical,[  22   80  443 8200],['elastic-agent' 'wazuh-manager'],Secrets Management Server,High,High,Moderate,synthetic_rules,0.96,True
+srv-0243,Windows Server,2016,4,32,False,True,Hyper-V,[9000],['suricata' 'wazuh-manager'],HSM Management Server,High,High,Moderate,synthetic_rules,0.93,True
+srv-0244,Ubuntu Server,20.04,8,32,False,True,VMware,[443],['sshd'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_ml_seed,0.8,True
+srv-0245,Ubuntu Server,22.04,8,4,False,True,Container,[  53   80 3389],['dns'],DNS Server,Moderate,Moderate,High,synthetic_rules,0.74,True
+srv-0246,Windows Server,2019,4,32,False,True,Container,[  22   23  443 5985],['winrm'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_ml_seed,0.85,True
+srv-0247,Debian,12,4,16,False,True,Cloud VM,[2380 5985 6443],['dns' 'ntp'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_ml_seed,0.81,True
+srv-0248,RHEL,8,16,4,False,False,VMware,[ 443 5986],['winrm'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0249,Debian,11,4,4,False,False,VMware,[  22  631 3389 9100],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0250,Debian,12,16,32,False,False,Physical,[  80  443 1935],['sshd'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0251,Windows Server,2022,8,128,False,True,KVM,[22],['winrm'],SFTP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.89,True
+srv-0252,Windows Server,2019,8,16,False,True,VMware,[ 443 2195],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0253,Windows Server,2022,2,64,False,True,Cloud VM,[631],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.88,True
+srv-0254,Windows Server,2016,8,16,False,True,VMware,[ 443 5986],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0255,Windows Server,2019,8,128,False,True,KVM,[1433 3306 5432],['mssql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0256,Windows Server,2022,32,128,False,True,VMware,[3260 5985],['sshd'],SAN Management Server,High,High,High,synthetic_rules,0.89,True
+srv-0257,Ubuntu Server,20.04,8,16,False,True,VMware,[443],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0258,Debian,12,8,128,False,True,VMware,[443 502],['winrm'],OT Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0259,Debian,11,8,8,False,False,VMware,[ 80 443 873],['sshd'],Replication Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.73,True
+srv-0260,Windows Server,2016,4,8,False,True,VMware,[  22 3389],['winrm'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.92,True
+srv-0261,Debian,11,16,4,False,False,KVM,[ 22 443],['sshd'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0262,Windows Server,2022,4,64,False,True,Hyper-V,[ 111  445 2049 5985],['sshd'],NAS Server,High,High,High,synthetic_rules,0.86,True
+srv-0263,Ubuntu Server,22.04,8,4,False,False,VMware,[  22  443 3478],['teams-gateway'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.83,True
+srv-0264,Windows Server,2019,8,64,False,True,KVM,[22],['ntp'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0265,Windows Server,2016,4,16,False,True,Physical,[8443],['apache2' 'nginx'],API Gateway,Moderate,Moderate,High,synthetic_rules,0.75,True
+srv-0266,Ubuntu Server,22.04,8,64,False,False,VMware,[ 22 445],['sshd'],File Server,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0267,Ubuntu Server,20.04,2,32,False,True,VMware,[  80  443 8530],['prometheus' 'puppetserver'],Patch Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0268,RHEL,9,16,16,False,False,Hyper-V,[ 80 443],['tomcat'],Web Server,Moderate,Moderate,High,synthetic_ml_seed,0.9,True
+srv-0269,Debian,11,8,16,False,True,VMware,[ 443 5985 8443],['sshd'],Application Server,Moderate,Moderate,High,synthetic_ml_seed,0.98,True
+srv-0270,RHEL,9,8,16,False,True,Hyper-V,[ 22 443],['sshd'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0271,RHEL,9,16,64,False,True,Hyper-V,[22],['ansible'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0272,Windows Server,2019,16,8,False,True,Physical,[ 443 5986],['winrm'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0273,RHEL,9,8,4,False,True,Cloud VM,[  22  443 1883 3389],['winrm'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0274,RHEL,9,4,8,False,False,KVM,[ 443 1813],['elastic-agent'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0275,Windows Server,2019,16,16,False,True,VMware,[80],['iis' 'sharepoint' 'tomcat'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0276,Windows Server,2022,8,64,False,True,KVM,[443],['sshd'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0277,RHEL,9,8,4,False,False,Hyper-V,[ 80 443],['sshd'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.82,True
+srv-0278,Windows Server,2016,32,8,False,True,Cloud VM,[1521 5432],['oracle'],Geospatial Database,Moderate,Moderate,Moderate,synthetic_hybrid,0.71,True
+srv-0279,RHEL,8,8,64,True,False,VMware,[  80  443 6006],['sshd'],Machine Learning Platform,Moderate,Moderate,Moderate,synthetic_ml_seed,0.97,True
+srv-0280,RHEL,8,16,4,False,True,Cloud VM,[ 443 9000],['vault' 'wazuh-manager'],HSM Management Server,High,High,Moderate,synthetic_hybrid,0.98,True
+srv-0281,RHEL,8,8,128,False,True,VMware,[ 80 443],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0282,Windows Server,2016,2,64,False,True,KVM,[1813],['ossec'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0283,Debian,12,8,4,False,False,VMware,[5986 6514],['sshd'],Syslog Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.71,True
+srv-0284,Windows Server,2019,8,32,False,True,Hyper-V,[ 443  514 5601 9200],['wazuh-manager'],SIEM Server,High,High,Moderate,synthetic_hybrid,0.99,True
+srv-0285,Debian,11,4,128,False,False,Hyper-V,[23],['winrm'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0286,Debian,11,2,16,False,False,VMware,[ 443 5985 8088],['sshd'],BI Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.77,True
+srv-0287,Windows Server,2022,8,32,False,True,VMware,[443],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_hybrid,0.73,True
+srv-0288,RHEL,8,8,4,False,True,Container,[445],['sshd'],Storage Server,High,High,High,synthetic_hybrid,0.98,True
+srv-0289,Windows Server,2022,32,4,False,True,KVM,[443],['winrm'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0290,RHEL,8,2,64,True,False,VMware,[  22  443 3389],['ossec'],DLP Management Server,High,High,High,synthetic_hybrid,0.77,True
+srv-0291,RHEL,9,16,16,False,False,VMware,[443],['suricata'],DLP Management Server,High,High,High,synthetic_rules,0.9,True
+srv-0292,Debian,11,16,32,False,True,Physical,[67 68],['dns' 'winrm'],DHCP Server,Moderate,Moderate,High,synthetic_rules,0.93,True
+srv-0293,Ubuntu Server,22.04,8,64,False,True,Physical,[ 443 1812],['winrm'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0294,Windows Server,2019,4,32,False,True,KVM,[3389 4500],['winrm'],VPN Server,Moderate,Moderate,High,synthetic_rules,0.81,True
+srv-0295,Windows Server,2016,16,64,False,True,KVM,[  80  443 5986],['confluence' 'nginx' 'tomcat'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0296,Ubuntu Server,22.04,4,16,True,True,VMware,[3478],['exchange'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0297,Windows Server,2022,32,32,False,True,VMware,[5985 8530 8531],['zabbix-server'],WSUS Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0298,Debian,12,4,32,False,False,VMware,[ 443 5986 8080],['iis' 'tomcat'],CRM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0299,Ubuntu Server,22.04,32,4,False,False,Hyper-V,[ 5060  5061  5985  5986 10000],['sshd'],VoIP Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0300,RHEL,8,4,128,False,True,Physical,[443],['wazuh-manager'],SIEM Server,High,High,Moderate,synthetic_hybrid,0.74,True
+srv-0301,Windows Server,2022,2,128,False,True,VMware,[  22  443 7990],['veeam' 'zabbix-server'],Source Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0302,Windows Server,2019,4,32,False,True,Container,[123],['dns' 'winrm'],NTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0303,Debian,11,2,32,False,False,Cloud VM,[ 443 3389],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0304,Windows Server,2019,8,8,True,True,Container,[443],['winrm'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0305,Debian,11,32,16,False,True,Physical,[443],['sshd'],SSO Server,High,High,Moderate,synthetic_rules,0.71,True
+srv-0306,Ubuntu Server,20.04,8,32,False,False,VMware,[ 2379  2380  6443 10250],['sshd'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_hybrid,0.71,True
+srv-0307,Windows Server,2016,8,64,False,True,KVM,[ 80 443],['wazuh-manager'],Identity Governance Server,High,High,Moderate,synthetic_rules,0.89,True
+srv-0308,Ubuntu Server,20.04,8,16,False,False,KVM,[ 443  873 3389 5986],['sshd'],Replication Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.75,True
+srv-0309,Windows Server,2022,8,8,False,True,Physical,[  80  443 3389 5986],['winrm'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.83,True
+srv-0310,Debian,11,16,8,False,False,Hyper-V,[  80 1433 3306],['mysql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0311,Windows Server,2019,8,4,False,True,Cloud VM,[8080],['nginx' 'teams-gateway' 'tomcat'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.71,True
+srv-0312,Ubuntu Server,22.04,4,32,False,False,Cloud VM,[ 443 8443],['winrm'],Application Server,Moderate,Moderate,High,synthetic_hybrid,0.88,True
+srv-0313,Ubuntu Server,20.04,16,128,False,True,Physical,[ 443 5985],['sshd'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0314,RHEL,9,4,8,False,True,VMware,[443 873],['sshd'],Replication Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0315,Windows Server,2022,8,64,False,True,Physical,[ 80 443],['apache2' 'confluence'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.83,True
+srv-0316,Debian,11,16,64,False,False,Hyper-V,[ 80 443],['iis' 'nginx'],Web Server,Moderate,Moderate,High,synthetic_ml_seed,0.72,True
+srv-0317,Ubuntu Server,22.04,4,128,False,False,Hyper-V,[67 68],['docker'],DHCP Server,Moderate,Moderate,High,synthetic_hybrid,0.8,True
+srv-0318,RHEL,9,32,16,False,False,Hyper-V,[  22 3389 9092],['winrm'],Message Queue Server,Moderate,Moderate,High,synthetic_rules,0.81,True
+srv-0319,RHEL,8,4,8,False,False,Hyper-V,[443],['apache2'],ERP Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0320,RHEL,9,4,4,False,True,Hyper-V,[ 5060  5061 10000],['sshd'],VoIP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0321,Windows Server,2022,4,4,False,True,VMware,[ 443 1194],['sshd'],VPN Server,Moderate,Moderate,High,synthetic_rules,0.84,True
+srv-0322,Ubuntu Server,22.04,4,4,True,False,Cloud VM,[443],['elastic-agent' 'ossec'],Identity Governance Server,High,High,Moderate,synthetic_ml_seed,0.98,True
+srv-0323,Ubuntu Server,22.04,4,32,False,True,Cloud VM,[3389],['ntp'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0324,Windows Server,2022,4,32,False,True,VMware,[443],['tomcat'],Web Server,Moderate,Moderate,High,synthetic_hybrid,0.94,True
+srv-0325,Windows Server,2019,4,4,False,True,Hyper-V,[8530 8531],['gitlab' 'puppetserver'],WSUS Server,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0326,Debian,12,2,16,True,False,VMware,[ 22  80 443],['nginx'],Web Server,Moderate,Moderate,High,synthetic_ml_seed,0.84,True
+srv-0327,Windows Server,2019,8,32,False,True,VMware,[ 443 5985],['elastic-agent' 'vault'],Email Security Gateway,High,High,High,synthetic_rules,0.93,True
+srv-0328,RHEL,9,32,32,False,False,Container,[ 443 2195],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.88,True
+srv-0329,Windows Server,2016,8,128,False,True,VMware,[ 443 3389 9000],['elastic-agent' 'vault'],HSM Management Server,High,High,Moderate,synthetic_hybrid,0.77,True
+srv-0330,Windows Server,2022,4,16,False,True,Cloud VM,[139 445],['winrm'],File Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0331,RHEL,9,32,16,False,False,KVM,[ 443 5985],['gitlab'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0332,RHEL,8,2,16,False,False,Physical,[22],['gitlab' 'jenkins'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_ml_seed,0.81,True
+srv-0333,RHEL,8,32,8,True,False,VMware,[135 445],['winrm'],PKI / Certificate Authority,High,High,Moderate,synthetic_ml_seed,0.86,True
+srv-0334,Windows Server,2019,8,32,False,True,Physical,[443],['apache2' 'iis'],API Gateway,Moderate,Moderate,High,synthetic_rules,0.93,True
+srv-0335,Windows Server,2022,16,8,False,True,VMware,[ 443 5986],['zabbix-server'],Backup Server,High,High,High,synthetic_hybrid,0.86,True
+srv-0336,Windows Server,2019,4,4,False,True,KVM,[2049 5986],['winrm'],Storage Server,High,High,High,synthetic_hybrid,0.88,True
+srv-0337,Debian,12,32,128,False,False,Physical,[ 443 5985],['winrm'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0338,Windows Server,2022,8,128,False,True,VMware,[443],['winrm'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0339,Windows Server,2016,2,16,False,True,VMware,[443],['winrm'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0340,Windows Server,2019,4,4,False,True,Hyper-V,[ 443 8080],['apache2'],CRM Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0341,RHEL,9,2,8,False,False,VMware,[443],['sshd'],SSO Server,High,High,Moderate,synthetic_rules,0.85,True
+srv-0342,Windows Server,2022,2,4,False,True,Cloud VM,[1433 5432 5986],['postgresql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.86,True
+srv-0343,Debian,11,4,16,False,False,VMware,[ 80 443],['sshd'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0344,Ubuntu Server,22.04,16,8,False,True,KVM,[443 902],['sshd' 'winrm'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0345,Ubuntu Server,22.04,4,4,True,True,Cloud VM,[ 443  873 5985],['sshd'],Replication Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0346,Ubuntu Server,22.04,2,16,False,False,Physical,[  22  443 1433 3306 5432],['postgresql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.73,True
+srv-0347,RHEL,8,8,64,False,False,VMware,[1433 3389 5432],['mysql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0348,Windows Server,2019,16,64,False,True,VMware,[5601],['ansible' 'gitlab'],Log Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.76,True
+srv-0349,Debian,12,8,128,False,True,Physical,[8834],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_hybrid,0.83,True
+srv-0350,Windows Server,2016,8,8,False,True,Physical,[8080],['iis' 'teams-gateway' 'tomcat'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_rules,0.89,True
+srv-0351,Windows Server,2019,4,8,True,True,KVM,[ 443 1812 3389],['sshd'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.91,True
+srv-0352,Windows Server,2016,16,32,False,True,Physical,[8080],['tomcat'],Wiki Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0353,Debian,12,2,64,False,False,KVM,[ 443 8530 8531],['ansible'],Patch Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0354,Ubuntu Server,22.04,8,32,False,False,Hyper-V,[443 903],['containerd' 'kubelet'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0355,Windows Server,2016,32,128,False,True,Cloud VM,[68],['containerd'],DHCP Server,Moderate,Moderate,High,synthetic_rules,0.99,True
+srv-0356,Windows Server,2019,4,4,False,True,KVM,[ 443 5986],['puppetserver'],Automation Orchestration Server,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0357,Windows Server,2019,32,8,False,True,Hyper-V,[ 443 5985 5986],['radiusd'],Identity Federation Server,High,High,Moderate,synthetic_rules,0.9,True
+srv-0358,Ubuntu Server,20.04,16,16,False,True,VMware,[ 443 8530 8531],['jenkins' 'prometheus'],Patch Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0359,RHEL,9,32,64,False,False,Cloud VM,[  22 2375 2376],['dns' 'ntp'],Container Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.75,True
+srv-0360,Debian,12,8,32,False,False,VMware,[443],['apache2' 'sharepoint'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.76,True
+srv-0361,Windows Server,2022,2,16,False,True,VMware,[ 443 8834],['sshd'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0362,Ubuntu Server,22.04,2,4,False,True,Cloud VM,[ 443 5986],['sshd'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.79,True
+srv-0363,Windows Server,2022,8,4,False,True,VMware,[ 443 5985 5986],['puppetserver'],Automation Orchestration Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0364,RHEL,9,4,16,False,False,VMware,[ 443 3478],['jira'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0365,Windows Server,2016,8,16,False,True,Hyper-V,[  22 8080],['winrm'],Application Server,Moderate,Moderate,High,synthetic_rules,0.72,True
+srv-0366,Windows Server,2016,32,8,False,True,Cloud VM,[  80 3389],['winrm'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.91,True
+srv-0367,RHEL,8,8,4,False,True,Physical,[  80  443 5985 8080],['iis' 'tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0368,Windows Server,2016,32,128,False,True,KVM,[  22 5986 8080],['apache2' 'jira'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.79,True
+srv-0369,Windows Server,2022,2,16,False,True,VMware,[ 1433 44818],['winrm'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0370,Windows Server,2022,8,128,False,True,Physical,[ 443 5986 8443],['elastic-agent' 'wazuh-manager'],EDR Management Server,High,High,High,synthetic_hybrid,0.85,True
+srv-0371,Windows Server,2022,16,16,False,True,Hyper-V,[ 443 3389],['kubelet' 'ntp'],Remote Desktop Services,Moderate,Moderate,Moderate,synthetic_ml_seed,0.94,True
+srv-0372,Debian,11,4,8,False,True,VMware,[ 443 8080],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.89,True
+srv-0373,Windows Server,2016,8,64,True,True,VMware,[123],['containerd' 'kubelet'],NTP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0374,Ubuntu Server,22.04,2,8,False,True,Cloud VM,[25],['wazuh-manager'],Email Security Gateway,High,High,High,synthetic_rules,0.84,True
+srv-0375,Windows Server,2016,2,8,False,True,KVM,[  22 8530 8531],['puppetserver' 'zabbix-server'],WSUS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0376,Windows Server,2019,16,64,False,True,Hyper-V,[443],['suricata' 'wazuh-manager'],DLP Management Server,High,High,High,synthetic_ml_seed,0.83,True
+srv-0377,Windows Server,2019,4,128,False,True,Hyper-V,[443],['winrm'],CMDB Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.91,True
+srv-0378,Windows Server,2022,16,32,False,True,VMware,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_rules,0.93,True
+srv-0379,Windows Server,2022,4,8,False,True,Hyper-V,[1812 1813],['vault'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0380,Ubuntu Server,20.04,2,64,False,True,VMware,[443],['sshd'],SSO Server,High,High,Moderate,synthetic_rules,0.84,True
+srv-0381,Windows Server,2016,2,64,False,True,Cloud VM,[6080],['winrm'],GIS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.85,True
+srv-0382,Windows Server,2016,16,16,False,True,Physical,[ 443 3391],['dhcp'],Remote Access Gateway,Moderate,Moderate,High,synthetic_rules,0.92,True
+srv-0383,Ubuntu Server,20.04,4,64,False,True,Cloud VM,[ 443 9000],['wazuh-manager'],HSM Management Server,High,High,Moderate,synthetic_rules,0.82,True
+srv-0384,Windows Server,2016,8,4,False,True,Hyper-V,[443],['sshd'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_hybrid,0.98,True
+srv-0385,Debian,12,8,32,False,False,Hyper-V,[ 5672  5986  9092 15672],['sshd'],Message Queue Server,Moderate,Moderate,High,synthetic_hybrid,0.93,True
+srv-0386,Debian,12,4,8,False,False,Hyper-V,[ 161 5666],['zabbix-server'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.78,True
+srv-0387,Windows Server,2019,2,128,False,True,VMware,[445],['winrm'],Archive Server,High,High,High,synthetic_hybrid,0.77,True
+srv-0388,Windows Server,2022,16,32,False,True,VMware,[ 389  443 5985],['sshd'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0389,RHEL,9,8,64,False,False,VMware,[ 443 8081],['prometheus' 'puppetserver'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_hybrid,0.86,True
+srv-0390,Ubuntu Server,20.04,8,32,False,True,Hyper-V,[9092],['sshd'],Message Queue Server,Moderate,Moderate,High,synthetic_rules,0.79,True
+srv-0391,Windows Server,2022,4,64,False,True,Cloud VM,[ 443 5985 5986 8088],['sshd'],BI Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0392,Debian,11,32,128,False,True,Physical,[ 443 3389],['sshd'],SSO Server,High,High,Moderate,synthetic_hybrid,0.8,True
+srv-0393,Debian,11,16,16,False,False,KVM,[  80 5601 9200 9300],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.86,True
+srv-0394,Debian,12,4,4,False,True,Cloud VM,[  67   68   80 3389],['docker' 'ntp'],DHCP Server,Moderate,Moderate,High,synthetic_rules,0.73,True
+srv-0395,Ubuntu Server,22.04,4,4,False,False,KVM,[5601 5985],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0396,Ubuntu Server,20.04,32,64,False,False,KVM,[   22   443 10000],['jenkins'],Backup Server,High,High,High,synthetic_ml_seed,0.88,True
+srv-0397,Debian,12,16,8,False,False,Physical,[25],['radiusd' 'wazuh-manager'],Email Security Gateway,High,High,High,synthetic_hybrid,0.96,True
+srv-0398,Windows Server,2022,2,4,False,True,Hyper-V,[443],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0399,Windows Server,2022,16,64,False,True,Cloud VM,[5986],['jenkins' 'prometheus'],Automation Orchestration Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.8,True
+srv-0400,RHEL,8,2,128,False,False,Hyper-V,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_ml_seed,0.72,True
+srv-0401,Debian,11,16,4,False,False,Cloud VM,[ 443 8443],['apache2'],API Gateway,Moderate,Moderate,High,synthetic_hybrid,0.94,True
+srv-0402,RHEL,8,4,4,False,False,Cloud VM,[443],['exchange'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0403,Ubuntu Server,22.04,8,64,False,False,KVM,[  80  443 1935],['winrm'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0404,Debian,12,8,16,False,False,Physical,[ 25 443],['radiusd'],Email Security Gateway,High,High,High,synthetic_rules,0.78,True
+srv-0405,RHEL,8,2,32,False,True,Hyper-V,[443],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0406,RHEL,8,32,16,False,False,Container,[ 443 5986],['vault' 'wazuh-manager'],DLP Management Server,High,High,High,synthetic_rules,0.71,True
+srv-0407,Windows Server,2019,32,8,False,True,Cloud VM,[ 631 3389 5985],['sshd'],Print Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.83,True
+srv-0408,Windows Server,2022,8,4,False,True,Hyper-V,[443 514],['vault'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.88,True
+srv-0409,Debian,12,8,16,False,False,Hyper-V,[  80 2379 6443],['dhcp' 'ntp'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_rules,0.89,True
+srv-0410,Windows Server,2016,8,64,False,True,Physical,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_ml_seed,0.84,True
+srv-0411,RHEL,8,8,16,False,True,Hyper-V,[ 80 111],['winrm'],NAS Server,High,High,High,synthetic_hybrid,0.8,True
+srv-0412,RHEL,9,4,4,False,True,Physical,[ 443 5985 5986],['ossec'],Identity Governance Server,High,High,Moderate,synthetic_rules,0.98,True
+srv-0413,RHEL,8,32,64,False,True,VMware,[ 22 123],['containerd' 'dhcp'],NTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0414,Debian,12,32,64,False,False,Physical,[1883],['sshd'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.89,True
+srv-0415,Debian,12,4,8,False,True,KVM,[ 445 3389],['sshd'],Storage Server,High,High,High,synthetic_ml_seed,0.94,True
+srv-0416,RHEL,8,8,64,False,True,VMware,[ 1433  5985 44818],['sshd'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0417,RHEL,9,8,8,False,False,Hyper-V,[  80 3389],['apache2' 'tomcat'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0418,RHEL,9,2,8,False,True,Physical,[1521 5986],['postgresql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0419,RHEL,8,4,16,False,False,Cloud VM,[30001],['docker' 'winrm'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0420,Windows Server,2016,8,128,False,True,KVM,[9200],['grafana' 'puppetserver'],Log Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0421,RHEL,9,4,32,False,False,VMware,[   22  2380 10250],['ntp' 'winrm'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_ml_seed,0.88,True
+srv-0422,Windows Server,2016,4,64,False,True,Hyper-V,[ 515  631 9100],['sshd'],Print Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0423,Debian,12,4,4,False,False,Physical,[135],['dhcp' 'dns'],Hyper-V Host,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0424,Windows Server,2019,4,64,False,True,KVM,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.86,True
+srv-0425,Ubuntu Server,22.04,4,4,False,False,Cloud VM,[443],['oracle'],Time Series Database,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0426,RHEL,9,8,8,False,True,Hyper-V,[ 443 8086],['mssql'],Time Series Database,Moderate,Moderate,Moderate,synthetic_rules,0.9,True
+srv-0427,Windows Server,2019,16,128,False,True,VMware,[  80  443 8443],['apache2' 'iis'],API Gateway,Moderate,Moderate,High,synthetic_rules,0.7,True
+srv-0428,Debian,11,8,16,False,False,VMware,[5986 8080],['winrm'],Proxy Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0429,Ubuntu Server,22.04,32,8,False,True,Physical,[ 443 8530 8531],['veeam'],Patch Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0430,Windows Server,2019,8,128,False,True,Physical,[  80 5986],['sshd'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0431,Ubuntu Server,22.04,2,128,False,True,VMware,[2380],['sshd'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_rules,0.8,True
+srv-0432,RHEL,8,2,32,False,True,KVM,[ 22 902 903],['winrm'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0433,RHEL,9,16,128,False,True,KVM,[ 443 8200],['suricata'],Secrets Management Server,High,High,Moderate,synthetic_rules,0.94,True
+srv-0434,RHEL,9,32,8,False,True,VMware,[  443 10000],['grafana' 'puppetserver'],Backup Server,High,High,High,synthetic_rules,0.95,True
+srv-0435,RHEL,9,16,16,False,True,KVM,[ 443 5696],['ossec' 'vault'],Key Management Server,High,High,Moderate,synthetic_rules,0.9,True
+srv-0436,Debian,11,2,8,False,False,Cloud VM,[  88 3268 5985],['sshd'],Active Directory Domain Services,High,High,High,synthetic_hybrid,0.77,True
+srv-0437,Ubuntu Server,20.04,4,16,False,False,VMware,[ 443 8443],['elastic-agent' 'wazuh-manager'],EDR Management Server,High,High,High,synthetic_rules,0.72,True
+srv-0438,Windows Server,2019,8,64,False,True,KVM,[ 443 5696],['suricata'],Key Management Server,High,High,Moderate,synthetic_hybrid,0.7,True
+srv-0439,Windows Server,2022,16,16,False,True,Cloud VM,[  53 3389],['docker'],DNS Server,Moderate,Moderate,High,synthetic_hybrid,0.75,True
+srv-0440,Ubuntu Server,22.04,32,128,False,False,Hyper-V,[2379 2380 3389 6443],['ntp'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_rules,0.84,True
+srv-0441,Ubuntu Server,20.04,8,64,False,False,Physical,[5985 8080],['apache2' 'tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0442,Windows Server,2022,8,64,False,True,VMware,[443],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0443,Windows Server,2019,32,128,False,True,VMware,[ 443 8088],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0444,Ubuntu Server,20.04,4,32,False,False,Physical,[  22  443 1433 3306 3389],['postgresql'],Database Server,High,High,High,synthetic_rules,0.78,True
+srv-0445,Windows Server,2022,8,4,False,True,Hyper-V,[9000],['ossec' 'radiusd'],HSM Management Server,High,High,Moderate,synthetic_ml_seed,0.8,True
+srv-0446,RHEL,8,16,32,False,True,VMware,[  22 3389],['ntp' 'sshd'],Bastion Host,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0447,Windows Server,2022,8,128,False,True,Container,[1883 8883],['winrm'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0448,Windows Server,2019,16,128,False,True,KVM,[ 443 5985 8443],['ossec'],EDR Management Server,High,High,High,synthetic_hybrid,0.87,True
+srv-0449,Debian,11,2,32,False,True,VMware,[443],['iis'],ERP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.98,True
+srv-0450,Windows Server,2022,8,128,False,True,Physical,[ 80 443],['apache2' 'nginx' 'ossec' 'wazuh-manager'],Web Application Firewall,High,High,High,synthetic_rules,0.72,True
+srv-0451,Ubuntu Server,20.04,16,4,False,True,VMware,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_hybrid,0.74,True
+srv-0452,Ubuntu Server,20.04,2,32,True,False,VMware,[ 443 8888],['sshd'],Machine Learning Platform,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0453,Debian,11,16,8,False,False,VMware,[1433 3306],['oracle'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.79,True
+srv-0454,Windows Server,2016,2,64,False,True,VMware,[ 443 8883],['sshd'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0455,Windows Server,2016,32,128,False,True,KVM,[443],['sshd'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.88,True
+srv-0456,Windows Server,2022,8,32,False,True,VMware,[443],['elastic-agent' 'suricata'],SIEM Server,High,High,Moderate,synthetic_rules,0.73,True
+srv-0457,Ubuntu Server,22.04,16,64,False,False,VMware,[1812],['sshd'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0458,Debian,11,4,128,False,False,VMware,[  80  443 8888],['winrm'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0459,Debian,12,8,4,False,False,KVM,[443],['nginx' 'tomcat'],API Gateway,Moderate,Moderate,High,synthetic_rules,0.76,True
+srv-0460,Debian,12,4,4,False,True,VMware,[ 502 3389],['sshd'],OT Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.74,True
+srv-0461,RHEL,8,8,16,False,False,KVM,[ 22 443],['winrm'],CMDB Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0462,Debian,12,4,16,False,False,VMware,[443],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0463,Debian,12,8,8,False,True,Container,[ 443 8081],['grafana' 'prometheus'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_hybrid,0.94,True
+srv-0464,Ubuntu Server,20.04,4,4,False,False,VMware,[5060],['winrm'],VoIP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.87,True
+srv-0465,Windows Server,2016,4,16,False,True,VMware,[  443  5061 10000],['sshd'],VoIP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.71,True
+srv-0466,RHEL,8,16,8,False,False,Hyper-V,[1521 5432],['mysql'],Geospatial Database,Moderate,Moderate,Moderate,synthetic_ml_seed,0.72,True
+srv-0467,RHEL,8,32,4,False,True,VMware,[  22   80 5986],['ntp' 'sshd'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0468,Windows Server,2022,2,32,True,True,VMware,[443],['vault'],Email Security Gateway,High,High,High,synthetic_rules,0.75,True
+srv-0469,Windows Server,2022,4,8,False,True,Cloud VM,[ 25 443],['ossec'],Email Security Gateway,High,High,High,synthetic_rules,0.79,True
+srv-0470,RHEL,9,4,16,False,False,Hyper-V,[ 123  443 3389],['dns'],NTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0471,Ubuntu Server,20.04,8,32,False,False,Cloud VM,[  22 2375],['winrm'],Container Host,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0472,Windows Server,2022,4,16,False,True,Physical,[ 443 1883 5985 8883],['winrm'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.78,True
+srv-0473,Debian,12,8,128,False,True,KVM,[  443 10000],['zabbix-server'],Backup Server,High,High,High,synthetic_ml_seed,0.8,True
+srv-0474,Windows Server,2022,2,32,False,True,VMware,[8443],['radiusd'],EDR Management Server,High,High,High,synthetic_hybrid,0.76,True
+srv-0475,Windows Server,2019,16,128,False,True,VMware,[ 443 5986],['nginx'],CRM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0476,Ubuntu Server,20.04,4,16,False,True,VMware,[443],['sshd'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0477,Ubuntu Server,22.04,8,16,False,True,VMware,[  22   80  443 3389],['winrm'],Privileged Access Management,High,High,Moderate,synthetic_rules,0.94,True
+srv-0478,RHEL,8,4,128,False,False,Physical,[ 443 2049],['sshd'],Storage Server,High,High,High,synthetic_rules,0.73,True
+srv-0479,Windows Server,2022,4,16,False,True,Container,[  22 3128],['winrm'],Proxy Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.98,True
+srv-0480,Windows Server,2019,8,4,False,True,Hyper-V,[  22 3389],['ansible'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0481,Windows Server,2016,8,64,False,True,KVM,[ 443 8888],['sshd'],Analytics Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.86,True
+srv-0482,Ubuntu Server,20.04,4,128,False,True,VMware,[ 22 123],['sshd'],NTP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.7,True
+srv-0483,RHEL,8,4,4,False,False,VMware,[ 502 5985],['winrm'],OT Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0484,Windows Server,2019,16,128,False,True,Cloud VM,[67 68],['docker'],DHCP Server,Moderate,Moderate,High,synthetic_rules,0.98,True
+srv-0485,Windows Server,2022,8,8,False,True,VMware,[ 80 443],['apache2'],HRIS Server,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0486,Windows Server,2019,2,128,False,True,KVM,[  80 5986 6080],['sshd'],GIS Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0487,Windows Server,2016,32,4,False,True,Cloud VM,[443],['sshd'],Archive Server,High,High,High,synthetic_ml_seed,0.78,True
+srv-0488,Windows Server,2016,32,4,False,True,VMware,[ 80 443 445],['winrm'],Archive Server,High,High,High,synthetic_rules,0.98,True
+srv-0489,RHEL,9,4,4,False,False,VMware,[443],['mysql'],Time Series Database,Moderate,Moderate,Moderate,synthetic_ml_seed,0.91,True
+srv-0490,Ubuntu Server,22.04,8,16,False,True,Cloud VM,[ 443 8443],['elastic-agent' 'radiusd'],EDR Management Server,High,High,High,synthetic_hybrid,0.73,True
+srv-0491,Ubuntu Server,22.04,4,4,False,True,KVM,[443],['winrm'],CMDB Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0492,Debian,12,8,32,False,False,VMware,[  80  443 3389 8834],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0493,Windows Server,2022,4,32,False,True,Cloud VM,[ 22  80 443],['ansible'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.92,True
+srv-0494,Windows Server,2019,8,64,False,True,Physical,[  22  443  514 9200],['elastic-agent' 'radiusd'],SIEM Server,High,High,Moderate,synthetic_hybrid,0.84,True
+srv-0495,Ubuntu Server,22.04,2,8,False,False,Hyper-V,[  22 1433],['winrm'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0496,Windows Server,2022,4,4,False,True,Container,[ 80 443],['radiusd'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0497,RHEL,9,4,4,False,False,VMware,[  22  443 3389],['sshd'],OT Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.94,True
+srv-0498,Ubuntu Server,20.04,16,4,False,True,Hyper-V,[  22 3389],['ntp' 'sshd'],Jump Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0499,Windows Server,2022,16,4,False,True,Cloud VM,[  22  443 8080],['gitlab' 'prometheus'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.92,True
+srv-0500,Windows Server,2022,16,8,False,True,VMware,[443 514],['radiusd' 'suricata'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0501,Windows Server,2022,16,32,False,True,Physical,[  22 3128 8080],['sshd'],Proxy Server,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0502,Debian,11,4,32,False,True,Physical,[6080 6443],['winrm'],GIS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0503,Debian,12,8,16,False,False,Physical,[500],['winrm'],VPN Server,Moderate,Moderate,High,synthetic_rules,0.97,True
+srv-0504,RHEL,8,8,32,False,False,Hyper-V,[443],['iis' 'tomcat'],ERP Server,Moderate,Moderate,Moderate,synthetic_rules,0.92,True
+srv-0505,Ubuntu Server,22.04,8,4,False,False,Physical,[ 443 3389],['suricata' 'wazuh-manager'],Identity Governance Server,High,High,Moderate,synthetic_rules,0.7,True
+srv-0506,Ubuntu Server,22.04,4,128,False,True,VMware,[443],['wazuh-manager'],Key Management Server,High,High,Moderate,synthetic_hybrid,0.83,True
+srv-0507,Windows Server,2019,4,8,False,True,VMware,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_rules,0.93,True
+srv-0508,Windows Server,2022,4,128,False,True,Cloud VM,[ 80 443],['apache2' 'nginx' 'radiusd'],Web Application Firewall,High,High,High,synthetic_rules,0.88,True
+srv-0509,Ubuntu Server,20.04,8,128,False,True,VMware,[  80  443  445 5985],['winrm'],PKI / Certificate Authority,High,High,Moderate,synthetic_hybrid,0.92,True
+srv-0510,Debian,11,8,32,False,False,VMware,[1433 5432],['oracle'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0511,Windows Server,2016,2,4,False,True,Physical,[ 443 3389],['sshd'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0512,Debian,11,8,32,False,False,Container,[ 443 8080],['iis' 'tomcat'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0513,Windows Server,2016,8,4,True,True,VMware,[ 443 8834],['sshd'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0514,RHEL,9,16,8,False,True,VMware,[443],['winrm'],CMDB Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.75,True
+srv-0515,Ubuntu Server,20.04,8,4,False,False,Physical,[ 22 443],['ossec'],Secrets Management Server,High,High,Moderate,synthetic_rules,0.96,True
+srv-0516,RHEL,9,32,16,False,True,Cloud VM,[22],['sshd'],SFTP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0517,Debian,11,32,4,False,False,Hyper-V,[ 443 5986],['sshd'],Load Balancer,Moderate,Moderate,High,synthetic_ml_seed,0.89,True
+srv-0518,RHEL,8,4,32,False,False,Physical,[  80  443  515  631 9100],['sshd'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0519,Windows Server,2022,4,16,False,True,Container,[ 443 8531],['jenkins'],Patch Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.73,True
+srv-0520,Ubuntu Server,22.04,4,8,False,False,Cloud VM,[443],['winrm'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0521,Windows Server,2019,8,32,False,True,Cloud VM,[  22  515  631 5986 9100],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0522,RHEL,8,16,4,False,True,Hyper-V,[  22 3389],['docker'],Bastion Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.83,True
+srv-0523,Ubuntu Server,20.04,4,4,False,False,Container,[  22 3389 5985 5986],['containerd'],Bastion Host,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0524,Debian,12,8,4,False,True,Hyper-V,[5601 9200],['gitlab' 'jenkins'],Log Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.85,True
+srv-0525,Windows Server,2016,32,16,False,True,Physical,[1433],['sshd'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0526,Debian,12,2,128,False,True,KVM,[  80 8081],['grafana'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_ml_seed,0.73,True
+srv-0527,Windows Server,2022,32,64,False,True,Container,[ 161  162  443 5666],['gitlab' 'jenkins'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0528,Ubuntu Server,20.04,16,4,False,False,VMware,[22],['winrm'],SFTP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.79,True
+srv-0529,Windows Server,2022,32,64,False,True,Physical,[443],['sshd'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0530,Windows Server,2022,8,4,False,True,VMware,[443],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0531,RHEL,8,2,32,False,True,Hyper-V,[ 443 8080],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0532,Windows Server,2016,8,16,False,True,Hyper-V,[ 22 443],['ossec'],Firewall Management Server,High,High,High,synthetic_ml_seed,0.92,True
+srv-0533,Windows Server,2016,2,8,False,True,KVM,[111 445],['sshd'],NAS Server,High,High,High,synthetic_hybrid,0.91,True
+srv-0534,Windows Server,2016,4,16,False,True,VMware,[8080],['apache2' 'iis'],CRM Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.94,True
+srv-0535,Windows Server,2019,4,128,False,True,Hyper-V,[8530 8531],['grafana' 'prometheus'],WSUS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.93,True
+srv-0536,RHEL,9,32,8,False,True,Hyper-V,[1935],['winrm'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.98,True
+srv-0537,Debian,11,8,8,False,False,Cloud VM,[ 80 443 445],['sshd'],Archive Server,High,High,High,synthetic_hybrid,0.95,True
+srv-0538,Windows Server,2016,8,128,False,True,KVM,[ 80 389 443],['sshd'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0539,Windows Server,2016,2,16,False,True,Cloud VM,[443],['elastic-agent'],DLP Management Server,High,High,High,synthetic_hybrid,0.77,True
+srv-0540,RHEL,9,8,4,False,False,Hyper-V,[443],['ossec'],Email Security Gateway,High,High,High,synthetic_rules,0.79,True
+srv-0541,Windows Server,2019,8,8,False,True,Cloud VM,[ 443 8080],['apache2' 'jira' 'tomcat'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0542,Windows Server,2019,2,8,False,True,VMware,[445],['sshd'],File Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0543,Windows Server,2019,32,4,False,True,VMware,[443],['radiusd'],Key Management Server,High,High,Moderate,synthetic_rules,0.74,True
+srv-0544,Debian,11,4,8,False,False,VMware,[ 443 8080],['apache2' 'exchange'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0545,Windows Server,2016,2,16,False,True,Container,[8080],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.91,True
+srv-0546,Debian,12,4,32,False,True,Physical,[ 443 1812 5986],['sshd'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.7,True
+srv-0547,Debian,11,2,16,False,False,KVM,[443],['sshd'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.9,True
+srv-0548,RHEL,8,8,128,False,True,KVM,[ 443 8443],['gitlab' 'grafana'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0549,RHEL,9,2,4,True,False,VMware,[389],['sshd'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.75,True
+srv-0550,Windows Server,2019,2,4,False,True,Physical,[3391],['kubelet' 'ntp'],Remote Access Gateway,Moderate,Moderate,High,synthetic_ml_seed,0.76,True
+srv-0551,Debian,11,16,16,False,False,VMware,[10250 30000 30001],['dhcp' 'ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0552,Debian,11,4,8,False,False,VMware,[443],['dhcp'],Remote Access Gateway,Moderate,Moderate,High,synthetic_rules,0.71,True
+srv-0553,Windows Server,2016,4,16,False,True,VMware,[  80  111  445 2049],['sshd'],NAS Server,High,High,High,synthetic_rules,0.92,True
+srv-0554,Ubuntu Server,22.04,16,4,False,False,VMware,[ 514 5986],['sshd'],Syslog Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.88,True
+srv-0555,Windows Server,2016,4,4,False,True,Hyper-V,[ 443 3389],['sshd'],Replication Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0556,Windows Server,2016,2,8,False,True,Cloud VM,[ 22 514],['vault' 'wazuh-manager'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0557,RHEL,9,2,8,False,False,VMware,[  22  443 3389 8080],['gitlab' 'jenkins'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.77,True
+srv-0558,RHEL,9,8,128,False,True,VMware,[443],['iis' 'teams-gateway' 'tomcat'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.78,True
+srv-0559,Debian,12,2,4,False,False,Container,[  22 3389],['dns' 'ntp'],Bastion Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.92,True
+srv-0560,Debian,11,2,4,False,True,VMware,[  22  443 2195 3389],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0561,Ubuntu Server,22.04,2,64,False,False,Cloud VM,[443],['radiusd' 'wazuh-manager'],DLP Management Server,High,High,High,synthetic_hybrid,0.87,True
+srv-0562,Windows Server,2022,4,64,False,True,Hyper-V,[ 443 8140],['prometheus' 'puppetserver'],Configuration Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.79,True
+srv-0563,Windows Server,2016,8,16,False,True,KVM,[ 443 5986],['sshd'],SSO Server,High,High,Moderate,synthetic_rules,0.81,True
+srv-0564,Debian,12,4,32,False,False,VMware,[443],['apache2'],HRIS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0565,Windows Server,2016,4,128,False,True,VMware,[  22  443 8443],['sshd'],Application Server,Moderate,Moderate,High,synthetic_hybrid,0.89,True
+srv-0566,Windows Server,2019,8,32,False,True,Physical,[1812 3389],['sshd'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.81,True
+srv-0567,Windows Server,2022,4,32,False,True,VMware,[443],['radiusd' 'vault'],Identity Federation Server,High,High,Moderate,synthetic_hybrid,0.92,True
+srv-0568,Windows Server,2019,32,64,False,True,KVM,[389 443],['winrm'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0569,Debian,11,16,64,False,True,VMware,[ 5672  9092 15672],['sshd'],Message Queue Server,Moderate,Moderate,High,synthetic_hybrid,0.98,True
+srv-0570,RHEL,8,8,64,False,False,Hyper-V,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.91,True
+srv-0571,Ubuntu Server,22.04,4,16,False,False,Hyper-V,[443],['ansible' 'jenkins'],Patch Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.99,True
+srv-0572,Windows Server,2022,32,4,False,True,Physical,[443],['iis'],CRM Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0573,Windows Server,2019,16,4,False,True,Cloud VM,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_ml_seed,0.96,True
+srv-0574,Windows Server,2016,8,64,False,True,Hyper-V,[ 443 8888],['sshd'],Analytics Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.86,True
+srv-0575,RHEL,9,4,16,False,False,Container,[443],['sshd'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0576,Ubuntu Server,22.04,8,4,False,False,Physical,[ 443 2179],['dns'],Hyper-V Host,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0577,Ubuntu Server,22.04,8,32,False,False,Cloud VM,[139 445],['sshd'],File Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0578,Windows Server,2019,4,8,False,True,VMware,[  22   80  443 3389],['winrm'],Privileged Access Management,High,High,Moderate,synthetic_hybrid,0.9,True
+srv-0579,Windows Server,2022,2,8,False,True,VMware,[9100],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0580,Windows Server,2016,8,4,False,True,Hyper-V,[5432],['mssql'],Geospatial Database,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0581,Windows Server,2022,8,32,False,True,VMware,[ 22 443 514],['elastic-agent' 'suricata'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0582,RHEL,8,16,32,False,False,Hyper-V,[  22 3389],['kubelet' 'winrm'],Bastion Host,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0583,Ubuntu Server,22.04,2,16,False,True,Hyper-V,[2195],['winrm'],MDM Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.74,True
+srv-0584,Windows Server,2016,32,32,False,True,KVM,[ 443 3260],['sshd'],SAN Management Server,High,High,High,synthetic_hybrid,0.99,True
+srv-0585,Ubuntu Server,20.04,8,128,False,True,Cloud VM,[  80  443 3389],['jenkins'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0586,Windows Server,2022,32,128,False,True,Cloud VM,[  22 3389],['prometheus'],Source Control Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0587,Ubuntu Server,22.04,32,16,False,False,VMware,[ 443 5985 5986],['grafana' 'puppetserver'],Automation Orchestration Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.87,True
+srv-0588,Windows Server,2016,8,128,False,True,VMware,[8080],['winrm'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0589,Windows Server,2016,8,8,False,True,Cloud VM,[443],['winrm'],Archive Server,High,High,High,synthetic_rules,0.79,True
+srv-0590,Windows Server,2022,2,16,False,True,Hyper-V,[443],['elastic-agent' 'radiusd'],Identity Governance Server,High,High,Moderate,synthetic_ml_seed,0.97,True
+srv-0591,Windows Server,2016,2,32,False,True,VMware,[443],['suricata' 'vault'],Identity Governance Server,High,High,Moderate,synthetic_rules,0.93,True
+srv-0592,Windows Server,2016,4,4,False,True,VMware,[ 443 8080],['apache2' 'iis'],Wiki Server,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0593,Windows Server,2022,32,8,False,True,KVM,[ 443 5985],['radiusd'],Identity Federation Server,High,High,Moderate,synthetic_rules,0.84,True
+srv-0594,Debian,11,8,8,False,False,Cloud VM,[443],['ossec' 'vault'],Identity Federation Server,High,High,Moderate,synthetic_ml_seed,0.91,True
+srv-0595,Ubuntu Server,20.04,16,8,False,True,Physical,[10250 30000 30001],['dhcp' 'sshd'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0596,Windows Server,2022,4,8,False,True,Physical,[80],['tomcat'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0597,Ubuntu Server,22.04,32,64,False,True,Hyper-V,[443],['winrm'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.87,True
+srv-0598,Windows Server,2022,2,16,False,True,KVM,[443],['suricata'],DLP Management Server,High,High,High,synthetic_rules,0.86,True
+srv-0599,Ubuntu Server,22.04,4,4,False,False,Hyper-V,[  22 2380 3389],['dns'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_hybrid,0.99,True
+srv-0600,Windows Server,2022,8,32,False,True,KVM,[443],['tomcat'],CRM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.73,True
+srv-0601,Windows Server,2016,4,4,False,True,VMware,[1433 3306],['mysql'],Database Server,High,High,High,synthetic_ml_seed,0.91,True
+srv-0602,Windows Server,2016,2,8,False,True,Hyper-V,[ 514 5601 9200],['jenkins'],Log Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0603,Windows Server,2019,8,32,False,True,Cloud VM,[10000],['puppetserver' 'zabbix-server'],Backup Server,High,High,High,synthetic_hybrid,0.77,True
+srv-0604,Ubuntu Server,20.04,16,128,False,True,KVM,[3389],['kubelet' 'winrm'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0605,RHEL,8,4,128,False,False,KVM,[443],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.79,True
+srv-0606,Debian,12,8,128,False,True,KVM,[ 80 443],['sshd'],Load Balancer,Moderate,Moderate,High,synthetic_ml_seed,0.91,True
+srv-0607,Windows Server,2019,16,4,False,True,Cloud VM,[2049],['sshd'],Storage Server,High,High,High,synthetic_rules,0.7,True
+srv-0608,Debian,11,8,64,False,False,Hyper-V,[2195 5985],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0609,RHEL,9,32,16,False,False,Physical,[8080],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0610,Windows Server,2022,32,16,False,True,VMware,[1812],['suricata'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.97,True
+srv-0611,Debian,11,4,16,False,False,VMware,[ 443 5985],['winrm'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0612,Debian,12,32,32,False,False,VMware,[5986 8200],['suricata' 'wazuh-manager'],Secrets Management Server,High,High,Moderate,synthetic_rules,0.76,True
+srv-0613,RHEL,9,2,16,False,True,VMware,[ 22  80 443],['apache2' 'nginx'],Web Server,Moderate,Moderate,High,synthetic_ml_seed,0.73,True
+srv-0614,Windows Server,2016,4,16,False,True,Hyper-V,[ 443  502 3389],['sshd'],OT Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0615,Debian,11,16,16,False,False,Physical,[27001],['winrm'],License Server,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0616,Debian,11,8,4,False,True,Cloud VM,[443 873],['winrm'],Replication Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0617,RHEL,8,4,128,False,True,KVM,[  22   80  443 8834],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_ml_seed,0.77,True
+srv-0618,Debian,11,2,4,False,True,Hyper-V,[3391],['winrm'],Remote Access Gateway,Moderate,Moderate,High,synthetic_hybrid,0.93,True
+srv-0619,RHEL,9,2,8,False,False,Hyper-V,[443 500],['winrm'],VPN Server,Moderate,Moderate,High,synthetic_rules,0.82,True
+srv-0620,Ubuntu Server,22.04,2,32,False,False,KVM,[2375 2376 5985],['winrm'],Container Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0621,RHEL,8,8,32,False,False,VMware,[6080 6443],['sshd'],GIS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.88,True
+srv-0622,Debian,12,4,4,False,False,VMware,[  22  500 1194 4500],['sshd'],VPN Server,Moderate,Moderate,High,synthetic_hybrid,0.87,True
+srv-0623,Ubuntu Server,20.04,8,64,False,False,Cloud VM,[3389],['winrm'],Privileged Access Management,High,High,Moderate,synthetic_rules,0.83,True
+srv-0624,RHEL,9,8,16,False,False,Physical,[  22  443 8080],['ansible'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0625,Windows Server,2022,16,4,False,True,KVM,[  80  443 5986],['ossec' 'wazuh-manager'],Identity Federation Server,High,High,Moderate,synthetic_ml_seed,0.75,True
+srv-0626,Windows Server,2019,4,4,False,True,Cloud VM,[ 443 8080],['exchange' 'iis'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.76,True
+srv-0627,Ubuntu Server,20.04,16,64,False,True,VMware,[443],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.91,True
+srv-0628,Debian,12,8,32,False,False,VMware,[ 25 443],['ossec'],Email Security Gateway,High,High,High,synthetic_rules,0.99,True
+srv-0629,Debian,11,8,4,False,False,KVM,[443],['sshd'],Analytics Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.84,True
+srv-0630,Ubuntu Server,20.04,32,16,False,False,VMware,[443],['sshd'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0631,Windows Server,2016,8,128,False,True,KVM,[  22 3389 5985],['ntp' 'winrm'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0632,Debian,12,8,32,False,True,VMware,[1521],['oracle'],Geospatial Database,Moderate,Moderate,Moderate,synthetic_hybrid,0.7,True
+srv-0633,Windows Server,2019,4,16,False,True,VMware,[80],['apache2' 'radiusd' 'wazuh-manager'],Web Application Firewall,High,High,High,synthetic_rules,0.73,True
+srv-0634,Ubuntu Server,22.04,8,64,False,False,Physical,[443],['suricata'],Identity Federation Server,High,High,Moderate,synthetic_ml_seed,0.84,True
+srv-0635,Ubuntu Server,22.04,8,16,False,True,Cloud VM,[ 80 443],['kubelet'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0636,Debian,11,2,32,False,False,VMware,[10250 30000],['dns' 'ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0637,Windows Server,2022,4,64,False,True,VMware,[ 5060  5061 10000],['sshd'],VoIP Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0638,Windows Server,2022,4,4,False,True,KVM,[8888],['sshd'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0639,Ubuntu Server,22.04,8,8,False,True,VMware,[5672 9092],['winrm'],Message Queue Server,Moderate,Moderate,High,synthetic_rules,0.99,True
+srv-0640,Ubuntu Server,22.04,4,8,False,False,Cloud VM,[ 123 3389 5986],['containerd' 'kubelet'],NTP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0641,Ubuntu Server,20.04,4,128,False,True,VMware,[443],['winrm'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0642,Debian,11,16,64,False,False,Physical,[443 902 903],['containerd' 'ntp'],Virtualization Host,Moderate,Moderate,High,synthetic_rules,0.74,True
+srv-0643,RHEL,9,32,8,False,False,Hyper-V,[  22  443 3389],['sshd'],Privileged Access Management,High,High,Moderate,synthetic_hybrid,0.97,True
+srv-0644,RHEL,8,32,16,False,False,Cloud VM,[443],['winrm'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0645,RHEL,9,32,32,False,False,Physical,[ 1433 44818],['sshd'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0646,Debian,12,32,4,False,False,Cloud VM,[8080],['apache2' 'iis' 'sharepoint'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_rules,0.9,True
+srv-0647,Debian,12,32,128,False,False,Cloud VM,[ 22 443],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.8,True
+srv-0648,Ubuntu Server,20.04,32,64,False,False,KVM,[ 443 3389],['iis'],API Gateway,Moderate,Moderate,High,synthetic_hybrid,0.8,True
+srv-0649,Windows Server,2022,4,8,False,True,VMware,[  22   80 3389],['containerd'],Bastion Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0650,Windows Server,2016,8,32,False,True,VMware,[ 22 443],['elastic-agent'],Identity Governance Server,High,High,Moderate,synthetic_hybrid,0.81,True
+srv-0651,Windows Server,2019,4,8,False,True,KVM,[  22  443 3389],['sshd'],Privileged Access Management,High,High,Moderate,synthetic_rules,0.79,True
+srv-0652,Ubuntu Server,22.04,4,128,False,False,VMware,[ 25 143 993 995],['exchange'],Mail Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0653,Windows Server,2022,4,16,False,True,Cloud VM,[ 80 443],['sshd'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.85,True
+srv-0654,RHEL,8,32,16,False,True,Physical,[  22  443 3389],['winrm'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.7,True
+srv-0655,Windows Server,2016,8,4,False,True,Hyper-V,[389 443],['sshd'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.89,True
+srv-0656,Debian,11,8,128,False,False,Physical,[ 80 443],['iis' 'radiusd'],Web Application Firewall,High,High,High,synthetic_ml_seed,0.8,True
+srv-0657,Windows Server,2022,8,64,False,True,Container,[443],['winrm'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.95,True
+srv-0658,Ubuntu Server,22.04,16,4,False,True,VMware,[30001],['containerd'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_ml_seed,0.87,True
+srv-0659,Ubuntu Server,22.04,16,64,False,True,Cloud VM,[ 443 2195],['winrm'],MDM Server,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0660,Ubuntu Server,20.04,8,4,False,False,Physical,[ 443 5601 9300],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.76,True
+srv-0661,Ubuntu Server,20.04,32,4,False,False,Hyper-V,[8530],['grafana'],WSUS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.97,True
+srv-0662,Windows Server,2022,8,64,False,True,VMware,[443],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0663,Ubuntu Server,22.04,4,128,False,False,Physical,[443],['winrm'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0664,RHEL,8,2,8,False,True,Cloud VM,[445],['sshd'],Storage Server,High,High,High,synthetic_rules,0.79,True
+srv-0665,Debian,11,4,128,False,False,Hyper-V,[ 5672  5986  9092 15672],['winrm'],Message Queue Server,Moderate,Moderate,High,synthetic_rules,0.9,True
+srv-0666,Windows Server,2022,16,128,False,True,Hyper-V,[  22  443 8000],['apache2' 'tomcat'],ERP Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0667,Ubuntu Server,22.04,4,128,False,False,Cloud VM,[ 22 443],['sshd'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0668,RHEL,9,8,64,False,False,Physical,[443],['sshd'],License Compliance Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0669,Debian,11,32,32,False,False,Cloud VM,[  80  443 3389],['apache2' 'iis'],Web Server,Moderate,Moderate,High,synthetic_hybrid,0.81,True
+srv-0670,Windows Server,2016,4,32,False,True,VMware,[  22  443 8080],['puppetserver'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0671,Ubuntu Server,20.04,4,16,False,False,Hyper-V,[ 443 8080],['ansible' 'gitlab'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0672,Ubuntu Server,20.04,8,16,False,False,Hyper-V,[ 80 443],['ossec' 'suricata'],Secrets Management Server,High,High,Moderate,synthetic_ml_seed,0.82,True
+srv-0673,Windows Server,2016,32,128,False,True,Cloud VM,[ 443 8530],['puppetserver'],Patch Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.92,True
+srv-0674,Ubuntu Server,20.04,8,128,False,True,VMware,[22],['radiusd' 'vault'],Firewall Management Server,High,High,High,synthetic_hybrid,0.82,True
+srv-0675,RHEL,8,32,16,False,False,Cloud VM,[  80 3389],['winrm'],Privileged Access Management,High,High,Moderate,synthetic_ml_seed,0.73,True
+srv-0676,Debian,12,4,4,False,False,KVM,[5986 8080],['winrm'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0677,RHEL,8,8,128,False,False,Physical,[ 443 8080],['iis' 'sharepoint' 'tomcat'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0678,Windows Server,2016,32,64,False,True,Hyper-V,[443],['winrm'],Analytics Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.77,True
+srv-0679,Windows Server,2022,32,8,True,True,Cloud VM,[  22  111  445 2049],['sshd'],NAS Server,High,High,High,synthetic_hybrid,0.75,True
+srv-0680,Windows Server,2022,16,32,False,True,Hyper-V,[135],['winrm'],PKI / Certificate Authority,High,High,Moderate,synthetic_rules,0.89,True
+srv-0681,Windows Server,2016,16,16,False,True,Physical,[1433 5986],['mssql'],Database Server,High,High,High,synthetic_rules,0.89,True
+srv-0682,Ubuntu Server,20.04,4,4,False,False,Hyper-V,[1433 1521 5432],['postgresql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.79,True
+srv-0683,Windows Server,2022,8,64,False,True,Physical,[80],['confluence' 'iis' 'nginx'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0684,Debian,11,4,32,False,True,Container,[ 22 443],['jenkins'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0685,RHEL,9,8,32,False,False,Hyper-V,[ 443 5696],['suricata'],Key Management Server,High,High,Moderate,synthetic_hybrid,0.79,True
+srv-0686,Debian,12,4,128,False,True,Physical,[ 111 2049],['winrm'],Storage Server,High,High,High,synthetic_ml_seed,0.91,True
+srv-0687,Ubuntu Server,20.04,2,32,False,False,KVM,[  23 3389],['sshd'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0688,RHEL,8,4,32,False,False,Cloud VM,[443],['winrm'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.76,True
+srv-0689,Ubuntu Server,22.04,8,128,True,False,VMware,[  80  502 3389],['winrm'],OT Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0690,Debian,11,2,8,False,True,KVM,[ 514 6514],['winrm'],Syslog Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.85,True
+srv-0691,RHEL,9,8,4,False,True,VMware,[30001],['sshd'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_hybrid,0.93,True
+srv-0692,Windows Server,2016,4,16,False,True,VMware,[ 443 3389],['ntp'],Bastion Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.8,True
+srv-0693,Windows Server,2016,32,32,False,True,VMware,[ 443 1883 3389 5986 8883],['winrm'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0694,Windows Server,2019,16,8,True,True,Physical,[ 443 5986],['ansible' 'grafana'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0695,Windows Server,2016,16,32,False,True,VMware,[27000 27001],['sshd'],License Server,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0696,RHEL,9,32,16,False,False,KVM,[443],['puppetserver' 'veeam'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0697,Debian,12,8,8,False,False,Hyper-V,[ 443 8200],['suricata' 'wazuh-manager'],Secrets Management Server,High,High,Moderate,synthetic_rules,0.87,True
+srv-0698,Debian,12,8,8,False,True,VMware,[443 902 903],['docker'],Virtualization Host,Moderate,Moderate,High,synthetic_rules,0.77,True
+srv-0699,Debian,11,4,64,False,False,KVM,[  80  443 5985],['ossec' 'suricata'],Identity Governance Server,High,High,Moderate,synthetic_hybrid,0.76,True
+srv-0700,RHEL,8,8,16,False,False,Hyper-V,[3389],['ntp' 'winrm'],Jump Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.85,True
+srv-0701,Windows Server,2022,32,8,False,True,KVM,[ 22  80 443],['winrm'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0702,Windows Server,2022,8,4,False,True,Cloud VM,[  80  443 2195],['winrm'],MDM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.91,True
+srv-0703,RHEL,8,16,4,False,False,Hyper-V,[ 5986 10250 30000 30001],['dns' 'ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0704,RHEL,9,4,4,False,False,KVM,[3389 5986],['containerd' 'sshd'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0705,RHEL,9,4,16,False,False,KVM,[1433 5432 5986],['oracle'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0706,Windows Server,2022,2,4,False,True,Cloud VM,[22 80],['nginx' 'vault' 'wazuh-manager'],Web Application Firewall,High,High,High,synthetic_rules,0.9,True
+srv-0707,RHEL,8,32,128,False,True,KVM,[ 443 6080],['winrm'],GIS Server,Moderate,Moderate,Moderate,synthetic_rules,0.9,True
+srv-0708,Ubuntu Server,20.04,16,32,False,True,VMware,[   80  5672  9092 15672],['winrm'],Message Queue Server,Moderate,Moderate,High,synthetic_ml_seed,0.92,True
+srv-0709,Windows Server,2022,32,16,False,True,VMware,[ 443 5696],['ossec' 'suricata'],Key Management Server,High,High,Moderate,synthetic_rules,0.72,True
+srv-0710,Windows Server,2016,8,32,False,True,KVM,[1433 1521 5432],['mysql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0711,Debian,11,4,32,False,False,Hyper-V,[   80 27000],['winrm'],License Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.84,True
+srv-0712,Windows Server,2022,16,32,False,True,Physical,[8000],['apache2'],ERP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.75,True
+srv-0713,RHEL,9,8,8,False,True,Hyper-V,[443],['apache2' 'tomcat'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.71,True
+srv-0714,Windows Server,2016,4,128,False,True,VMware,[ 443 3389],['ansible' 'jenkins'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0715,RHEL,8,32,128,False,False,Container,[5672],['sshd'],Message Queue Server,Moderate,Moderate,High,synthetic_hybrid,0.85,True
+srv-0716,RHEL,8,16,8,False,False,KVM,[443],['jira'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0717,Debian,11,8,64,False,False,KVM,[443],['radiusd' 'suricata'],Secrets Management Server,High,High,Moderate,synthetic_ml_seed,0.8,True
+srv-0718,Debian,11,8,8,False,False,Hyper-V,[ 22 443],['jenkins'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0719,Windows Server,2016,4,16,False,True,VMware,[  22 8443],['ossec' 'wazuh-manager'],EDR Management Server,High,High,High,synthetic_hybrid,0.84,True
+srv-0720,Debian,11,4,8,False,True,Physical,[3478],['sharepoint'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0721,Windows Server,2016,16,16,False,True,KVM,[873],['sshd'],Replication Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0722,RHEL,8,4,4,False,False,Hyper-V,[9000],['ossec'],HSM Management Server,High,High,Moderate,synthetic_rules,0.71,True
+srv-0723,Windows Server,2016,2,128,False,True,VMware,[1433],['winrm'],SCADA Historian,Moderate,Moderate,Moderate,synthetic_ml_seed,0.7,True
+srv-0724,Debian,11,2,128,False,False,Physical,[443],['winrm'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0725,Ubuntu Server,22.04,4,64,False,False,Cloud VM,[ 443 5985 8443],['prometheus' 'veeam'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0726,Ubuntu Server,20.04,4,64,False,True,KVM,[ 514 9200],['ossec'],SIEM Server,High,High,Moderate,synthetic_rules,0.96,True
+srv-0727,RHEL,9,16,32,False,False,VMware,[2375 5986],['dns'],Container Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0728,Windows Server,2019,2,16,False,True,KVM,[  22  443 5986],['sshd'],Application Server,Moderate,Moderate,High,synthetic_rules,0.94,True
+srv-0729,Windows Server,2019,4,16,False,True,Cloud VM,[ 515 3389],['sshd'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0730,Windows Server,2022,16,64,False,True,Physical,[3389 6080 6443],['sshd'],GIS Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0731,Ubuntu Server,22.04,16,16,False,True,VMware,[  80  443 3389],['apache2' 'iis'],Web Server,Moderate,Moderate,High,synthetic_hybrid,0.71,True
+srv-0732,RHEL,8,8,32,False,False,Cloud VM,[5222],['sharepoint'],Collaboration Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0733,Windows Server,2022,8,32,False,True,VMware,[ 443 9000],['suricata' 'vault'],HSM Management Server,High,High,Moderate,synthetic_ml_seed,0.87,True
+srv-0734,Windows Server,2022,32,64,False,True,Cloud VM,[  22  445 5985],['sshd'],Archive Server,High,High,High,synthetic_hybrid,0.91,True
+srv-0735,RHEL,8,8,4,False,False,VMware,[ 445 2179],['docker' 'ntp'],Hyper-V Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.94,True
+srv-0736,Debian,12,32,4,False,False,KVM,[  443  2379  2380  5985  5986 10250],['sshd'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_rules,0.94,True
+srv-0737,Ubuntu Server,22.04,8,4,False,False,VMware,[  80  443 8080],['tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.85,True
+srv-0738,Ubuntu Server,22.04,16,32,False,False,Hyper-V,[3389 5986],['containerd'],Bastion Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0739,Windows Server,2019,2,8,False,True,KVM,[8080],['apache2' 'iis'],CRM Server,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0740,Windows Server,2016,8,32,False,True,VMware,[ 443 8080],['tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0741,RHEL,8,8,4,False,False,Physical,[  22   80  443 5986],['apache2'],Web Server,Moderate,Moderate,High,synthetic_rules,0.91,True
+srv-0742,Ubuntu Server,20.04,16,32,False,False,Physical,[ 443 3389],['sshd'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.98,True
+srv-0743,Debian,12,2,32,False,True,Hyper-V,[  22 1433 3306],['mssql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0744,Ubuntu Server,20.04,8,128,False,False,VMware,[ 443 1812],['ossec' 'wazuh-manager'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0745,Ubuntu Server,22.04,8,64,True,False,Physical,[  53 5985],['ntp'],DNS Server,Moderate,Moderate,High,synthetic_ml_seed,0.97,True
+srv-0746,Windows Server,2019,8,64,False,True,Physical,[443],['winrm'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0747,Ubuntu Server,20.04,16,128,False,False,Hyper-V,[443],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_ml_seed,0.85,True
+srv-0748,Windows Server,2016,8,4,False,True,KVM,[443],['winrm'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0749,RHEL,9,32,128,False,False,KVM,[5986 8080],['apache2' 'iis'],CRM Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.77,True
+srv-0750,Windows Server,2019,4,64,False,True,Container,[3389],['winrm'],Bastion Host,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0751,Debian,12,4,8,False,False,VMware,[ 22 443],['gitlab' 'puppetserver'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0752,Windows Server,2022,4,64,False,True,Physical,[  22 6080 6443],['winrm'],GIS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.83,True
+srv-0753,RHEL,9,16,32,False,False,VMware,[ 3389 10250],['docker' 'ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0754,Windows Server,2016,16,64,False,True,Physical,[  80  443 8080],['apache2'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0755,Windows Server,2022,32,32,False,True,Hyper-V,[22],['dhcp' 'sshd'],Bastion Host,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0756,Windows Server,2019,2,4,False,True,VMware,[443 902 903],['dns' 'docker'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.78,True
+srv-0757,Windows Server,2019,8,64,False,True,Physical,[ 80 443],['sshd'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.82,True
+srv-0758,Ubuntu Server,22.04,4,32,False,False,Physical,[443],['jira'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0759,Ubuntu Server,20.04,4,16,False,True,VMware,[ 443 5985],['vault'],DLP Management Server,High,High,High,synthetic_ml_seed,0.71,True
+srv-0760,Ubuntu Server,22.04,8,8,False,False,VMware,[ 21 443],['winrm'],FTP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0761,Debian,12,8,32,False,True,Cloud VM,[ 22 443],['radiusd' 'suricata'],Identity Governance Server,High,High,Moderate,synthetic_rules,0.99,True
+srv-0762,RHEL,8,32,8,False,False,Physical,[  22 2375 2376],['containerd' 'dhcp'],Container Host,Moderate,Moderate,Moderate,synthetic_rules,0.92,True
+srv-0763,Windows Server,2022,16,64,False,True,Physical,[ 514 6514],['winrm'],Syslog Server,Moderate,Moderate,Moderate,synthetic_rules,0.9,True
+srv-0764,RHEL,9,32,16,True,False,Hyper-V,[ 443 6006],['sshd'],Machine Learning Platform,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0765,Windows Server,2016,4,32,False,True,KVM,[ 443 8088],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0766,Windows Server,2016,4,8,False,True,Cloud VM,[ 443 5985 8000],['apache2' 'nginx'],ERP Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True
+srv-0767,Debian,12,4,4,False,True,KVM,[ 2380  6443 10250],['ntp' 'winrm'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_rules,0.86,True
+srv-0768,Debian,11,32,32,False,False,KVM,[443],['sshd'],Asset Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0769,RHEL,9,4,4,False,True,Physical,[443 873],['winrm'],Replication Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0770,Windows Server,2019,4,32,False,True,VMware,[ 22 123],['containerd' 'kubelet'],NTP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.86,True
+srv-0771,Debian,12,16,16,False,False,VMware,[8443],['jenkins' 'zabbix-server'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.87,True
+srv-0772,Ubuntu Server,20.04,4,32,False,False,KVM,[ 22 443],['ossec'],Firewall Management Server,High,High,High,synthetic_hybrid,0.71,True
+srv-0773,RHEL,9,4,32,False,True,Cloud VM,[443],['ossec'],DLP Management Server,High,High,High,synthetic_rules,0.95,True
+srv-0774,RHEL,8,8,32,False,True,Physical,[  80  135  445 2179],['containerd'],Hyper-V Host,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0775,Windows Server,2019,16,128,False,True,KVM,[  80  443 5985 5986],['apache2' 'teams-gateway'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0776,Ubuntu Server,22.04,8,64,False,False,Physical,[ 443 5986 8088],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0777,RHEL,8,8,16,False,False,VMware,[5985 5986 8080],['apache2'],CRM Server,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0778,Windows Server,2019,4,16,False,True,Hyper-V,[ 161  162  443 3389 5666],['zabbix-server'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0779,Debian,11,8,128,False,False,Cloud VM,[20 21],['sshd'],FTP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.75,True
+srv-0780,Debian,11,4,8,False,True,Hyper-V,[20 21],['sshd'],FTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0781,Debian,12,4,8,False,False,Cloud VM,[443],['winrm'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0782,Debian,12,32,32,False,True,VMware,[ 111  445 2049],['sshd'],Storage Server,High,High,High,synthetic_rules,0.9,True
+srv-0783,Ubuntu Server,22.04,8,16,True,True,VMware,[ 22  80 443 515 631],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0784,Ubuntu Server,22.04,32,64,False,False,Hyper-V,[ 443 3391 5986],['dhcp' 'ntp'],Remote Access Gateway,Moderate,Moderate,High,synthetic_ml_seed,0.85,True
+srv-0785,Ubuntu Server,22.04,4,128,False,True,VMware,[67 68],['ntp'],DHCP Server,Moderate,Moderate,High,synthetic_hybrid,0.97,True
+srv-0786,Windows Server,2016,32,16,False,True,Physical,[  53  445  464 3268 5985],['sshd'],Active Directory Domain Services,High,High,High,synthetic_rules,0.76,True
+srv-0787,Ubuntu Server,20.04,8,4,False,True,VMware,[5601 9200 9300],['sshd'],Search Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.95,True
+srv-0788,Ubuntu Server,20.04,8,128,False,False,KVM,[ 514 3389 5601 5986 9200],['gitlab' 'zabbix-server'],Log Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0789,Windows Server,2016,4,32,False,True,Cloud VM,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_ml_seed,0.77,True
+srv-0790,RHEL,9,4,4,False,True,VMware,[3389],['dhcp' 'sshd'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0791,Ubuntu Server,22.04,4,8,False,False,Cloud VM,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0792,Debian,12,32,64,False,True,KVM,[ 443 3478],['sharepoint'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.74,True
+srv-0793,Windows Server,2016,2,32,False,True,Cloud VM,[  25  110  143  587 3389],['confluence'],Mail Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.73,True
+srv-0794,Debian,11,4,128,False,True,Container,[ 22 445],['winrm'],Archive Server,High,High,High,synthetic_rules,0.76,True
+srv-0795,Ubuntu Server,20.04,32,64,False,True,Container,[443 873],['winrm'],Replication Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0796,Windows Server,2022,8,8,False,True,Hyper-V,[  22  443 3389],['sshd'],Privileged Access Management,High,High,Moderate,synthetic_rules,0.7,True
+srv-0797,Windows Server,2019,32,128,True,True,Physical,[502],['winrm'],OT Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.84,True
+srv-0798,Windows Server,2022,4,32,False,True,Cloud VM,[ 443 1883 8883],['winrm'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.86,True
+srv-0799,Windows Server,2019,4,8,False,True,VMware,[443],['apache2' 'sharepoint' 'tomcat'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0800,Windows Server,2016,32,8,False,True,VMware,[ 443 3389],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0801,Windows Server,2016,4,16,False,True,VMware,[  80 8080],['apache2' 'nginx' 'teams-gateway'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0802,RHEL,9,4,128,False,False,Hyper-V,[  22 3389],['kubelet'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0803,Windows Server,2019,2,64,False,True,VMware,[443],['apache2' 'teams-gateway'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0804,RHEL,9,2,16,False,False,Cloud VM,[443 631],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0805,Windows Server,2022,16,128,False,True,Cloud VM,[3306 5432 5986],['mysql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.94,True
+srv-0806,Windows Server,2022,2,128,False,True,Hyper-V,[ 3389 27001],['sshd'],License Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0807,Windows Server,2022,2,4,False,True,KVM,[ 443 8883],['sshd'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0808,RHEL,9,2,4,False,True,VMware,[443],['nginx' 'tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.89,True
+srv-0809,Ubuntu Server,20.04,8,32,False,False,VMware,[ 443 8443],['iis' 'nginx'],API Gateway,Moderate,Moderate,High,synthetic_rules,0.92,True
+srv-0810,Windows Server,2016,16,128,False,True,Cloud VM,[ 161  162  443 5666],['veeam'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.72,True
+srv-0811,Windows Server,2019,4,16,False,True,Physical,[443],['winrm'],SSO Server,High,High,Moderate,synthetic_ml_seed,0.72,True
+srv-0812,Debian,12,2,128,False,False,KVM,[ 443 8443],['ossec'],EDR Management Server,High,High,High,synthetic_rules,0.93,True
+srv-0813,Windows Server,2019,16,8,False,True,Cloud VM,[  22  443 1935 3389],['sshd'],Media Streaming Server,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0814,Ubuntu Server,22.04,4,8,False,False,Hyper-V,[ 443 8080],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.71,True
+srv-0815,Windows Server,2016,2,64,False,True,KVM,[8080],['winrm'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0816,RHEL,8,4,128,False,True,VMware,[   80  5060  5061 10000],['winrm'],VoIP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.7,True
+srv-0817,Debian,12,4,8,False,True,Physical,[443],['winrm'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0818,Debian,11,8,8,False,False,KVM,[443 902 903],['winrm'],VMware ESXi Host,Moderate,Moderate,Moderate,synthetic_rules,0.75,True
+srv-0819,RHEL,9,32,128,False,False,Cloud VM,[ 67  68 443],['containerd' 'ntp'],DHCP Server,Moderate,Moderate,High,synthetic_hybrid,0.81,True
+srv-0820,Windows Server,2016,4,32,False,True,KVM,[ 443 3389 5985 9000],['ossec' 'radiusd'],HSM Management Server,High,High,Moderate,synthetic_ml_seed,0.96,True
+srv-0821,Ubuntu Server,22.04,16,4,False,False,Hyper-V,[ 5985 15672],['sshd'],Message Queue Server,Moderate,Moderate,High,synthetic_ml_seed,0.71,True
+srv-0822,Ubuntu Server,20.04,4,16,False,False,Hyper-V,[ 443 3389],['exchange' 'iis' 'nginx'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.76,True
+srv-0823,Ubuntu Server,20.04,8,8,False,False,Container,[1812],['winrm'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0824,Debian,12,32,32,False,False,Hyper-V,[ 80 443],['sshd'],PKI / Certificate Authority,High,High,Moderate,synthetic_ml_seed,0.96,True
+srv-0825,Windows Server,2016,4,128,False,True,Hyper-V,[ 111  445 2049],['winrm'],NAS Server,High,High,High,synthetic_rules,0.89,True
+srv-0826,Windows Server,2016,2,16,False,True,Cloud VM,[389 443],['sshd'],Directory Sync Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0827,Windows Server,2022,8,64,False,True,VMware,[ 80 902 903],['dns' 'docker'],Virtualization Host,Moderate,Moderate,High,synthetic_rules,0.7,True
+srv-0828,Ubuntu Server,20.04,8,32,False,False,KVM,[443],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0829,Windows Server,2019,32,4,False,True,KVM,[8140],['ansible'],Configuration Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.75,True
+srv-0830,Debian,11,16,32,False,False,Cloud VM,[443],['ossec' 'suricata'],DLP Management Server,High,High,High,synthetic_rules,0.85,True
+srv-0831,Windows Server,2022,8,8,False,True,VMware,[  80  443 3389],['iis' 'suricata' 'vault'],Web Application Firewall,High,High,High,synthetic_hybrid,0.92,True
+srv-0832,Windows Server,2022,32,8,False,True,Hyper-V,[27000 27001],['winrm'],License Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0833,RHEL,8,8,32,False,False,Physical,[ 22 443],['apache2' 'exchange'],SharePoint Server,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0834,Windows Server,2022,32,32,False,True,Hyper-V,[22 80],['elastic-agent' 'wazuh-manager'],Firewall Management Server,High,High,High,synthetic_rules,0.76,True
+srv-0835,Ubuntu Server,20.04,8,64,False,False,Hyper-V,[  22  443 3389 5986],['docker' 'kubelet'],Jump Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0836,RHEL,9,4,4,False,False,Physical,[  80 1433 3306 5432],['mssql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.85,True
+srv-0837,Windows Server,2022,32,8,False,True,VMware,[ 443 8443],['radiusd' 'wazuh-manager'],EDR Management Server,High,High,High,synthetic_hybrid,0.96,True
+srv-0838,Ubuntu Server,20.04,2,4,False,False,Hyper-V,[ 135 2179 5985],['containerd' 'dns'],Hyper-V Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0839,Ubuntu Server,22.04,2,16,False,True,KVM,[15672],['sshd'],Message Queue Server,Moderate,Moderate,High,synthetic_rules,0.93,True
+srv-0840,Ubuntu Server,22.04,4,4,False,False,Hyper-V,[ 443 8081],['gitlab'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0841,Debian,11,16,128,False,False,Cloud VM,[1812 5986],['suricata'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0842,Windows Server,2019,4,128,False,True,VMware,[  80  443 1812 1813],['wazuh-manager'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.7,True
+srv-0843,RHEL,9,4,64,False,True,Hyper-V,[  22  443 7990],['grafana'],Source Control Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.8,True
+srv-0844,RHEL,9,4,64,False,False,VMware,[ 443 8443],['winrm'],Application Server,Moderate,Moderate,High,synthetic_hybrid,0.85,True
+srv-0845,Windows Server,2022,2,4,False,True,Hyper-V,[ 80 443],['nginx' 'suricata' 'tomcat' 'vault'],Web Application Firewall,High,High,High,synthetic_rules,0.73,True
+srv-0846,RHEL,8,8,4,False,False,VMware,[8888],['sshd'],Analytics Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0847,RHEL,9,8,8,False,True,KVM,[  22 1433 5432],['oracle'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.91,True
+srv-0848,RHEL,8,8,32,False,False,VMware,[22],['jenkins' 'zabbix-server'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_ml_seed,0.94,True
+srv-0849,RHEL,9,8,64,False,False,Cloud VM,[  80 3389],['iis' 'tomcat'],Secure Web Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0850,RHEL,8,32,128,False,False,Physical,[ 443 5986],['grafana' 'prometheus'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.77,True
+srv-0851,RHEL,9,8,8,False,False,VMware,[ 443 5601 9200 9300],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0852,RHEL,9,8,32,False,True,Cloud VM,[ 443 5986],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_ml_seed,0.95,True
+srv-0853,Ubuntu Server,22.04,2,128,False,False,Container,[  80  443 1812],['sshd'],Network Access Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0854,RHEL,9,8,32,False,False,Cloud VM,[  22 2376],['sshd'],Container Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.98,True
+srv-0855,Windows Server,2019,8,8,False,True,KVM,[443],['sshd'],CMDB Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0856,Ubuntu Server,20.04,4,64,False,False,Physical,[ 111  445 2049],['sshd'],Storage Server,High,High,High,synthetic_ml_seed,0.94,True
+srv-0857,Ubuntu Server,22.04,32,16,False,True,Hyper-V,[ 443 5985],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.78,True
+srv-0858,RHEL,8,4,32,False,True,Hyper-V,[515 631],['winrm'],Print Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.77,True
+srv-0859,RHEL,8,2,4,False,True,Cloud VM,[ 443 8443],['radiusd'],EDR Management Server,High,High,High,synthetic_ml_seed,0.85,True
+srv-0860,Windows Server,2022,32,32,True,True,VMware,[8080],['apache2' 'confluence' 'nginx'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.95,True
+srv-0861,Debian,11,4,16,False,True,KVM,[ 443 9000],['suricata' 'vault'],HSM Management Server,High,High,Moderate,synthetic_rules,0.89,True
+srv-0862,Windows Server,2022,8,16,True,True,Cloud VM,[   22 10000],['grafana'],Backup Server,High,High,High,synthetic_ml_seed,0.96,True
+srv-0863,RHEL,8,2,8,True,True,Physical,[6514],['sshd'],Syslog Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.92,True
+srv-0864,Ubuntu Server,20.04,8,32,False,False,KVM,[ 443 8088],['sshd'],BI Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0865,Debian,12,8,4,False,True,Physical,[ 443 5985 9092],['sshd'],Message Queue Server,Moderate,Moderate,High,synthetic_rules,0.77,True
+srv-0866,Windows Server,2022,4,128,False,True,VMware,[8834],['sshd'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.81,True
+srv-0867,Debian,11,4,32,False,False,Physical,[443],['exchange' 'tomcat'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.75,True
+srv-0868,Debian,12,8,8,False,False,VMware,[8086],['mssql'],Time Series Database,Moderate,Moderate,Moderate,synthetic_hybrid,0.98,True
+srv-0869,Windows Server,2022,8,16,False,True,Hyper-V,[ 135  445 2179],['kubelet'],Hyper-V Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.79,True
+srv-0870,Debian,11,16,128,False,False,Hyper-V,[5061],['winrm'],VoIP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.93,True
+srv-0871,Debian,11,8,64,False,True,VMware,[ 22 514],['sshd'],Syslog Server,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0872,Debian,12,8,8,False,True,KVM,[8200],['ossec'],Secrets Management Server,High,High,Moderate,synthetic_hybrid,0.85,True
+srv-0873,Debian,11,8,64,False,False,VMware,[3260],['winrm'],SAN Management Server,High,High,High,synthetic_hybrid,0.96,True
+srv-0874,Windows Server,2016,4,16,False,True,VMware,[ 80 443],['winrm'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_hybrid,0.7,True
+srv-0875,Windows Server,2022,32,128,False,True,KVM,[443],['sshd'],Cloud Management Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0876,Debian,11,2,64,False,True,Physical,[443],['nginx'],CRM Server,Moderate,Moderate,Moderate,synthetic_rules,0.94,True
+srv-0877,Windows Server,2019,2,32,False,True,Physical,[443],['winrm'],Privileged Access Management,High,High,Moderate,synthetic_hybrid,0.76,True
+srv-0878,Ubuntu Server,20.04,2,16,False,False,VMware,[443],['sshd'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0879,RHEL,9,16,64,False,True,Physical,[ 67  68 443],['containerd' 'docker'],DHCP Server,Moderate,Moderate,High,synthetic_hybrid,0.95,True
+srv-0880,Windows Server,2016,32,8,False,True,Hyper-V,[443],['ossec'],Identity Governance Server,High,High,Moderate,synthetic_rules,0.99,True
+srv-0881,Debian,12,4,32,False,False,VMware,[3389 8080],['grafana' 'prometheus'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.85,True
+srv-0882,Ubuntu Server,22.04,2,8,False,True,KVM,[514],['ossec'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0883,Windows Server,2016,4,128,False,True,VMware,[443],['kubelet' 'sshd'],Virtualization Host,Moderate,Moderate,High,synthetic_hybrid,0.79,True
+srv-0884,Debian,11,8,128,False,True,VMware,[ 443 5986],['sshd'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0885,Ubuntu Server,20.04,2,128,False,False,Physical,[ 443 3389 5985 8888],['sshd'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0886,Windows Server,2016,4,128,False,True,Physical,[ 445 5985 5986],['winrm'],File Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0887,Ubuntu Server,20.04,32,32,False,False,Physical,[ 443 3478],['exchange'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0888,Ubuntu Server,20.04,8,32,False,False,Cloud VM,[  80  389  636 3268],['sshd'],Active Directory Domain Services,High,High,High,synthetic_rules,0.78,True
+srv-0889,Windows Server,2019,4,16,False,True,Physical,[  22  514 5986],['jenkins' 'veeam'],Log Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.87,True
+srv-0890,Ubuntu Server,22.04,8,4,False,False,KVM,[ 25 110 443 995],['jira'],Mail Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0891,Debian,11,16,8,False,True,Hyper-V,[3260 5986],['sshd'],SAN Management Server,High,High,High,synthetic_rules,0.71,True
+srv-0892,Ubuntu Server,22.04,4,8,False,False,VMware,[5985 8088],['winrm'],BI Server,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0893,Ubuntu Server,20.04,8,4,False,False,Hyper-V,[  22   80 1883 5985],['winrm'],IoT Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.99,True
+srv-0894,Ubuntu Server,22.04,4,128,False,False,Hyper-V,[  80 3389 5601 9200 9300],['winrm'],Search Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0895,Windows Server,2019,8,32,False,True,VMware,[443],['winrm'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0896,Windows Server,2016,8,8,False,True,Physical,[443],['jenkins'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_ml_seed,0.72,True
+srv-0897,Windows Server,2019,4,64,False,True,KVM,[ 443 5696],['radiusd' 'wazuh-manager'],Key Management Server,High,High,Moderate,synthetic_rules,0.88,True
+srv-0898,Windows Server,2019,4,4,False,True,VMware,[  22 8080],['gitlab'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0899,Debian,11,8,128,False,False,VMware,[5601],['ossec' 'wazuh-manager'],SIEM Server,High,High,Moderate,synthetic_rules,0.79,True
+srv-0900,Windows Server,2016,4,64,False,True,VMware,[5986 8443],['jenkins'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.87,True
+srv-0901,Windows Server,2016,8,8,False,True,VMware,[  80  443 5985 5986],['winrm'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_rules,0.98,True
+srv-0902,Windows Server,2016,4,128,False,True,Hyper-V,[443],['wazuh-manager'],HSM Management Server,High,High,Moderate,synthetic_hybrid,0.8,True
+srv-0903,RHEL,9,4,128,True,True,Cloud VM,[ 443 5985 8080],['confluence' 'iis' 'nginx'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.97,True
+srv-0904,Debian,11,16,4,False,True,VMware,[443 587],['sharepoint'],Mail Server,Moderate,Moderate,Moderate,synthetic_rules,0.78,True
+srv-0905,Windows Server,2019,32,8,False,True,Hyper-V,[443],['winrm'],Threat Intelligence Server,Moderate,Moderate,Moderate,synthetic_rules,0.89,True
+srv-0906,Debian,12,8,64,False,False,Physical,[  80  443 8080],['iis' 'nginx'],Wiki Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0907,Windows Server,2019,2,32,False,True,KVM,[3306],['oracle'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.9,True
+srv-0908,Ubuntu Server,22.04,4,16,False,False,Physical,[ 443 5985],['ansible' 'jenkins'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0909,RHEL,9,8,32,False,False,VMware,[5986 8080],['apache2' 'iis' 'teams-gateway'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0910,Windows Server,2022,4,16,False,True,VMware,[ 443 3260],['sshd'],SAN Management Server,High,High,High,synthetic_hybrid,0.7,True
+srv-0911,Windows Server,2019,4,8,False,True,VMware,[5432],['postgresql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0912,Windows Server,2019,2,16,False,True,Cloud VM,[ 443 1194 4500],['winrm'],VPN Server,Moderate,Moderate,High,synthetic_hybrid,0.74,True
+srv-0913,Debian,11,8,16,False,False,Physical,[ 5986 10250 30000],['ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0914,Debian,11,4,8,False,False,KVM,[20],['sshd'],FTP Server,Moderate,Moderate,Moderate,synthetic_rules,0.87,True
+srv-0915,Debian,12,4,16,False,False,Container,[3306],['mssql'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0916,Ubuntu Server,20.04,4,128,False,True,Hyper-V,[3128 8080],['winrm'],Proxy Server,Moderate,Moderate,Moderate,synthetic_rules,0.7,True
+srv-0917,Debian,11,8,128,False,True,Hyper-V,[  80 6443],['dns'],Kubernetes Control Plane,Moderate,Moderate,High,synthetic_rules,0.95,True
+srv-0918,Debian,12,8,8,False,False,VMware,[ 22 514],['elastic-agent' 'radiusd'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.86,True
+srv-0919,RHEL,8,4,16,False,False,Container,[  25  143  465 5985],['teams-gateway'],Mail Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0920,RHEL,8,4,128,False,True,Hyper-V,[ 443 8080],['apache2' 'iis'],Wiki Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.74,True
+srv-0921,Debian,11,16,8,False,True,Cloud VM,[443],['apache2'],HRIS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.73,True
+srv-0922,Windows Server,2022,16,64,False,True,VMware,[ 443 3389],['grafana'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0923,Ubuntu Server,20.04,4,4,True,False,VMware,[  22   80  514 6514],['winrm'],Syslog Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.73,True
+srv-0924,Ubuntu Server,22.04,4,16,False,True,Physical,[  53 3389 5986],['sshd' 'winrm'],DNS Server,Moderate,Moderate,High,synthetic_hybrid,0.94,True
+srv-0925,Ubuntu Server,20.04,4,16,False,False,VMware,[ 22 443],['iis'],Wiki Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.78,True
+srv-0926,Windows Server,2022,8,32,False,True,VMware,[ 443 5985],['ossec' 'radiusd'],Identity Federation Server,High,High,Moderate,synthetic_hybrid,0.92,True
+srv-0927,Ubuntu Server,20.04,4,4,False,False,Physical,[  80 1812 1813],['suricata' 'vault'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_rules,0.93,True
+srv-0928,RHEL,9,4,32,False,False,Hyper-V,[ 443 5985 5986 8080],['apache2' 'jira' 'tomcat'],Ticketing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.88,True
+srv-0929,Windows Server,2016,16,64,False,True,Physical,[6080],['winrm'],GIS Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.82,True
+srv-0930,Windows Server,2019,8,4,False,True,Container,[53],['containerd' 'ntp'],DNS Server,Moderate,Moderate,High,synthetic_hybrid,0.91,True
+srv-0931,Ubuntu Server,22.04,8,64,False,True,Hyper-V,[  22  443 3389],['winrm'],Privileged Access Management,High,High,Moderate,synthetic_rules,0.86,True
+srv-0932,Windows Server,2016,32,128,False,True,Cloud VM,[111 445],['winrm'],Storage Server,High,High,High,synthetic_rules,0.94,True
+srv-0933,Windows Server,2022,4,16,False,True,Physical,[ 22 443],['sshd'],ETL Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0934,Debian,11,4,64,False,False,VMware,[  22  443 3478],['jira'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0935,Debian,12,32,16,True,True,KVM,[443],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_ml_seed,0.8,True
+srv-0936,Debian,12,4,8,False,False,VMware,[  22   80 2375 2376 5985],['dhcp' 'winrm'],Container Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.79,True
+srv-0937,Ubuntu Server,22.04,4,128,False,False,Hyper-V,[8080],['apache2' 'jira'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.79,True
+srv-0938,Windows Server,2019,2,16,False,True,VMware,[  22  443 8443],['apache2' 'tomcat'],API Gateway,Moderate,Moderate,High,synthetic_hybrid,0.74,True
+srv-0939,RHEL,9,32,16,False,False,KVM,[ 443 8834],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.77,True
+srv-0940,Windows Server,2022,32,16,False,True,Physical,[ 443 5985],['gitlab' 'zabbix-server'],Source Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.82,True
+srv-0941,Windows Server,2022,16,4,False,True,Hyper-V,[  22  443  902 3389],['dhcp'],Virtualization Host,Moderate,Moderate,High,synthetic_hybrid,0.73,True
+srv-0942,RHEL,9,2,64,False,True,VMware,[  22  443 3389 8000],['iis'],ERP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0943,Windows Server,2019,16,8,False,True,Cloud VM,[ 5060  5061  5986 10000],['winrm'],VoIP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.92,True
+srv-0944,Windows Server,2019,4,8,False,True,Cloud VM,[5985 8080 8443],['sshd'],Application Server,Moderate,Moderate,High,synthetic_rules,0.76,True
+srv-0945,Debian,12,2,16,False,False,VMware,[162 443],['jenkins'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.7,True
+srv-0946,Windows Server,2019,2,16,False,True,Cloud VM,[  22  443 5985],['winrm'],Load Balancer,Moderate,Moderate,High,synthetic_rules,0.77,True
+srv-0947,Windows Server,2022,8,16,False,True,KVM,[ 22 443 502],['sshd'],OT Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0948,Windows Server,2022,2,4,False,True,KVM,[ 443 8443],['radiusd'],EDR Management Server,High,High,High,synthetic_rules,0.97,True
+srv-0949,RHEL,8,32,8,True,False,Hyper-V,[5222 5985],['jira'],Collaboration Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0950,Windows Server,2019,8,64,False,True,Hyper-V,[ 443 3389 5985 5986],['ansible'],Automation Orchestration Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.71,True
+srv-0951,Debian,12,8,32,False,True,VMware,[  22 5985],['grafana' 'puppetserver'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.88,True
+srv-0952,Debian,12,8,16,False,False,Physical,[ 443 8080],['apache2' 'jira'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.86,True
+srv-0953,Debian,11,8,4,False,True,Cloud VM,[  22 5985],['dhcp'],Container Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.89,True
+srv-0954,Windows Server,2019,4,64,False,True,Hyper-V,[1521 5432],['postgresql'],Geospatial Database,Moderate,Moderate,Moderate,synthetic_hybrid,0.98,True
+srv-0955,Debian,11,16,32,False,False,VMware,[22],['dhcp'],Bastion Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.82,True
+srv-0956,Windows Server,2022,8,32,False,True,Cloud VM,[ 443 3260],['sshd'],SAN Management Server,High,High,High,synthetic_rules,0.76,True
+srv-0957,Windows Server,2022,16,8,False,True,Cloud VM,[ 22 443],['winrm'],Replication Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0958,Windows Server,2019,8,64,False,True,KVM,[443],['winrm'],Vulnerability Scanner,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0959,Windows Server,2022,16,4,False,True,KVM,[5432 5986],['postgresql'],Data Warehouse Server,Moderate,Moderate,Moderate,synthetic_rules,0.95,True
+srv-0960,Debian,11,8,32,False,False,Physical,[ 111  445 2049 3389],['winrm'],NAS Server,High,High,High,synthetic_rules,0.79,True
+srv-0961,Windows Server,2016,32,8,False,True,Container,[22 80],['ansible' 'prometheus'],Source Control Server,Moderate,Moderate,Moderate,synthetic_rules,0.72,True
+srv-0962,RHEL,9,2,64,False,False,Cloud VM,[  443 30000 30001],['kubelet' 'ntp'],Kubernetes Worker Node,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0963,Ubuntu Server,22.04,4,128,False,False,VMware,[5222 5985],['jira'],Collaboration Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0964,RHEL,9,4,32,False,True,VMware,[161 443],['gitlab' 'jenkins'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0965,Windows Server,2022,2,64,False,True,Cloud VM,[5985 8888],['winrm'],Analytics Server,Moderate,Moderate,Moderate,synthetic_rules,0.76,True
+srv-0966,Ubuntu Server,20.04,4,128,False,False,Cloud VM,[8080],['apache2' 'exchange'],Help Desk Server,Moderate,Moderate,Moderate,synthetic_rules,0.96,True
+srv-0967,Debian,12,8,32,True,False,VMware,[ 22 443],['grafana' 'veeam'],CI/CD Runner,Moderate,Moderate,Moderate,synthetic_hybrid,0.83,True
+srv-0968,Ubuntu Server,22.04,8,32,False,False,Hyper-V,[443],['gitlab'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_hybrid,0.99,True
+srv-0969,Windows Server,2019,8,4,False,True,VMware,[443],['winrm'],Disaster Recovery Orchestrator,Moderate,Moderate,Moderate,synthetic_rules,0.84,True
+srv-0970,RHEL,8,32,128,False,True,VMware,[  22 3478],['teams-gateway'],Video Conferencing Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0971,RHEL,8,4,8,False,True,Hyper-V,[3389 6514],['sshd'],Syslog Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.96,True
+srv-0972,Windows Server,2016,2,4,False,True,Hyper-V,[443],['grafana' 'puppetserver'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_rules,0.91,True
+srv-0973,Windows Server,2019,2,4,False,True,Hyper-V,[443],['sshd'],OT Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.83,True
+srv-0974,RHEL,9,4,8,False,True,Cloud VM,[ 443  514 5601 9200],['zabbix-server'],Log Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0975,Windows Server,2016,16,8,False,True,VMware,[ 80 443],['tomcat'],HRIS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.9,True
+srv-0976,Windows Server,2022,2,8,False,True,VMware,[3306 3389 5432],['oracle'],Database Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.81,True
+srv-0977,RHEL,8,32,128,False,False,Physical,[ 161 5666 5985],['ansible' 'veeam'],Monitoring Server,Moderate,Moderate,Moderate,synthetic_rules,0.74,True
+srv-0978,Windows Server,2019,8,16,False,True,Hyper-V,[443],['suricata'],IDS/IPS Server,Moderate,Moderate,Moderate,synthetic_rules,0.73,True
+srv-0979,Windows Server,2022,8,4,False,True,Cloud VM,[53],['docker' 'winrm'],DNS Server,Moderate,Moderate,High,synthetic_rules,0.76,True
+srv-0980,Ubuntu Server,22.04,4,8,False,False,VMware,[8200],['ossec'],Secrets Management Server,High,High,Moderate,synthetic_ml_seed,0.91,True
+srv-0981,Windows Server,2022,4,128,False,True,VMware,[443],['radiusd'],Identity Governance Server,High,High,Moderate,synthetic_hybrid,0.85,True
+srv-0982,Windows Server,2019,8,4,False,True,KVM,[22],['winrm'],SFTP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.8,True
+srv-0983,Windows Server,2019,4,32,False,True,KVM,[ 443 8443],['grafana' 'zabbix-server'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_rules,0.88,True
+srv-0984,Windows Server,2019,4,4,False,True,KVM,[3128 5985],['sshd'],Proxy Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.88,True
+srv-0985,Debian,11,8,32,False,True,Hyper-V,[  22   80 5985],['nginx' 'tomcat'],Reverse Proxy,Moderate,Moderate,Moderate,synthetic_hybrid,0.72,True
+srv-0986,Ubuntu Server,20.04,8,8,False,False,Cloud VM,[ 443 8443],['veeam' 'zabbix-server'],Endpoint Management Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.94,True
+srv-0987,RHEL,9,16,4,False,True,Hyper-V,[  22 2375 2376],['dns' 'sshd'],Container Host,Moderate,Moderate,Moderate,synthetic_ml_seed,0.9,True
+srv-0988,Ubuntu Server,22.04,4,4,False,False,KVM,[ 443 5986],['sshd'],Data Loss Prevention Scanner,Moderate,Moderate,Moderate,synthetic_hybrid,0.78,True
+srv-0989,Debian,11,32,16,False,False,Physical,[ 443 5222],['jira'],Collaboration Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.98,True
+srv-0990,Ubuntu Server,20.04,8,16,False,False,VMware,[1812 1813 5985],['elastic-agent' 'vault'],RADIUS Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.84,True
+srv-0991,RHEL,8,4,64,False,True,VMware,[ 443 2195],['sshd'],MDM Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0992,Debian,12,8,64,False,False,Hyper-V,[  22 3389],['ntp' 'sshd'],Bastion Host,Moderate,Moderate,Moderate,synthetic_hybrid,0.95,True
+srv-0993,Ubuntu Server,22.04,8,4,False,False,Hyper-V,[8080],['winrm'],Proxy Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.91,True
+srv-0994,Windows Server,2022,4,4,False,True,Hyper-V,[443],['winrm'],Mainframe Gateway,Moderate,Moderate,Moderate,synthetic_hybrid,0.73,True
+srv-0995,Windows Server,2016,32,64,False,True,Physical,[22],['sshd'],SFTP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.83,True
+srv-0996,Windows Server,2022,32,8,False,True,Physical,[ 443 5986 8081],['grafana'],Artifact Repository,Moderate,Moderate,Moderate,synthetic_hybrid,0.97,True
+srv-0997,Windows Server,2019,4,128,False,True,VMware,[ 443 8080],['jenkins' 'prometheus'],DevOps Build Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.72,True
+srv-0998,Debian,12,4,8,False,True,VMware,[123],['kubelet' 'ntp'],NTP Server,Moderate,Moderate,Moderate,synthetic_hybrid,0.71,True
+srv-0999,Debian,11,4,8,False,True,Physical,[22],['winrm'],SFTP Server,Moderate,Moderate,Moderate,synthetic_ml_seed,0.7,True
+srv-1000,RHEL,8,16,128,False,False,VMware,[ 515  631 9100],['sshd'],Print Server,Moderate,Moderate,Moderate,synthetic_rules,0.8,True

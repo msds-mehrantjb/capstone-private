@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from pathlib import Path
 from typing import Any, Dict, Optional, List, Literal, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import re
 import copy
@@ -25,6 +25,8 @@ Command = Literal[
     "submit",
     "reset",
     "cancel",
+    "yes",
+    "no",
 ]
 
 class LoadOption(BaseModel):
@@ -35,23 +37,18 @@ class AgentRequest(BaseModel):
     year: int = 2026
     command: Command
     draft: Optional[Dict[str, Any]] = None
-    answer: Optional[str] = None  # used for button clicks / fill selections
+    answer: Optional[str] = None
 
 class AgentResponse(BaseModel):
     message: str
     draft: Dict[str, Any]
     next_question: Optional[str] = None
     saved_version: Optional[str] = None
-    load_options: Optional[List[LoadOption]] = None  # buttons
-
-# -------------------------
-# Paths / IO
-# -------------------------
+    load_options: Optional[List[LoadOption]] = None
 
 PLACEHOLDER_RE = re.compile(r"\[[^\]]+\]")
 
 def project_root() -> Path:
-    # .../Capstone-main/app/api/routes_scope_agent.py -> parents[2] = Capstone-main
     return Path(__file__).resolve().parents[2]
 
 def get_data_dir() -> Path:
@@ -59,19 +56,13 @@ def get_data_dir() -> Path:
     p.mkdir(parents=True, exist_ok=True)
     return p
 
-def get_system_status_path() -> Path:
-    return project_root() / "data" / "raw" / "SystemStatus.json"
+def get_dashboard_path() -> Path:
+    p = get_data_dir() / "dashboard.json"
+    print(f"[SCOPE AGENT] dashboard path = {p}")
+    return p
 
-def update_system_scope_pointer(year: int, filename: str, status: str = "In Progress") -> None:
-    p = get_system_status_path()
-    if not p.exists():
-        return  # or create default; but your system route already creates it
-    obj = read_json(p)
-    obj.setdefault("sections", {})
-    obj["sections"].setdefault("scope_context", {})
-    obj["sections"]["scope_context"]["status"] = status
-    obj["sections"]["scope_context"]["scope_file_name"] = filename
-    write_json(p, obj)
+def get_system_status_path(year: int) -> Path:
+    return project_root() / "data" / "work" / str(year) / "systemstatus.json"
 
 def read_json(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
@@ -81,6 +72,27 @@ def write_json(path: Path, data: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
+def read_dashboard() -> Dict[str, Any]:
+    p = get_dashboard_path()
+    print(f"[SCOPE AGENT] reading dashboard.json from: {p}")
+    if not p.exists():
+        raise FileNotFoundError(f"dashboard.json not found at {p}")
+    return read_json(p)
+
+def write_dashboard(data: Dict[str, Any]) -> None:
+    p = get_dashboard_path()
+    print(f"[SCOPE AGENT] writing dashboard.json to: {p}")
+    write_json(p, data)
+
+def read_system_status(year: int) -> Dict[str, Any]:
+    p = get_system_status_path(year)
+    if not p.exists():
+        raise FileNotFoundError(f"systemstatus.json not found at {p}")
+    return read_json(p)
+
+def write_system_status(year: int, data: Dict[str, Any]) -> None:
+    write_json(get_system_status_path(year), data)
 
 # -------------------------
 # Template (v0)
@@ -93,13 +105,13 @@ def default_scope_template(year: int) -> Dict[str, Any]:
             "version": "v0",
             "title": "ISO 27001 Scope Statement Template",
             "template_name": "ISO 27001 Scope Statement Template",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "placeholders_retained": True,
             "source_file": f"{year}-Scope-v0.json",
         },
         "sections": [
             {
-                "id": "intro_purpose",
+                "id": "1_introduction_purpose",
                 "title": "1. Introduction and Purpose",
                 "body": (
                     "The Information Security Management System (ISMS) of [Organization Name] is established "
@@ -109,7 +121,7 @@ def default_scope_template(year: int) -> Dict[str, Any]:
                 "bullets": [],
             },
             {
-                "id": "org_boundaries",
+                "id": "2_organizational_boundaries",
                 "title": "2. Organizational Boundaries",
                 "body": "The ISMS applies to the following departments and business units within [Organization Name]:",
                 "bullets": [
@@ -119,7 +131,7 @@ def default_scope_template(year: int) -> Dict[str, Any]:
                 ],
             },
             {
-                "id": "geo_boundaries",
+                "id": "3_geographic_physical_boundaries",
                 "title": "3. Geographic and Physical Boundaries",
                 "body": "The scope includes all information processing facilities located at:",
                 "bullets": [
@@ -129,7 +141,7 @@ def default_scope_template(year: int) -> Dict[str, Any]:
                 ],
             },
             {
-                "id": "tech_boundaries",
+                "id": "4_technical_logical_boundaries",
                 "title": "4. Technical and Logical Boundaries",
                 "body": "This ISMS encompasses the Windows-based enterprise ecosystem, specifically:",
                 "bullets": [
@@ -140,7 +152,7 @@ def default_scope_template(year: int) -> Dict[str, Any]:
                 ],
             },
             {
-                "id": "exclusions",
+                "id": "5_exclusions_justifications",
                 "title": "5. Exclusions and Justifications",
                 "body": "The following areas are excluded from the scope of the ISMS:",
                 "bullets": [
@@ -149,7 +161,7 @@ def default_scope_template(year: int) -> Dict[str, Any]:
                 ],
             },
             {
-                "id": "stakeholders",
+                "id": "6_stakeholders_external_dependencies",
                 "title": "6. Stakeholders and External Dependencies",
                 "body": "The scope also accounts for the security requirements of:",
                 "bullets": [
@@ -171,10 +183,15 @@ def ensure_v0_exists(year: int) -> Path:
 # Helpers
 # -------------------------
 
-def _get_section(draft: Dict[str, Any], section_id: str, title_prefix: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Find a section by id; if not found, optionally by title prefix like '2.'"""
+def _get_section(
+    draft: Dict[str, Any],
+    section_id: str,
+    title_prefix: Optional[str] = None,
+    alt_ids: Optional[List[str]] = None,
+) -> Optional[Dict[str, Any]]:
+    ids = [section_id] + (alt_ids or [])
     for s in (draft.get("sections") or []):
-        if s.get("id") == section_id:
+        if s.get("id") in ids:
             return s
     if title_prefix:
         for s in (draft.get("sections") or []):
@@ -210,11 +227,73 @@ def _replace_everywhere(draft: Dict[str, Any], mapping: Dict[str, str]) -> None:
 def _replace_first_bracket_value(line: str, value: str) -> str:
     return re.sub(r"\[[^\]]+\]", value, line, count=1)
 
+def _extract_audit_scope_value(draft: Dict[str, Any]) -> str:
+    """
+    Whatever should appear in Dashboard -> Audit Scope
+    is saved into dashboard.json -> scope.name.
+
+    Current rule:
+    use draft.meta.title exactly as-is.
+    """
+    meta = draft.get("meta") or {}
+    title = str(meta.get("title") or "").strip()
+    return title or "Unnamed Scope"
+
+def _extract_section2_bullets(draft: Dict[str, Any]) -> List[str]:
+    sec = _get_section(
+        draft,
+        "2_organizational_boundaries",
+        title_prefix="2.",
+        alt_ids=["org_boundaries"],
+    )
+    if not sec:
+        return []
+    bullets = sec.get("bullets") or []
+    return [str(x).strip() for x in bullets if str(x).strip()]
+
+def _update_dashboard_after_submit(filename: str, draft: Dict[str, Any]) -> None:
+    dashboard = read_dashboard()
+
+    scope_name = _extract_audit_scope_value(draft)
+    section2_bullets = _extract_section2_bullets(draft)
+
+    dashboard["scope_file_name"] = filename
+
+    dashboard.setdefault("scope", {})
+    dashboard["scope"]["name"] = scope_name
+    if "asset_count" not in dashboard["scope"]:
+        dashboard["scope"]["asset_count"] = 0
+    dashboard["scope"].pop("status", None)
+
+    dashboard["scope_context_section2"] = {
+        "title": "Scope & Context — Section 2 (Organizational Boundaries)",
+        "bullets": section2_bullets,
+    }
+
+    dashboard["scopes"] = [
+        {
+            "name": scope_name,
+            "asset_count": int(dashboard["scope"].get("asset_count", 0) or 0),
+        }
+    ]
+
+    write_dashboard(dashboard)
+    
+def _update_system_status_after_submit(year: int) -> None:
+    obj = read_system_status(year)
+    obj.setdefault("sections", {})
+    obj["sections"].setdefault("scope_context", {})
+    obj["sections"].setdefault("assets_cia", {})
+
+    obj["sections"]["scope_context"]["status"] = "In Progress"
+    obj["sections"]["assets_cia"]["status"] = "Not Started"
+
+    write_system_status(year, obj)
+
 # -------------------------
 # Fill state (in-memory)
 # -------------------------
 
-# _FILL_STATE[year] = {"in_fill": bool, "active": "s1".."s6"|None, "step": int, "buffer": dict|None, "exit_stage": 0|1}
 _FILL_STATE: Dict[int, Dict[str, Any]] = {}
 
 def _fill_sections() -> List[tuple[str, str, str]]:
@@ -246,7 +325,7 @@ COMMANDS_TEXT = (
     "/fill — fill the scope document in conversation mode\n"
     "/autofill — load a specified version of the scope document (or samples)\n"
     "/load — load latest saved versions (non-v0) as buttons\n"
-    "/submit — save as a new version\n"
+    "/submit — save as a new version and update dashboard/system status\n"
     "/cancel — discard unsaved changes and reload the latest saved version\n"
     "/reset — reset to the baseline template (v0)\n"
     "/exit — exit fill mode\n"
@@ -286,18 +365,10 @@ def save_version_as(year: int, filename: str, obj: Dict[str, Any]) -> Path:
     return p
 
 def _parse_scope_filename(year: int, filename: str) -> Optional[Tuple[str, int]]:
-    """
-    Returns (group_key, version_num) for filenames like:
-      {year}-Scope-v2.json               -> ("Base", 2)
-      {year}-Scope-Financial-v3.json     -> ("Financial", 3)
-      {year}-Scope-Draft-v10.json        -> ("Draft", 10)
-    """
-    # Base: 2026-Scope-v3.json
     m0 = re.match(rf"^{re.escape(str(year))}-Scope-v(\d+)\.json$", filename)
     if m0:
         return ("Base", int(m0.group(1)))
 
-    # Named: 2026-Scope-Anything-v3.json
     m1 = re.match(rf"^{re.escape(str(year))}-Scope-(.+)-v(\d+)\.json$", filename)
     if m1:
         return (m1.group(1), int(m1.group(2)))
@@ -305,20 +376,9 @@ def _parse_scope_filename(year: int, filename: str) -> Optional[Tuple[str, int]]
     return None
 
 def discover_latest_non_v0_scope_files(year: int) -> List[LoadOption]:
-    """
-    Find every file in data/raw that matches {year}-Scope-*-vN.json (or Base {year}-Scope-vN.json),
-    where N != 0. If multiple versions exist for the same group, keep only the latest version.
-
-    IMPORTANT UI behavior:
-      - button caption (label) MUST be the exact filename
-      - button id MUST also be the exact filename
-    """
     d = get_data_dir()
-    best: Dict[str, Tuple[int, str]] = {}  # group -> (version, filename)
+    best: Dict[str, Tuple[int, str]] = {}
 
-    # Include both patterns:
-    # - 2026-Scope-v4.json
-    # - 2026-Scope-Anything-v4.json
     for p in d.glob(f"{year}-Scope-*.json"):
         parsed = _parse_scope_filename(year, p.name)
         if not parsed:
@@ -330,14 +390,12 @@ def discover_latest_non_v0_scope_files(year: int) -> List[LoadOption]:
         if (cur is None) or (vnum > cur[0]):
             best[group] = (vnum, p.name)
 
-    # Sort: Base first, then name
     def sort_key(item: Tuple[str, Tuple[int, str]]) -> Tuple[int, str]:
         group = item[0]
         return (0 if group == "Base" else 1, group.lower())
 
     opts: List[LoadOption] = []
     for _, (_, fname) in sorted(best.items(), key=sort_key):
-        # show exact filename as the button caption
         opts.append(LoadOption(id=fname, label=fname))
 
     return opts
@@ -349,10 +407,6 @@ def _looks_like_scope_filename(year: int, s: str) -> bool:
     return _parse_scope_filename(year, s) is not None
 
 def load_by_filename_if_exists(year: int, filename: str) -> Dict[str, Any]:
-    """
-    Safe-ish loader for /load button selections. Only allows files under data/raw
-    that match the scope naming convention for the same year.
-    """
     filename = (filename or "").strip()
     parsed = _parse_scope_filename(year, filename)
     if not parsed:
@@ -366,11 +420,19 @@ def load_by_filename_if_exists(year: int, filename: str) -> Dict[str, Any]:
     obj.setdefault("meta", {})
     obj["meta"]["year"] = year
     obj["meta"]["source_file"] = p.name
-    # keep meta.version as-is if present; otherwise infer
     if not obj["meta"].get("version"):
         _, vnum = parsed
         obj["meta"]["version"] = f"v{vnum}"
     return obj
+
+def next_base_version_filename(year: int) -> str:
+    d = get_data_dir()
+    max_v = -1
+    for p in d.glob(f"{year}-Scope-v*.json"):
+        m = re.match(rf"^{re.escape(str(year))}-Scope-v(\d+)\.json$", p.name)
+        if m:
+            max_v = max(max_v, int(m.group(1)))
+    return f"{year}-Scope-v{max_v + 1}.json" if max_v >= 0 else f"{year}-Scope-v0.json"
 
 # -------------------------
 # API
@@ -383,7 +445,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
 
     draft = req.draft if req.draft is not None else load_saved(year, latest_saved_version(year))
     answer_raw = (req.answer or "").strip()
-
     cmd = req.command
 
     if cmd == "commands":
@@ -392,13 +453,28 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
     if cmd == "help":
         return AgentResponse(message=HELP_TEXT, draft=draft)
 
+    if cmd == "yes":
+        return AgentResponse(message="No pending confirmation.", draft=draft)
+
+    if cmd == "no":
+        return AgentResponse(message="No pending confirmation.", draft=draft)
+
     if cmd == "reset":
         fresh = load_saved(year, 0)
         _FILL_STATE[year] = {"in_fill": False, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
         return AgentResponse(message="Returned to baseline template (v0).", draft=fresh, saved_version="v0")
 
     if cmd == "cancel":
-        latest = load_saved(year, latest_saved_version(year))
+        try:
+            dashboard = read_dashboard()
+            scope_file_name = (dashboard.get("scope_file_name") or "").strip()
+            if scope_file_name and (get_data_dir() / scope_file_name).exists():
+                latest = load_by_filename_if_exists(year, scope_file_name)
+            else:
+                latest = load_saved(year, latest_saved_version(year))
+        except Exception:
+            latest = load_saved(year, latest_saved_version(year))
+
         _FILL_STATE[year] = {"in_fill": False, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
         return AgentResponse(
             message="Discarded unsaved changes and reloaded the latest saved version.",
@@ -406,9 +482,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             saved_version=latest.get("meta", {}).get("version"),
         )
 
-    # -------------------------
-    # /autofill (unchanged)
-    # -------------------------
     if cmd == "autofill":
         if not answer_raw:
             opts = [
@@ -424,7 +497,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 next_question="__LOAD__",
             )
 
-        # ✅ NEW: if frontend sends a filename, load it directly
         if _looks_like_scope_filename(year, answer_raw):
             try:
                 loaded = load_by_filename_if_exists(year, answer_raw)
@@ -492,13 +564,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         loaded["meta"]["source_file"] = p.name
         return AgentResponse(message=f"Loaded version {ver}.", draft=loaded, saved_version=loaded["meta"].get("version"))
 
-    # -------------------------
-    # /load (UPDATED)
-    # Same button-driven flow as /autofill, but:
-    # - discover every *non-v0* scope file
-    # - if multiple versions exist for the same "group", only show the latest one
-    # - button id is the exact filename to load
-    # -------------------------
     if cmd == "load":
         if not answer_raw:
             opts = discover_latest_non_v0_scope_files(year)
@@ -517,7 +582,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 next_question="__LOAD__",
             )
 
-        # answer_raw is expected to be the button id (filename)
         try:
             loaded = load_by_filename_if_exists(year, answer_raw)
             return AgentResponse(
@@ -526,7 +590,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 saved_version=loaded.get("meta", {}).get("version"),
             )
         except FileNotFoundError:
-            # If the frontend sends something else, try to re-render options to recover gracefully.
             opts = discover_latest_non_v0_scope_files(year)
             if not opts:
                 return AgentResponse(message="Selection not found, and no saved (non-v0) versions exist yet.", draft=draft)
@@ -537,46 +600,53 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 next_question="__LOAD__",
             )
 
-    # -------------------------
-    # /submit
-    # -------------------------
     if cmd == "submit":
-        src = (draft.get("meta", {}) or {}).get("source_file", "")
-        if src == f"{year}-Scope-v0.json":
-            out = copy.deepcopy(draft)
-            out.setdefault("meta", {})
-            out["meta"]["year"] = year
-            out["meta"]["version"] = "v1"
-            out["meta"]["source_file"] = f"{year}-Scope-Draft-v1.json"
-            save_version_as(year, f"{year}-Scope-Draft-v1.json", out)
-            update_system_scope_pointer(year, f"{year}-Scope-Draft-v1.json", status="In Progress")
-            return AgentResponse(message=f"Saved baseline as {year}-Scope-Draft-v1.json.", draft=out, saved_version="v1")
-
-        if src.endswith("-Scope-Sample-v1.json"):
-            return AgentResponse(
-                message=f"{src} is already the final version. No changes were saved.",
-                draft=draft,
-                saved_version=draft.get("meta", {}).get("version"),
-            )
-
-        v_latest = latest_saved_version(year)
-        v_new = v_latest + 1
         out = copy.deepcopy(draft)
         out.setdefault("meta", {})
         out["meta"]["year"] = year
-        out["meta"]["version"] = f"v{v_new}"
-        out["meta"]["source_file"] = f"{year}-Scope-v{v_new}.json"
-        save_version_as(year, f"{year}-Scope-v{v_new}.json", out)
-        update_system_scope_pointer(year, f"{year}-Scope-v{v_new}.json", status="In Progress")
-        return AgentResponse(
-            message=f"Submitted. Saved new version as {year}-Scope-v{v_new}.json",
-            draft=out,
-            saved_version=f"v{v_new}",
-        )
 
-    # -------------------------
-    # /fill (step-by-step)
-    # -------------------------
+        src = str((out.get("meta", {}) or {}).get("source_file", "")).strip()
+
+        if src == f"{year}-Scope-v0.json":
+            filename = f"{year}-Scope-v1.json"
+            version = "v1"
+        else:
+            filename = next_base_version_filename(year)
+            m = re.match(rf"^{re.escape(str(year))}-Scope-v(\d+)\.json$", filename)
+            version = f"v{m.group(1)}" if m else str(out["meta"].get("version") or "v1")
+
+        out["meta"]["version"] = version
+        out["meta"]["source_file"] = filename
+
+        save_version_as(year, filename, out)
+
+        try:
+            _update_dashboard_after_submit(filename, out)
+        except FileNotFoundError:
+            return AgentResponse(
+                message=f"Saved {filename}, but dashboard.json was not found.",
+                draft=out,
+                saved_version=version,
+            )
+
+        try:
+            _update_system_status_after_submit(year)
+        except FileNotFoundError:
+            return AgentResponse(
+                message=f"Saved {filename} and updated dashboard.json, but systemstatus.json was not found.",
+                draft=out,
+                saved_version=version,
+            )
+
+        return AgentResponse(
+            message=(
+                "Submitted successfully.\n"
+                f"Scope file: {filename}"
+            ),
+            draft=out,
+            saved_version=version,
+        )
+        
     if cmd == "fill":
         state = _FILL_STATE.get(year) or {"in_fill": True, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
         state["in_fill"] = True
@@ -687,7 +757,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         val = answer_raw
         is_na = val.strip().lower() == "na"
 
-        # ---------- S1 ----------
         if active == "s1":
             if step == 0:
                 buf["org"] = val
@@ -725,7 +794,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                     next_question="__FILL__",
                 )
 
-        # ---------- S2 ----------
         if active == "s2":
             items = buf.get("items") if isinstance(buf, dict) else None
             if items is None:
@@ -735,7 +803,12 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             if is_na:
                 clean = [x.strip() for x in items if x.strip()]
                 out = copy.deepcopy(draft)
-                sec = _get_section(out, "org_boundaries", title_prefix="2.")
+                sec = _get_section(
+                    out,
+                    "2_organizational_boundaries",
+                    title_prefix="2.",
+                    alt_ids=["org_boundaries"],
+                )
                 if sec is None:
                     return AgentResponse(message="⚠️ Could not find Section 2 in the document (id/title mismatch).", draft=draft, next_question="__FILL__")
                 sec["bullets"] = clean
@@ -757,7 +830,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             _FILL_STATE[year] = state
             return AgentResponse(message=f"Added: {val}\nAdd another, or type **NA** to finish:", draft=draft, next_question="__FILL__")
 
-        # ---------- S3 ----------
         if active == "s3":
             if step == 0:
                 buf["main"] = None if is_na else val
@@ -777,7 +849,12 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 buf["remote"] = None if is_na else val
 
                 out = copy.deepcopy(draft)
-                sec = _get_section(out, "geo_boundaries", title_prefix="3.")
+                sec = _get_section(
+                    out,
+                    "3_geographic_physical_boundaries",
+                    title_prefix="3.",
+                    alt_ids=["geo_boundaries"],
+                )
                 if sec is None:
                     return AgentResponse(message="⚠️ Could not find Section 3 in the document (id/title mismatch).", draft=draft, next_question="__FILL__")
 
@@ -791,8 +868,9 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 if buf.get("secondary"):
                     bullets.append(_replace_first_bracket_value(tpls[1], buf["secondary"]))
                 if buf.get("remote"):
-                    line = _replace_first_bracket_value(tpls[2], buf["remote"])
-                    bullets.append(line)
+                    bullets.append(
+                        f"The scope extends to the secure management of corporate-issued Windows workstations used by remote employees via {buf['remote']}."
+                    )
 
                 sec["bullets"] = bullets
 
@@ -807,7 +885,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                     next_question="__FILL__",
                 )
 
-        # ---------- S4 ----------
         if active == "s4":
             if step == 0:
                 buf["identity"] = val
@@ -834,7 +911,12 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 buf["network"] = val
 
                 out = copy.deepcopy(draft)
-                sec = _get_section(out, "tech_boundaries", title_prefix="4.")
+                sec = _get_section(
+                    out,
+                    "4_technical_logical_boundaries",
+                    title_prefix="4.",
+                    alt_ids=["tech_boundaries"],
+                )
                 if sec is None:
                     return AgentResponse(message="⚠️ Could not find Section 4 in the document (id/title mismatch).", draft=draft, next_question="__FILL__")
 
@@ -844,8 +926,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
 
                 bullets: List[str] = []
                 bullets.append(_replace_first_bracket_value(tpls[0], buf["identity"]))
-                line2 = re.sub(r"\[[^\]]+\]", buf["server"], tpls[1])
-                bullets.append(line2)
+                bullets.append(re.sub(r"\[[^\]]+\]", buf["server"], tpls[1]))
                 bullets.append(_replace_first_bracket_value(tpls[2], buf["endpoint"]))
                 bullets.append(f"Network Infrastructure: {buf['network']}")
                 sec["bullets"] = bullets
@@ -861,7 +942,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                     next_question="__FILL__",
                 )
 
-        # ---------- S5 ----------
         if active == "s5":
             items = buf.get("items") if isinstance(buf, dict) else None
             if items is None:
@@ -871,7 +951,12 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             if is_na:
                 clean = [x.strip() for x in items if x.strip()]
                 out = copy.deepcopy(draft)
-                sec = _get_section(out, "exclusions", title_prefix="5.")
+                sec = _get_section(
+                    out,
+                    "5_exclusions_justifications",
+                    title_prefix="5.",
+                    alt_ids=["exclusions"],
+                )
                 if sec is None:
                     return AgentResponse(message="⚠️ Could not find Section 5 in the document (id/title mismatch).", draft=draft, next_question="__FILL__")
                 sec["bullets"] = clean
@@ -893,7 +978,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             _FILL_STATE[year] = state
             return AgentResponse(message=f"Added: {val}\nAdd another, or type **NA** to finish:", draft=draft, next_question="__FILL__")
 
-        # ---------- S6 ----------
         if active == "s6":
             if step == 0:
                 buf["customers"] = None if is_na else val
@@ -913,7 +997,12 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 buf["vendors"] = None if is_na else val
 
                 out = copy.deepcopy(draft)
-                sec = _get_section(out, "stakeholders", title_prefix="6.")
+                sec = _get_section(
+                    out,
+                    "6_stakeholders_external_dependencies",
+                    title_prefix="6.",
+                    alt_ids=["stakeholders"],
+                )
                 if sec is None:
                     return AgentResponse(message="⚠️ Could not find Section 6 in the document (id/title mismatch).", draft=draft, next_question="__FILL__")
 
@@ -942,9 +1031,6 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         opts = [LoadOption(id=sid, label=label) for sid, label, _ in sections]
         return AgentResponse(message="Fill state was reset (unexpected state). Choose a section:", draft=draft, load_options=opts, next_question="__FILL__")
 
-    # -------------------------
-    # /exit
-    # -------------------------
     if cmd == "exit":
         state = _FILL_STATE.get(year) or {"in_fill": False, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
         if not state.get("in_fill"):

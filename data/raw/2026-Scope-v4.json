@@ -2,8 +2,8 @@
   "meta": {
     "year": 2026,
     "version": "v4",
-    "title": "2026 ISO 27001 Scope Statement - Financial Services",
-    "industry": "Financial Services",
+    "title": "2026 ISO 27001 Scope Statement - Healthcare Provider",
+    "industry": "Healthcare",
     "created_at": "2026-02-24T00:00:00Z",
     "source_file": "2026-Scope-v4.json"
   },
@@ -11,17 +11,17 @@
     {
       "id": "introduction",
       "title": "1. Introduction and Purpose",
-      "body": "The Information Security Management System (ISMS) of Apex Financial Group is established to protect the confidentiality, integrity, and availability of information assets supporting its digital banking, loan processing, and investment management operations."
+      "body": "The Information Security Management System (ISMS) of MedSecure Health Services is established to protect the confidentiality, integrity, and availability of patient information and clinical systems supporting healthcare delivery operations."
     },
     {
       "id": "organizational_boundaries",
       "title": "2. Organizational Boundaries",
-      "body": "The ISMS applies to the following departments and business units within Apex Financial Group:",
+      "body": "The ISMS applies to the following departments within MedSecure Health Services:",
       "bullets": [
         "Information Technology Department",
-        "Digital Banking Operations",
-        "Risk and Compliance Division",
-        "Customer Support Services"
+        "Clinical Operations",
+        "Medical Records Department",
+        "Billing and Insurance Processing"
       ]
     },
     {
@@ -29,20 +29,20 @@
       "title": "3. Geographic and Physical Boundaries",
       "body": "The scope includes all information processing facilities located at:",
       "bullets": [
-        "New York Headquarters: Including the primary data center hosting core banking servers.",
-        "New Jersey Disaster Recovery Site: Hosting backup domain controllers and DR infrastructure.",
-        "Remote Workforce: Corporate-issued laptops secured through Zero Trust Network Access (ZTNA)."
+        "Main Hospital Campus: Including secure server rooms hosting EHR systems.",
+        "Satellite Clinic Locations: Connected via encrypted MPLS links.",
+        "Remote Access for Physicians via VPN with MFA."
       ]
     },
     {
       "id": "technical_boundaries",
       "title": "4. Technical and Logical Boundaries",
-      "body": "This ISMS encompasses the enterprise financial services ecosystem, specifically:",
+      "body": "This ISMS encompasses the healthcare IT ecosystem, specifically:",
       "bullets": [
-        "Identity Management: Active Directory Domain Services and Azure AD.",
-        "Core Banking Systems: Windows Server-based application and SQL servers.",
-        "Endpoint Management: Microsoft Intune and Defender for Endpoint.",
-        "Network Infrastructure: Firewalls, IDS/IPS, VPN gateways, and secure LAN/WAN environments."
+        "Electronic Health Record (EHR) Systems hosted on Windows Server infrastructure.",
+        "Active Directory and Azure AD for identity management.",
+        "Endpoint Management via Microsoft Endpoint Manager.",
+        "Network segmentation protecting clinical systems and medical devices."
       ]
     },
     {
@@ -50,8 +50,8 @@
       "title": "5. Exclusions and Justifications",
       "body": "The following areas are excluded from the scope:",
       "bullets": [
-        "Third-party payment processors (managed under separate SOC 2 agreements).",
-        "Personal employee devices not enrolled in corporate MDM."
+        "Medical devices not connected to the corporate network.",
+        "Third-party insurance clearinghouses operating under separate compliance programs."
       ]
     },
     {
@@ -59,9 +59,9 @@
       "title": "6. Stakeholders and External Dependencies",
       "body": "The scope accounts for the security requirements of:",
       "bullets": [
-        "Customers utilizing online and mobile banking platforms.",
-        "Regulators including SEC and FINRA.",
-        "Cloud Providers such as Microsoft Azure for hybrid identity services."
+        "Patients and healthcare providers.",
+        "Regulatory compliance with HIPAA and state healthcare regulations.",
+        "Cloud hosting provider Microsoft Azure for backup and disaster recovery."
       ]
     }
   ]

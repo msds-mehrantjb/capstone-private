@@ -1,0 +1,61 @@
+Risk Evaluation
+Purpose: Determine which risks are acceptable.
+
+Example risk matrix:
+
+Score	Risk Level
+1-3	Low
+4-6	Medium
+7-9	High
+
+Decision
+Risk	Decision
+Low	Accept
+Medium	Monitor
+High	Treat
+
+
+Risk Treatment
+Purpose: Define how to reduce risk.
+
+Treatment options:
+Option	Description
+Mitigate	implement controls
+Transfer	insurance
+Avoid		remove system
+Accept		tolerate
+
+
+"hostname": "...",
+"ip_address": "....",
+"role": "....",
+"CIA rating": "....",
+"vulnerability_name": "....",
+"cve": ".....",
+"riskid": "....",
+"risk": "...",
+"evaluation": "",
+"treatment": "...."
+"treatment_action": ""
+"control": ""
+"responsible": ""
+"resources: ""
+"date" : ""
+
+
+"hostname": "....",
+"ip_address": "....",
+"role": "....",
+"CIA rating": "....",
+"vulnerability_name": ".....",
+"cve": "....",
+"riskid": "....",
+"risk": "....",
+"evaluation": "....",
+"root_cause": ""
+"corrective_action": ""
+"preventive_action": ""
+"responsible": ""
+"resources: ""
+"date": ""
+

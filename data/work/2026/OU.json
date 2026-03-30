@@ -1,0 +1,33 @@
+{
+  "nat_configuration": {
+    "public_gateway_ip": "203.0.113.10",
+    "internal_network_summary": {
+      "private_range": "10.0.0.0/24",
+      "subnet_mask": "255.255.255.240"
+    },
+    "subnets": [
+      {
+        "name": "Subnet_A",
+        "gateway_internal": "10.0.0.1",
+        "hosts": [
+          { "id": "Server_01", "internal_ip": "10.0.0.2", "nat_type": "Static (Inbound Access)" },
+          { "id": "Server_02", "internal_ip": "10.0.0.3", "nat_type": "Static (Inbound Access)" },
+          { "id": "WS_01", "internal_ip": "10.0.0.4", "nat_type": "Dynamic (Outbound Only)" },
+          { "id": "WS_02", "internal_ip": "10.0.0.5", "nat_type": "Dynamic (Outbound Only)" },
+          { "id": "WS_03", "internal_ip": "10.0.0.6", "nat_type": "Dynamic (Outbound Only)" }
+        ]
+      },
+      {
+        "name": "Subnet_B",
+        "gateway_internal": "10.0.0.17",
+        "hosts": [
+          { "id": "Server_03", "internal_ip": "10.0.0.18", "nat_type": "Static (Inbound Access)" },
+          { "id": "Server_04", "internal_ip": "10.0.0.19", "nat_type": "Static (Inbound Access)" },
+          { "id": "WS_04", "internal_ip": "10.0.0.20", "nat_type": "Dynamic (Outbound Only)" },
+          { "id": "WS_05", "internal_ip": "10.0.0.21", "nat_type": "Dynamic (Outbound Only)" },
+          { "id": "WS_06", "internal_ip": "10.0.0.22", "nat_type": "Dynamic (Outbound Only)" }
+        ]
+      }
+    ]
+  }
+}

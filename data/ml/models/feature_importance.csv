@@ -1,0 +1,16 @@
+feature,importance
+num__access_intensity,0.09867972
+num__session_per_access,0.081436016
+num__login_failure_rate,0.0769893
+num__log_accessFrequency,0.07180873
+num__behavior_score,0.071618676
+num__log_passwordResets,0.071480274
+num__log_sessionDuration,0.07144283
+num__accessFrequency,0.0688128
+num__session_anomaly,0.06717469
+num__loginConsistency,0.067078866
+num__sessionDuration,0.065894924
+num__passwordResets,0.06566059
+num__failedLoginAttempts,0.06142763
+num__auth_pressure,0.06049498
+num__log_failedLoginAttempts,0.0

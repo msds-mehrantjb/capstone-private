@@ -1,0 +1,272 @@
+{
+  "controls": [
+    {
+      "control_id": "8.2",
+      "control_name": "Network security",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "",
+      "justification": "To protect networks from unauthorized access and exploitation of the vulnerability",
+      "related_risks": [
+        "CVE-2020-1472",
+        "CVE-2022-26923"
+      ],
+      "risk_ids": [
+        "R-001",
+        "R-003"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-001",
+          "risk": "High",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "reason": "To protect networks from unauthorized access and exploitation of the vulnerability"
+        },
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-003",
+          "risk": "High",
+          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
+          "cve": "CVE-2022-26923",
+          "reason": "To control privileged access and prevent escalation of privileges"
+        }
+      ]
+    },
+    {
+      "control_id": "8.21",
+      "control_name": "Network services security",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "",
+      "justification": "To secure the Windows Domain Name System servers and prevent remote code execution vulnerability",
+      "related_risks": [
+        "CVE-2020-1350",
+        "CVE-2022-30190",
+        "CVE-2024-21413"
+      ],
+      "risk_ids": [
+        "R-002",
+        "R-004",
+        "R-007",
+        "R-008"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-002",
+          "risk": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "To secure the Windows Domain Name System servers and prevent remote code execution vulnerability"
+        },
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-004",
+          "risk": "Medium",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "This control is relevant for mitigating the vulnerability as it ensures secure network services, which includes DNS servers."
+        },
+        {
+          "hostname": "WS-01",
+          "role": "User Workstation",
+          "riskid": "R-007",
+          "risk": "Medium",
+          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
+          "cve": "CVE-2022-30190",
+          "reason": "To secure the MSDT (Microsoft Support Diagnostic Tool) network-based exploitation vulnerability and prevent remote code execution attacks."
+        },
+        {
+          "hostname": "WS-01",
+          "role": "User Workstation",
+          "riskid": "R-008",
+          "risk": "Medium",
+          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
+          "cve": "CVE-2024-21413",
+          "reason": "To secure the network services and prevent exploitation of this vulnerability"
+        }
+      ]
+    },
+    {
+      "control_id": "8.24",
+      "control_name": "Cryptography",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "",
+      "justification": "To protect data and prevent unauthorized access due to the high Windows LSA Spoofing Vulnerability CVE-2021-36942",
+      "related_risks": [
+        "CVE-2021-36942"
+      ],
+      "risk_ids": [
+        "R-005"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-005",
+          "risk": "High",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "reason": "To protect data and prevent unauthorized access due to the high Windows LSA Spoofing Vulnerability CVE-2021-36942"
+        }
+      ]
+    },
+    {
+      "control_id": "8.28",
+      "control_name": "Secure coding",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "",
+      "justification": "To reduce vulnerabilities in software development and minimize the risk of similar elevation of privilege vulnerabilities",
+      "related_risks": [
+        "CVE-2020-1472",
+        "CVE-2020-1350",
+        "CVE-2022-30190"
+      ],
+      "risk_ids": [
+        "R-001",
+        "R-002",
+        "R-004",
+        "R-007"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-001",
+          "risk": "High",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "reason": "To reduce vulnerabilities in software development and minimize the risk of similar elevation of privilege vulnerabilities"
+        },
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-002",
+          "risk": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "To reduce vulnerabilities in the implementation of the Windows DNS Server and prevent exploitation of the CVE-2020-1350 vulnerability"
+        },
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-004",
+          "risk": "Medium",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "This control is relevant for reducing the risk of similar vulnerabilities in the future by ensuring that software is developed with security in mind."
+        },
+        {
+          "hostname": "WS-01",
+          "role": "User Workstation",
+          "riskid": "R-007",
+          "risk": "Medium",
+          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
+          "cve": "CVE-2022-30190",
+          "reason": "To reduce the risk of vulnerabilities in the calling application, such as Word, that could be exploited by an attacker to run arbitrary code with elevated privileges."
+        }
+      ]
+    },
+    {
+      "control_id": "8.29",
+      "control_name": "Security testing",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "",
+      "justification": "To validate the security controls implemented to mitigate the remote code execution vulnerability",
+      "related_risks": [
+        "CVE-2020-1350"
+      ],
+      "risk_ids": [
+        "R-002"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-002",
+          "risk": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "To validate the security controls implemented to mitigate the remote code execution vulnerability"
+        }
+      ]
+    },
+    {
+      "control_id": "8.8",
+      "control_name": "Technical vulnerability management",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "",
+      "justification": "The vulnerability is a technical issue and requires proper vulnerability management to identify, assess, and remediate the issue.",
+      "related_risks": [
+        "CVE-2020-1472",
+        "CVE-2020-1350",
+        "CVE-2022-26923",
+        "CVE-2024-21413"
+      ],
+      "risk_ids": [
+        "R-001",
+        "R-002",
+        "R-003",
+        "R-004",
+        "R-008"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-001",
+          "risk": "High",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "reason": "The vulnerability is a technical issue and requires proper vulnerability management to identify, assess, and remediate the issue."
+        },
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-002",
+          "risk": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "This control is responsible for managing vulnerabilities, which aligns with the risk of a high-level remote code execution vulnerability."
+        },
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-003",
+          "risk": "High",
+          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
+          "cve": "CVE-2022-26923",
+          "reason": "To manage the identified technical vulnerability (CVE-2022-26923) and ensure prompt remediation"
+        },
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-004",
+          "risk": "Medium",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "This control is responsible for managing vulnerabilities and ensures that the medium-level Windows DNS Server Remote Code Execution CVE-2020-1350 is properly assessed, prioritized, and mitigated."
+        },
+        {
+          "hostname": "WS-01",
+          "role": "User Workstation",
+          "riskid": "R-008",
+          "risk": "Medium",
+          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
+          "cve": "CVE-2024-21413",
+          "reason": "To manage and patch the identified vulnerability in Microsoft Outlook"
+        }
+      ]
+    }
+  ]
+}

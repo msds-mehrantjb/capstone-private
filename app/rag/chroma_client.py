@@ -1,26 +1,27 @@
-# app/rag/chroma_client.py
-
-from __future__ import annotations
-
-import os
-from functools import lru_cache
+from pathlib import Path
 import chromadb
+from sentence_transformers import SentenceTransformer
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+CHROMA_DIR = BASE_DIR / "app" / "chroma_db"
+COLLECTION_NAME = "iso27001_knowledge"
+EMBED_MODEL = "all-MiniLM-L6-v2"
 
 
-def _default_db_path() -> str:
-    # project-root/storage/chroma_db
-    # This file is located at app/rag/chroma_client.py, so go up 2 levels -> project root
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    return os.path.join(base_dir, "storage", "chroma_db")
+class ChromaKnowledgeClient:
+    def __init__(self):
+        self.client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+        self.embedder = SentenceTransformer(EMBED_MODEL)
+        self.collection = self.client.get_collection(COLLECTION_NAME)
+
+    def search(self, text: str, n_results: int = 5, where: dict | None = None):
+        embedding = self.embedder.encode([text]).tolist()[0]
+        return self.collection.query(
+            query_embeddings=[embedding],
+            n_results=n_results,
+            where=where
+        )
 
 
-@lru_cache(maxsize=1)
-def get_chroma_client() -> chromadb.PersistentClient:
-    db_path = _default_db_path()
-    os.makedirs(db_path, exist_ok=True)
-    return chromadb.PersistentClient(path=db_path)
-
-
-def get_or_create_collection(name: str):
-    client = get_chroma_client()
-    return client.get_or_create_collection(name=name)
+def get_chroma_client() -> ChromaKnowledgeClient:
+    return ChromaKnowledgeClient()

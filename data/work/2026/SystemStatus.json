@@ -1,0 +1,26 @@
+{
+  "meta": {
+    "name": "System Status",
+    "version": "1.0"
+  },
+  "sections": {
+    "scope_context": {
+      "status": "Not Started"
+    },
+    "assets_cia": {
+      "status": "Not Started"
+    },
+    "risk_analysis": {
+      "status": "Not Started"
+    },
+    "risk_evaluation_treatment": {
+      "status": "In Progress"
+    },
+    "annex_a_soa": {
+      "status": "In Progress"
+    },
+    "action_plan_implementation": {
+      "status": "Blocked"
+    }
+  }
+}

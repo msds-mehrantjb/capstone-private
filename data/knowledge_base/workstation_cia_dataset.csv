@@ -1,0 +1,26 @@
+Workstation Role,Confidentiality,Integrity,Availability
+Standard Employee Workstation,Moderate,Moderate,Moderate
+Developer Workstation,High,High,Moderate
+System Administrator Workstation,High,High,High
+Privileged Access Workstation (PAW),High,High,High
+Security Analyst Workstation,High,High,High
+Finance Workstation,High,High,Moderate
+HR Workstation,High,High,Moderate
+Executive Workstation,High,High,High
+Call Center Workstation,Moderate,Moderate,Moderate
+Healthcare / Medical Workstation,High,High,High
+Engineering / CAD Workstation,High,High,Moderate
+Research Workstation,High,High,Moderate
+Data Scientist Workstation,High,High,Moderate
+SOC Monitoring Workstation,Moderate,High,High
+Kiosk / Public Access Workstation,Low,Moderate,High
+Training Lab Workstation,Low,Moderate,Moderate
+Student Lab Workstation,Low,Moderate,Moderate
+Manufacturing Floor Workstation,Moderate,High,High
+Industrial Control Workstation,Moderate,High,High
+POS Terminal Workstation,Moderate,High,High
+VDI Client Workstation,Moderate,Moderate,High
+Remote Worker Laptop,High,High,Moderate
+Contractor Workstation,Moderate,Moderate,Moderate
+Testing / QA Workstation,Moderate,High,Moderate
+Build Engineering Workstation,High,High,Moderate

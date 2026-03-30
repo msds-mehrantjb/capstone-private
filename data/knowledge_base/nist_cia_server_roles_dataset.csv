@@ -1,0 +1,101 @@
+Server Role,Confidentiality,Integrity,Availability
+Domain Controller (Active Directory),High,High,High
+LDAP Server,High,High,High
+Identity Provider (IdP / SSO),High,High,High
+Kerberos Authentication Server,High,High,High
+Privileged Access Management (PAM),High,High,High
+Certificate Authority (Root CA),High,High,High
+Certificate Authority (Subordinate CA),High,High,High
+OCSP / CRL Distribution Server,Moderate,High,High
+DNS Server,Low,High,High
+DHCP Server,Low,Moderate,High
+NTP Time Server,Low,High,High
+Network Configuration Server,Moderate,High,High
+VPN Gateway,High,High,High
+Remote Access Server,High,High,High
+Firewall Management Server,Moderate,High,High
+Load Balancer,Low,High,High
+Reverse Proxy,Moderate,High,High
+Public Web Server,Low,Moderate,High
+Internal Web Server,Moderate,High,Moderate
+Web Application Firewall (WAF),Moderate,High,High
+API Gateway,Moderate,High,High
+Application Server,Moderate,High,High
+Microservice Host,Moderate,High,High
+Middleware Server,Moderate,High,High
+Message Queue Server,Moderate,High,High
+Database Server,High,High,Moderate
+Database Cluster Node,High,High,High
+Data Warehouse Server,High,High,Moderate
+ETL Processing Server,Moderate,High,Moderate
+File Server,High,High,Moderate
+Network Attached Storage (NAS),High,High,Moderate
+Storage Array Controller,High,High,High
+Object Storage Server,High,High,Moderate
+Backup Server,High,High,Moderate
+Disaster Recovery Server,High,High,High
+Email Server,Moderate,High,High
+Email Gateway,Moderate,High,High
+Spam Filter Server,Low,Moderate,High
+Collaboration Server,Moderate,High,High
+Messaging Server,Moderate,High,High
+VoIP / PBX Server,Low,Moderate,High
+Video Conferencing Server,Low,Moderate,High
+SIEM Server,High,High,Moderate
+Security Log Server,High,High,Moderate
+IDS Management Server,Moderate,High,High
+IPS Management Server,Moderate,High,High
+Vulnerability Scanner,Moderate,High,Moderate
+Endpoint Security Management Server,High,High,High
+Threat Intelligence Platform,Moderate,High,Moderate
+Security Orchestration (SOAR) Server,High,High,High
+Configuration Management Server,High,High,High
+Patch Management Server,Moderate,High,High
+Monitoring Server,Moderate,High,High
+Hypervisor Host,High,High,High
+Hypervisor Management Server,High,High,High
+Virtualization Controller,High,High,High
+Cloud Management Platform,High,High,High
+Container Orchestration Master,High,High,High
+Container Registry,Moderate,High,Moderate
+DevOps Automation Server,High,High,High
+Source Code Repository,High,High,Moderate
+CI/CD Pipeline Server,High,High,High
+Artifact Repository,Moderate,High,Moderate
+Build Server,Moderate,High,Moderate
+Test Automation Server,Moderate,High,Moderate
+Package Repository,Moderate,High,Moderate
+Mobile Device Management (MDM),High,High,High
+Identity Governance Server,High,High,High
+Access Review Server,High,High,High
+Audit Management Server,Moderate,High,Moderate
+Compliance Reporting Server,Moderate,High,Moderate
+Data Loss Prevention Server,High,High,High
+Encryption Key Management Server,High,High,High
+HSM Management Server,High,High,High
+Print Server,Low,Moderate,Moderate
+License Management Server,Low,Moderate,Moderate
+Update Mirror Server,Low,Moderate,Moderate
+Proxy Server,Low,High,High
+Content Filtering Server,Low,Moderate,High
+DNSSEC Signing Server,Moderate,High,High
+Directory Synchronization Server,High,High,High
+Federation Server,High,High,High
+Remote Desktop Gateway,High,High,High
+Terminal Services Host,Moderate,High,High
+Application Streaming Server,Moderate,High,Moderate
+File Transfer Server (SFTP/FTPS),Moderate,High,High
+Media Streaming Server,Low,Moderate,High
+Search Index Server,Low,Moderate,Moderate
+Analytics Processing Server,Moderate,High,Moderate
+Machine Learning Training Server,Moderate,High,Moderate
+Machine Learning Inference Server,Moderate,High,High
+Telemetry Collection Server,Low,High,Moderate
+IoT Management Server,Moderate,High,High
+Edge Compute Node,Low,Moderate,High
+CDN Edge Node,Low,Moderate,High
+Gateway Aggregation Server,Moderate,High,High
+Policy Management Server,High,High,High
+Secrets Management Server,High,High,High
+Service Discovery Server,Moderate,High,High
+Configuration Database (CMDB) Server,High,High,Moderate

@@ -1,0 +1,23 @@
+User_Activity_Dataset
+
+- failedLoginAttempts: A direct indicator of either poor user memory or brute-force attempts.
+- accessFrequency: Number of times a user accessed the system within the profiling window.
+- loginConsistency: Measures how predictably a user logs in (e.g., same times/days).
+deviceConsistency: Tracks if the user is using familiar devices (0 = new/unknown).
+accessLocationConsistency: Are they logging in from expected geo-zones?
+dwellTime: Time actively spent during the session (in seconds).
+mouseMovements, scrollBehavior: Subtle cues that indicate "humanness" — used to detect bots, fatigue, or impersonation.
+incidentReports: Number of alerts triggered due to policy or behavioral violations.
+passwordResets: Self-service or forced resets — often signs of account insecurity.
+anomalousActivity: Binary flag (1 = something off), typically flagged by an AI/ML anomaly engine.
+failedTransactions: Operations attempted but not successfully executed, possibly unauthorized access to functions or errors due to unfamiliar environments.
+sessionDuration: Total time (HH:MM:SS) the session remained open.
+mfaEnabled: Is Multi-Factor Authentication active? (1 = Yes, 0 = No)
+accessToSensitiveData: Whether this session accessed confidential datasets or restricted zones.
+
+
+"failedLoginAttempts"
+"accessFrequency"
+"loginConsistency": Measures how predictably a user logs in (e.g., same times/days).
+"passwordResets"
+"sessionDuration":  Total time (HH:MM:SS) the session remained open.

@@ -1,25 +1,22 @@
 from fastapi import APIRouter, HTTPException
 from pathlib import Path
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 router = APIRouter(prefix="/api/scope", tags=["scope"])
 
 
 def _default_scope(year: int) -> dict:
-    """
-    Creates ISO 27001 Scope Statement template
-    with all placeholders preserved.
-    """
     return {
         "meta": {
             "year": year,
             "version": "v0",
             "title": "ISO 27001 Scope Statement",
             "template_name": "ISO 27001 Scope Statement Template",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "placeholders_retained": True,
+            "source_file": f"{year}-Scope-Draft-v0.json",
         },
         "sections": [
             {
@@ -86,54 +83,100 @@ def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
 
-def _data_dir() -> Path:
+def _scope_data_dir() -> Path:
     d = _project_root() / "data" / "raw"
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
-def _system_status_path() -> Path:
-    return _data_dir() / "SystemStatus.json"
+def _dashboard_path() -> Path:
+    return _project_root() / "data" / "raw" / "dashboard.json"
 
 
-def _read_system_status() -> dict:
-    p = _system_status_path()
+def _read_dashboard() -> dict:
+    p = _dashboard_path()
     if not p.exists():
-        raise HTTPException(status_code=404, detail=f"SystemStatus.json not found at: {p}")
+        raise HTTPException(status_code=404, detail=f"dashboard.json not found at: {p}")
+
     try:
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to read SystemStatus.json: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to read dashboard.json: {e}")
 
 
-# ---- NEW: filename validation (prevents ../ traversal) ----
 _SCOPE_FILE_RE = re.compile(r"^\d{4}-Scope(?:-[A-Za-z0-9_]+)?-v\d+\.json$")
+_SCOPE_VERSION_RE = re.compile(r"^(\d{4}-Scope(?:-[A-Za-z0-9_]+)?)-v(\d+)\.json$")
+
+
+def _default_draft_filename(year: int) -> str:
+    return f"{year}-Scope-Draft-v0.json"
+
+
+def _ensure_default_draft_exists(year: int) -> Path:
+    p = _scope_data_dir() / _default_draft_filename(year)
+    if not p.exists():
+        p.write_text(
+            json.dumps(_default_scope(year), indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+    return p
 
 
 def _validate_scope_filename(year: int, filename: str) -> str:
     filename = (filename or "").strip()
+
     if not filename:
         raise HTTPException(status_code=400, detail="filename is required")
 
-    # must match 2026-Scope-Anything-v3.json or 2026-Scope-v3.json
     if not _SCOPE_FILE_RE.match(filename):
         raise HTTPException(status_code=400, detail=f"Invalid scope filename: {filename}")
 
-    # must belong to this year
     if not filename.startswith(f"{year}-Scope"):
         raise HTTPException(status_code=400, detail=f"Filename year mismatch: {filename}")
 
     return filename
 
 
+def _latest_scope_filename(year: int) -> str | None:
+    scope_dir = _scope_data_dir()
+    latest_name = None
+    latest_version = -1
+
+    for p in scope_dir.glob(f"{year}-Scope*.json"):
+        m = _SCOPE_VERSION_RE.match(p.name)
+        if not m:
+            continue
+
+        version_num = int(m.group(2))
+        if version_num > latest_version:
+            latest_version = version_num
+            latest_name = p.name
+
+    return latest_name
+
+
+def _scope_filename_from_dashboard(year: int) -> str | None:
+    dashboard = _read_dashboard()
+
+    filename = (dashboard.get("scope_file_name") or "").strip()
+    if filename:
+        return _validate_scope_filename(year, filename)
+
+    scope = dashboard.get("scope") or {}
+    filename = (scope.get("scope_file_name") or "").strip()
+    if filename:
+        return _validate_scope_filename(year, filename)
+
+    return None
+
+
 def _load_or_create(year: int, filename: str) -> dict:
-    data_dir = _data_dir()
-    p = data_dir / filename
+    scope_dir = _scope_data_dir()
+    p = scope_dir / filename
 
     if not p.exists():
-        # create ONLY the v0 template if it's requested/missing
-        if filename == f"{year}-Scope-v0.json":
-            p.write_text(json.dumps(_default_scope(year), indent=2, ensure_ascii=False), encoding="utf-8")
+        if filename == _default_draft_filename(year):
+            _ensure_default_draft_exists(year)
         else:
             raise HTTPException(status_code=404, detail=f"Scope file not found: {filename}")
 
@@ -149,28 +192,44 @@ def _load_or_create(year: int, filename: str) -> dict:
 
 @router.get("/context")
 def get_scope_context(year: int = 2026):
-    """
-    Loads the scope doc based on SystemStatus.json sections.scope_context.scope_file_name
-    Falls back to {year}-Scope-v0.json if missing.
-    """
-    sys = _read_system_status()
-    scope_ctx = ((sys.get("sections") or {}).get("scope_context") or {})
-    filename = scope_ctx.get("scope_file_name") or f"{year}-Scope-v0.json"
+    default_filename = _default_draft_filename(year)
+    _ensure_default_draft_exists(year)
 
-    # validate only if not v0 fallback (v0 is always acceptable)
-    if filename != f"{year}-Scope-v0.json":
-        filename = _validate_scope_filename(year, filename)
+    filename = _scope_filename_from_dashboard(year)
+    if filename:
+        p = _scope_data_dir() / filename
 
-    return _load_or_create(year, filename)
+        if p.exists():
+            doc = _load_or_create(year, filename)
+            doc.setdefault("meta", {})
+            doc["meta"]["fallback_used"] = False
+            doc["meta"]["missing_saved_file"] = None
+            doc["meta"]["popup_message"] = None
+            return doc
+
+        doc = _load_or_create(year, default_filename)
+        doc.setdefault("meta", {})
+        doc["meta"]["fallback_used"] = True
+        doc["meta"]["missing_saved_file"] = filename
+        doc["meta"]["popup_message"] = (
+            f'The scope file "{filename}" is missing. '
+            f'Load the default scope template "{default_filename}".'
+        )
+        return doc
+
+    latest = _latest_scope_filename(year)
+    if latest:
+        return _load_or_create(year, latest)
+
+    doc = _load_or_create(year, default_filename)
+    doc.setdefault("meta", {})
+    doc["meta"]["fallback_used"] = False
+    doc["meta"]["missing_saved_file"] = None
+    doc["meta"]["popup_message"] = None
+    return doc
 
 
-# ✅ NEW ENDPOINT used by Dashboard.tsx
 @router.get("/file")
 def get_scope_by_filename(year: int = 2026, filename: str = ""):
-    """
-    Loads a scope doc by exact filename (must match naming convention).
-    Example:
-      /api/scope/file?year=2026&filename=2026-Scope-v2.json
-    """
     filename = _validate_scope_filename(year, filename)
     return _load_or_create(year, filename)

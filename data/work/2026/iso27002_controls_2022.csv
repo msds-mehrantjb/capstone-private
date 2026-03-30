@@ -1,0 +1,94 @@
+Section,Control,Title,Status,Purpose
+Organizational,5.1,Policies for information security,Existing,Ensure suitability adequacy and effectiveness of management direction and support for information security
+Organizational,5.2,Information security roles and responsibilities,Existing,Ensure a defined approved and understood structure is in place
+Organizational,5.3,Segregation of duties,Existing,Reduce risk of fraud error and bypassing controls
+Organizational,5.4,Management responsibilities,Existing,Require personnel to apply information security policies
+Organizational,5.5,Contact with authorities,Existing,Establish and maintain contact with authorities
+Organizational,5.6,Contact with special interest groups,Existing,Ensure appropriate information flow
+Organizational,5.7,Threat intelligence,NEW,Provide awareness of threat environment
+Organizational,5.8,Information security in project management,Existing,Ensure risks in projects are addressed
+Organizational,5.9,Inventory of information and assets,Changed,Identify assets to preserve security
+Organizational,5.10,Acceptable use of assets,Changed,Define rules for acceptable use
+Organizational,5.11,Return of assets,Existing,Protect assets during termination or change
+Organizational,5.12,Classification of information,Existing,Ensure understanding of protection needs
+Organizational,5.13,Labelling of information,Existing,Facilitate classification communication
+Organizational,5.14,Information transfer,Existing,Maintain security during transfer
+Organizational,5.15,Access control,Existing,Ensure authorized access
+Organizational,5.16,Identity management,NEW,Enable unique identification
+Organizational,5.17,Authentication information,NEW,Ensure proper authentication
+Organizational,5.18,Access rights,Changed,Ensure access is authorized
+Organizational,5.19,Supplier relationships,Existing,Maintain security in supplier relationships
+Organizational,5.20,Supplier agreements,Existing,Maintain agreed security level
+Organizational,5.21,ICT supply chain,NEW,Secure supply chain
+Organizational,5.22,Supplier monitoring,Changed,Ensure service delivery security
+Organizational,5.23,Cloud services security,NEW,Manage cloud security
+Organizational,5.24,Incident management planning,Changed,Ensure effective response
+Organizational,5.25,Event assessment,Existing,Ensure event prioritization
+Organizational,5.26,Incident response,Existing,Ensure effective response
+Organizational,5.27,Learning from incidents,Existing,Reduce recurrence
+Organizational,5.28,Collection of evidence,Existing,Ensure evidence handling
+Organizational,5.29,Security during disruption,Changed,Protect during disruption
+Organizational,5.30,ICT readiness for continuity,NEW,Ensure availability
+Organizational,5.31,Legal requirements,Existing,Ensure compliance
+Organizational,5.32,Intellectual property rights,Existing,Ensure compliance
+Organizational,5.33,Protection of records,Existing,Ensure availability
+Organizational,5.34,Privacy and PII protection,Existing,Protect personal data
+Organizational,5.35,Independent review,Existing,Ensure effectiveness
+Organizational,5.36,Compliance with policies,Existing,Ensure adherence
+Organizational,5.37,Operating procedures,Existing,Ensure secure operations
+People,6.1,Screening,Existing,Ensure personnel suitability
+People,6.2,Terms and conditions,Existing,Ensure responsibilities are understood
+People,6.3,Security awareness training,Existing,Ensure awareness of responsibilities
+People,6.4,Disciplinary process,Existing,Ensure consequences for violations
+People,6.5,Responsibilities after termination,Existing,Protect organizational interests
+People,6.6,Confidentiality agreements,Existing,Maintain confidentiality
+People,6.7,Remote working,NEW,Ensure security in remote work
+People,6.8,Event reporting,Existing,Ensure timely reporting
+Physical,7.1,Physical security perimeter,Existing,Prevent unauthorized access
+Physical,7.2,Physical entry,Existing,Ensure authorized access
+Physical,7.3,Securing facilities,Existing,Prevent damage and interference
+Physical,7.4,Physical security monitoring,Existing,Detect unauthorized access
+Physical,7.5,Environmental protection,Existing,Reduce physical risks
+Physical,7.6,Working in secure areas,Existing,Protect assets
+Physical,7.7,Clear desk and screen,Existing,Prevent unauthorized access
+Physical,7.8,Equipment protection,Existing,Reduce risks
+Physical,7.9,Assets off-premises,Existing,Prevent loss or theft
+Physical,7.10,Storage media,NEW,Control data handling
+Physical,7.11,Supporting utilities,Existing,Prevent failures
+Physical,7.12,Cabling security,Existing,Prevent compromise
+Physical,7.13,Equipment maintenance,Existing,Ensure proper operation
+Physical,7.14,Secure disposal,Existing,Prevent data leakage
+Technological,8.1,User endpoint devices,NEW,Protect endpoint risks
+Technological,8.2,Privileged access rights,Existing,Control privileged access
+Technological,8.3,Information access restriction,Existing,Prevent unauthorized access
+Technological,8.4,Access to source code,Existing,Protect intellectual property
+Technological,8.5,Secure authentication,Existing,Ensure secure authentication
+Technological,8.6,Capacity management,Existing,Ensure adequate capacity
+Technological,8.7,Protection against malware,Existing,Prevent malware attacks
+Technological,8.8,Technical vulnerability management,Existing,Manage vulnerabilities
+Technological,8.9,Configuration management,Existing,Ensure secure configurations
+Technological,8.10,Information deletion,NEW,Prevent data exposure
+Technological,8.11,Data masking,NEW,Protect sensitive data
+Technological,8.12,Data leakage prevention,NEW,Prevent data exfiltration
+Technological,8.13,Information backup,Existing,Enable recovery
+Technological,8.14,Redundancy,Existing,Ensure availability
+Technological,8.15,Logging,Existing,Record events
+Technological,8.16,Monitoring activities,Existing,Detect anomalies
+Technological,8.17,Clock synchronization,Existing,Support event analysis
+Technological,8.18,Privileged utilities,Existing,Control tools usage
+Technological,8.19,Software installation,Existing,Protect systems
+Technological,8.20,Network security,Existing,Protect networks
+Technological,8.21,Network services security,Existing,Secure services
+Technological,8.22,Network segregation,Existing,Control traffic
+Technological,8.23,Web filtering,NEW,Prevent malicious access
+Technological,8.24,Cryptography,Existing,Protect data
+Technological,8.25,Secure SDLC,Existing,Secure development
+Technological,8.26,Application security requirements,NEW,Define requirements
+Technological,8.27,Secure architecture,NEW,Ensure secure design
+Technological,8.28,Secure coding,Existing,Reduce vulnerabilities
+Technological,8.29,Security testing,Existing,Validate security
+Technological,8.30,Outsourced development,Existing,Ensure security
+Technological,8.31,Environment separation,Existing,Protect production
+Technological,8.32,Change management,Existing,Maintain security
+Technological,8.33,Test information,Existing,Protect test data
+Technological,8.34,System audit protection,NEW,Minimize audit impact

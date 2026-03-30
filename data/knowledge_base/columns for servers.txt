@@ -1,0 +1,31 @@
+columns for servers
+
+
+Column	Description	Example
+hostname	Server name	SRV-01
+os_family	OS family	Windows Server
+os_version	OS version	 2019
+cpu_cores	CPU	8
+memory_gb	RAM	16
+gpu_present	GPU	True
+domain_joined	AD joined	True
+virtualization	Virtual or Physical	Virtual
+open_ports	Open ports	53;88;389
+running_services	Services detected	DNS;Kerberos;LDAP
+
+
+Columns for workstations
+
+Column	Description	Example
+hostname	PC name	WS-01
+os_family	OS	Windows
+os_version	Version	 11
+cpu_cores	CPU	8
+memory_gb	RAM	16
+gpu_present	GPU	True
+domain_joined	AD joined	True
+open ports
+running services
+software indicators
+AD GROUPS
+PRIVILEDGE LEVEL

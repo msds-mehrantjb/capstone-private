@@ -3,7 +3,6 @@ Capstone-main/
 ├── app/
 │   │
 │   ├── main.py
-│   ├── main2.py
 │   │
 │   ├── agent/
 │   │   ├── collectors/

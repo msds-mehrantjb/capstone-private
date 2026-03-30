@@ -1,0 +1,74 @@
+{
+  "hosts": [
+    {
+      "hostname": "SRV-01",
+      "ip_address": "10.0.0.2",
+      "role": "Domain Controller",
+      "CIA rating": "Critical",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "SRV-02",
+      "ip_address": "10.0.0.3",
+      "role": "DNS Server",
+      "CIA rating": "High",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "WS-01",
+      "ip_address": "10.0.0.10",
+      "role": "User Workstation",
+      "CIA rating": "Medium",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "WS-02",
+      "ip_address": "10.0.0.11",
+      "role": "User Workstation",
+      "CIA rating": "Medium",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "WS-03",
+      "ip_address": "10.0.0.12",
+      "role": "User Workstation",
+      "CIA rating": "Medium",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "SRV-03",
+      "ip_address": "10.0.0.18",
+      "role": "File Server",
+      "CIA rating": "High",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "SRV-04",
+      "ip_address": "10.0.0.19",
+      "role": "Web Server",
+      "CIA rating": "High",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "WS-04",
+      "ip_address": "10.0.0.26",
+      "role": "User Workstation",
+      "CIA rating": "Medium",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "WS-05",
+      "ip_address": "10.0.0.27",
+      "role": "User Workstation",
+      "CIA rating": "Medium",
+      "vulnerabilities_threats": []
+    },
+    {
+      "hostname": "WS-06",
+      "ip_address": "10.0.0.28",
+      "role": "User Workstation",
+      "CIA rating": "Medium",
+      "vulnerabilities_threats": []
+    }
+  ]
+}

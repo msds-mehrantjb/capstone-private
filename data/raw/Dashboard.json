@@ -1,9 +1,8 @@
 {
   "environment": "Production",
   "scope": {
-    "name": "Project Management: Mehran Tajbakhsh",
-    "asset_count": 0,
-    "status": "Success"
+    "name": "2026 ISO 27001 Scope Statement - Financial Services",
+    "asset_count": 0
   },
   "kpis": {
     "readiness_score": {
@@ -27,62 +26,21 @@
       "pending_approvals": 0
     }
   },
-  "lifecycle": [
-    {
-      "step": 1,
-      "status": "Completed",
-      "name": "Scope & Context"
-    },
-    {
-      "step": 2,
-      "status": "blocked"
-    },
-    {
-      "step": 3,
-      "status": "blocked"
-    },
-    {
-      "step": 4,
-      "status": "blocked"
-    },
-    {
-      "step": 5,
-      "status": "blocked"
-    },
-    {
-      "step": 6,
-      "status": "blocked"
-    },
-    {
-      "step": 7,
-      "status": "blocked"
-    },
-    {
-      "step": 8,
-      "status": "blocked"
-    },
-    {
-      "step": 9,
-      "status": "blocked"
-    },
-    {
-      "step": 10,
-      "status": "blocked"
-    },
-    {
-      "step": 11,
-      "status": "blocked"
-    }
-  ],
   "blockers": [],
+  "scope_context_section2": {
+    "title": "Scope & Context — Section 2 (Organizational Boundaries)",
+    "bullets": [
+      "Information Technology Department",
+      "Digital Banking Operations",
+      "Risk and Compliance Division",
+      "Customer Support Services"
+    ]
+  },
   "scopes": [
     {
-      "name": "Project Management: Mehran Tajbakhsh",
-      "asset_count": 0
-    },
-    {
-      "name": "Technical Research & Development",
+      "name": "2026 ISO 27001 Scope Statement - Financial Services",
       "asset_count": 0
     }
-  ]
+  ],
+  "scope_file_name": "2026-Scope-v7.json"
 }

@@ -1,0 +1,270 @@
+Risk Analysis
+
+Risk = Impact x Likelihood x (1 + behavioral Risk)
+
+
+Likelihood inputs :
+CIA ratings
+CVSS scores
+Exploit availability
+Patch status
+Exposure (internet/internal)
+Asset role
+
+All above input except Exposures can be found in AssetVulnerabilitiesThreats.json file
+
+For exposures use following algorithm:  
+Exposure Levels 
+Level	Description
+Very Low	Isolated / no network access
+Low		Internal only, segmented
+Medium		Internal + limited access
+High		Internal + external indirect
+Critical	Directly internet-facing
+
+How to Detect Exposure 
+You need to combine network position + services + controls
+
+A. Check if Host is Internet-Facing
+Method 1: Public IP Detection
+Method 2: External Scan (Best Practice)
+If ports are open → CRITICAL exposure
+
+B. Open Ports & Services 
+You already scan ports — use that:
+
+Risky ports:
+Port	Service	Exposure Impact
+3389	RDP	Very high
+445	SMB	Critical
+22	SSH	High
+80/443	Web	Medium–High
+1433	SQL	Critical
+
+More open ports = higher exposure
+C. Network Zone Detection (VERY IMPORTANT)
+
+Classify host location:
+Zone		Exposure
+DMZ		High
+Internal LAN	Medium
+Segmented VLAN	Low
+Air-gapped	Very Low
+
+D. Firewall & ACL Analysis
+Windows Firewall status
+Open inbound rules
+
+E. Service Accessibility
+Even if port is open:
+Is it:
+Authenticated?
+Anonymous?
+Encrypted?
+
+Example:
+SMB without auth → Critical
+HTTPS with auth → Medium
+
+F. Domain Role Awareness (You already do this)
+Exposure depends on role:
+Role	Exposure Sensitivity
+Domain Controller	Very sensitive
+Web Server		High
+Workstation		Medium
+Backup Server		Critical
+
+
+def calculate_exposure(host):
+    score = 0
+
+    if host.is_internet_facing:
+        score += 5
+
+    score += len(host.open_ports) * 0.5
+
+    if host.has_critical_ports:
+        score += 3
+
+    if host.firewall_disabled:
+        score += 2
+
+    if host.in_dmz:
+        score += 2
+
+    return min(score, 5)
+
+Map score → level:
+
+Score	Exposure
+0–1	Very Low
+1–2	Low
+2–3	Medium
+3–4	High
+4–5	Critical
+
+
+Likelihood Formula
+
+Likelihood =  0.20 × CVSSₙ + 0.35 × Exploitₙ + 0.15 × Patchₙ + 0.15 × Exposureₙ + 0.10 × Roleₙ + 0.05 × CIAₙ x (1 + ML_probability)
+
+1. CVSSₙ (Normalized CVSS Score)
+
+Definition:
+Represents the intrinsic technical severity of a vulnerability based on CVSS.
+
+Purpose:
+Shows how severe and exploitable a vulnerability is, independent of the environment.
+
+Calculation:
+CVSSₙ = CVSS Score / 10
+
+Range:
+0.0 to 1.0
+
+Examples:
+
+CVSS 9.8 → 0.98
+
+CVSS 6.5 → 0.65
+
+2. Exploitₙ (Exploit Availability / Probability)
+
+Definition:
+Represents how likely the vulnerability is to be exploited in the real world.
+
+Purpose:
+This is the most important factor in likelihood. It reflects attacker activity and exploit maturity.
+
+Options:
+
+Use EPSS score (preferred) → value between 0 and 1
+
+Or use a mapped score based on exploit availability
+
+Typical Mapping:
+
+No exploit known → 0.10
+
+Theoretical exploit → 0.30
+
+Public PoC → 0.60
+
+Weaponized exploit → 0.85
+
+Active exploitation → 1.00
+
+Range:
+0.0 to 1.0
+
+3. Patchₙ (Patch Status)
+
+Definition:
+Indicates whether the vulnerability has been fixed or is still exploitable.
+
+Purpose:
+Represents the window of opportunity for attackers.
+
+Typical Mapping:
+
+Fully patched → 0.05
+
+Patch available but not applied → 0.70
+
+No patch / unsupported system → 1.00
+
+Partial mitigation → 0.50
+
+Range:
+0.0 to 1.0
+
+4. Exposureₙ (Network Exposure)
+
+Definition:
+Represents how accessible the asset is to attackers.
+
+Purpose:
+Higher exposure increases the chance of attack.
+
+Typical Mapping:
+
+Air-gapped → 0.05
+
+Internal (segmented) → 0.25
+
+Internal (flat network) → 0.50
+
+Partner / VPN exposed → 0.70
+
+Internet-facing → 1.00
+
+Range:
+0.0 to 1.0
+
+5. Roleₙ (Asset Role Criticality / Attractiveness)
+
+Definition:
+Represents how valuable or attractive the asset is to attackers based on its role.
+
+Purpose:
+Some systems are targeted more often (e.g., Domain Controllers, VPN servers).
+
+Typical Mapping:
+
+Low-value device → 0.20
+
+User workstation → 0.35
+
+Application / file server → 0.60
+
+Identity / VPN / email server → 0.90
+
+Crown-jewel / security system → 1.00
+
+Range:
+0.0 to 1.0
+
+6. CIAₙ (Normalized CIA Score)
+
+Definition:
+Represents the combined Confidentiality, Integrity, and Availability ratings of the asset.
+
+Purpose:
+Primarily used for impact, but here it slightly increases likelihood based on attacker interest.
+
+Calculation (if each is 1–5):
+CIAₙ = (C + I + A) / 15
+
+Range:
+0.0 to 1.0
+
+Example:
+C = 5, I = 5, A = 4
+CIAₙ = 14 / 15 = 0.93
+
+ Summary Table
+Parameter	Meaning	Role in Likelihood
+CVSSₙ		Technical severity		Base risk signal
+Exploitₙ		Exploit probability		Strongest driver
+Patchₙ		Patch/remediation status	Exposure window
+Exposureₙ	Network accessibility		Attack surface
+Roleₙ		Asset attractiveness		Target priority
+CIAₙ		Business impact (minor factor)	Context modifier
+
+
+These are your behavioral signals:
+accessFrequency		Strong attack indicator
+failedLoginAttempts	Highest correlation with attacks 
+loginConsistency	Behavioral anomaly
+incidentReports		Insider / stealth attacks
+network_packet_size 	Traffic behavior  (Not now)
+
+Strongest Indicators
+From SHAP + correlation :
+
+failedLoginAttempts → strongest
+accessFrequency → strong
+loginConsistency → moderate
+incidentReports → moderate
+
+ML Model: XGBoost
