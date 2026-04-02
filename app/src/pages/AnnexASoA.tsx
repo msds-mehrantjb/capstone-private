@@ -11,7 +11,7 @@ type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
-  confirmAction?: "recreate_annex" | "reset_annex" | "delete_annex_row";
+  confirmAction?: "recreate_annex" | "reset_annex" | "delete_annex_row" | "submit_annex";
 };
 
 type AnnexControl = {
@@ -88,6 +88,18 @@ type AnnexSubmitResponse = {
   requires_confirmation?: boolean;
 };
 
+type AnnexInfoResponse = {
+  success?: boolean;
+  message?: string;
+  control?: {
+    control_id?: string;
+    control_name?: string;
+    domain?: string;
+    concern?: string;
+    justification?: string;
+  } | null;
+};
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
@@ -117,6 +129,16 @@ async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
   }
 
   return data as T;
+}
+
+async function apiGetRecommendedControlInfo(
+  year: number,
+  control_id: string
+): Promise<AnnexInfoResponse> {
+  return apiPostJSONBody<AnnexInfoResponse>("/api/annex-a-soa/info", {
+    year,
+    control_id,
+  });
 }
 
 async function apiAddAnnexControl(
@@ -293,7 +315,9 @@ export default function AnnexASoA() {
   const [confirmRecreateOpen, setConfirmRecreateOpen] = useState(false);
 
   const [recommendedControls, setRecommendedControls] = useState<AnnexRecommendItem[]>([]);
-  const [assistantMode, setAssistantMode] = useState<null | "awaiting_add_control_id">(null);
+  const [assistantMode, setAssistantMode] = useState<
+    null | "awaiting_add_control_id" | "awaiting_info_control_id"
+  >(null);
     
   const [selectedStep, setSelectedStep] = useState<number>(7);
   const [selectedControlIndex, setSelectedControlIndex] = useState<number | null>(null);
@@ -307,7 +331,7 @@ export default function AnnexASoA() {
   const [popupText, setPopupText] = useState("");
 
   const [pendingAssistantAction, setPendingAssistantAction] = useState<
-    null | "recreate_annex" | "reset_annex" | "delete_annex_row"
+    null | "recreate_annex" | "reset_annex" | "delete_annex_row" | "submit_annex"
   >(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -320,6 +344,7 @@ export default function AnnexASoA() {
         "/delete    → Delete the selected row\n" +
         "/recommend → Recommend missing controls not already in the table\n" +
         "/add       → Add a control from the recommendation list\n" +
+        "/info      → Show information about a control\n" +
         "/submit    → Finalize and lock the table\n" +
         "/help      → Provide an overview of this section\n" +
         "/commands  → Display available commands",
@@ -339,13 +364,64 @@ export default function AnnexASoA() {
       { step: 5, name: "Risk Analysis", href: "#/risk-analysis" },
       { step: 6, name: "Risk Evaluation/Treatment", href: "#/risk-evaluation-treatment" },
       { step: 7, name: "Annex A & SoA", href: "#/annex-a-soa" },
-      { step: 8, name: "Action Plan / Implementation", href: "#/" },
+      { step: 8, name: "Action Plan / Implementation", href: "#/action-plan-implementation" },
       { step: 9, name: "Monitoring & Improvement", href: "#/" },
       { step: 10, name: "Final Deliverables", href: "#/" },
     ],
     []
   );
 
+
+  const handleShowRecommendedControlInfo = async (controlId: string) => {
+    setSending(true);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama3 reasoning to generate control information.",
+      },
+    ]);
+
+    try {
+      const data = await apiGetRecommendedControlInfo(YEAR, controlId);
+      const control = data?.control;
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            "Control Information\n\n" +
+            `Control ID: ${control?.control_id || controlId}\n` +
+            `Control Name: ${control?.control_name || "NA"}\n` +
+            `Domain: ${control?.domain || "NA"}\n` +
+            `Concern: ${control?.concern || "NA"}\n\n` +  
+            `Justification: ${control?.justification || "NA"}`
+        };
+        return updated;
+      });
+
+      setAssistantMode(null);
+    } catch (e) {
+      setMessages((prev) => {
+        const updated = [...prev];
+         updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            e instanceof Error
+              ? e.message
+              : "Backend error while generating control information.",
+        };
+        return updated;
+      });
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
+    }
+  };
+    
   const handleConfirmRecreateYes = async () => {
     setConfirmRecreateOpen(false);
     await createAnnexTableConfirmed();
@@ -359,6 +435,34 @@ export default function AnnexASoA() {
     (c) => (c.implementation_status ?? "").trim() !== ""
   );
 
+  const handleStartInfoCommand = () => {
+    if (!Array.isArray(recommendedControls) || recommendedControls.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Recommendation list is empty. Run /recommend first, then use /info.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
+    setAssistantMode("awaiting_info_control_id");
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Enter control id from the recommendation list to show control information.\n\nAvailable control ids:\n" +
+          recommendedControls.map((item) => item.control_id).join(", "),
+      },
+    ]);
+
+    scrollChatToBottom();
+  };
+    
   const handleAssistantConfirmYes = async () => {
     if (pendingAssistantAction === "recreate_annex") {
       setPendingAssistantAction(null);
@@ -393,6 +497,18 @@ export default function AnnexASoA() {
       ]);
 
       await handleDeleteSelectedRow();
+      return;
+    }
+
+    if (pendingAssistantAction === "submit_annex") {
+      setPendingAssistantAction(null);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: "Yes" },
+      ]);
+
+      await handleSubmitAnnex();
     }
   };
     
@@ -430,6 +546,19 @@ export default function AnnexASoA() {
         ...prev,
         { role: "user", content: "No" },
         { role: "assistant", content: "Delete operation cancelled." },
+      ]);
+
+      scrollChatToBottom();
+      return;
+    }
+
+    if (pendingAssistantAction === "submit_annex") {
+      setPendingAssistantAction(null);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: "No" },
+        { role: "assistant", content: "Submit operation cancelled." },
       ]);
 
       scrollChatToBottom();
@@ -846,6 +975,32 @@ export default function AnnexASoA() {
       return;
     }
 
+    if (assistantMode === "awaiting_info_control_id") {
+      const selectedId = text.trim().toLowerCase();
+    
+      const selectedRecommendation = recommendedControls.find(
+        (item) => (item.control_id || "").trim().toLowerCase() === selectedId
+      );
+    
+      if (!selectedRecommendation) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content:
+              "Invalid control id. Please choose a control id only from the current recommendation list.",
+          },
+        ]);
+        scrollChatToBottom();
+        return;
+      }
+    
+      setAssistantMode(null);
+      await handleShowRecommendedControlInfo(selectedRecommendation.control_id);
+      return;
+    }
+
+      
     if (assistantMode === "awaiting_add_control_id") {
       const selectedId = text.trim().toLowerCase();
     
@@ -932,16 +1087,32 @@ export default function AnnexASoA() {
         ...prev,
         {
           role: "assistant",
-          content: `DEBUG: recommendation count = ${recommendedControls.length}`,
+          content: `recommendation count = ${recommendedControls.length}`,
         },
       ]);
     
       handleStartAddCommand();
       return;
     }
+
+    if (text.toLowerCase() === "/info") {
+      handleStartInfoCommand();
+      return;
+    }
       
     if (text.toLowerCase() === "/submit") {
-      await handleSubmitAnnex();
+      setPendingAssistantAction("submit_annex");
+    
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "The Annex A & SoA results will be finalized and locked. Are you sure?",
+          confirmAction: "submit_annex",
+        },
+      ]);
+    
+      scrollChatToBottom();
       return;
     }
 
@@ -979,6 +1150,7 @@ export default function AnnexASoA() {
             "/delete: Delete the selected row\n" +
             "/recommend: Recommend missing controls not already in the table\n" +
             "/add: Add a control from the recommendation list\n" +
+            "/info: Show information about a control\n" +
             "/submit: Finalize and lock the table\n" +
             "/help: Provide an overview of this section\n" +
             "/commands: Display available commands",
@@ -1130,14 +1302,14 @@ export default function AnnexASoA() {
                   >
                     <div>{m.content}</div>
 
-                    {!isUser &&
-                    m.confirmAction === pendingAssistantAction &&
-                    (
-                      m.confirmAction === "recreate_annex" ||
-                      m.confirmAction === "reset_annex" ||
-                      m.confirmAction === "delete_annex_row"
-                    ) ? (
-                      <div className="mt-3 flex gap-2">
+                        {!isUser &&
+                        m.confirmAction === pendingAssistantAction &&
+                        (
+                          m.confirmAction === "recreate_annex" ||
+                          m.confirmAction === "reset_annex" ||
+                          m.confirmAction === "delete_annex_row" ||
+                          m.confirmAction === "submit_annex"
+                        ) ? (                      <div className="mt-3 flex gap-2">
                         <button
                           onClick={() => void handleAssistantConfirmYes()}
                           className="rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-600"
@@ -1183,7 +1355,7 @@ export default function AnnexASoA() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /create /reset /delete /recommend /add /submit /help /commands
+          Command mode: /create /reset /delete /recommend /add /info /submit /help /commands
         </div>
       </div>
     </ShellCard>

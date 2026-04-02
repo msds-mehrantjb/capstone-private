@@ -5,22 +5,22 @@
   },
   "sections": {
     "scope_context": {
-      "status": "Not Started"
+      "status": "In Progress"
     },
     "assets_cia": {
-      "status": "Not Started"
+      "status": "In Progress"
     },
     "risk_analysis": {
-      "status": "Not Started"
+      "status": "In Progress"
     },
     "risk_evaluation_treatment": {
       "status": "In Progress"
     },
     "annex_a_soa": {
-      "status": "In Progress"
+      "status": "Completed"
     },
     "action_plan_implementation": {
-      "status": "Blocked"
+      "status": "In Progress"
     }
   }
 }

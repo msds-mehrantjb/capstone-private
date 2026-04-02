@@ -1,0 +1,122 @@
+{
+  "controls": [
+    {
+      "control_id": "8.2",
+      "control_name": "Network security",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "In Progress",
+      "justification": "To protect networks from unauthorized access and exploitation of the vulnerability",
+      "related_risks": [
+        "CVE-2020-1472",
+        "CVE-2022-26923"
+      ],
+      "risk_ids": [
+        "R-001",
+        "R-003"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-001",
+          "risk": "High",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "reason": "To protect networks from unauthorized access and exploitation of the vulnerability"
+        },
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-003",
+          "risk": "High",
+          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
+          "cve": "CVE-2022-26923",
+          "reason": "To control privileged access and prevent escalation of privileges"
+        }
+      ]
+    },
+    {
+      "control_id": "8.21",
+      "control_name": "Network services security",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "In Progress",
+      "justification": "To secure the Windows Domain Name System servers and prevent remote code execution vulnerability",
+      "related_risks": [
+        "CVE-2020-1350",
+        "CVE-2022-30190",
+        "CVE-2024-21413"
+      ],
+      "risk_ids": [
+        "R-002",
+        "R-004",
+        "R-007",
+        "R-008"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller",
+          "riskid": "R-002",
+          "risk": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "To secure the Windows Domain Name System servers and prevent remote code execution vulnerability"
+        },
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-004",
+          "risk": "Medium",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "This control is relevant for mitigating the vulnerability as it ensures secure network services, which includes DNS servers."
+        },
+        {
+          "hostname": "WS-01",
+          "role": "User Workstation",
+          "riskid": "R-007",
+          "risk": "Medium",
+          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
+          "cve": "CVE-2022-30190",
+          "reason": "To secure the MSDT (Microsoft Support Diagnostic Tool) network-based exploitation vulnerability and prevent remote code execution attacks."
+        },
+        {
+          "hostname": "WS-01",
+          "role": "User Workstation",
+          "riskid": "R-008",
+          "risk": "Medium",
+          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
+          "cve": "CVE-2024-21413",
+          "reason": "To secure the network services and prevent exploitation of this vulnerability"
+        }
+      ]
+    },
+    {
+      "control_id": "8.24",
+      "control_name": "Cryptography",
+      "domain": "ISO 27001:2022 Control",
+      "applicable": true,
+      "implementation_status": "Implemented",
+      "justification": "To protect data and prevent unauthorized access due to the high Windows LSA Spoofing Vulnerability CVE-2021-36942",
+      "related_risks": [
+        "CVE-2021-36942"
+      ],
+      "risk_ids": [
+        "R-005"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-005",
+          "risk": "High",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "reason": "To protect data and prevent unauthorized access due to the high Windows LSA Spoofing Vulnerability CVE-2021-36942"
+        }
+      ]
+    }
+  ]
+}

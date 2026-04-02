@@ -7,10 +7,11 @@ import ControlsPostures from "./pages/ControlsPostures";
 import RiskAnalysis from "./pages/RiskAnalysis";
 import RiskEvaluationTreatment from "./pages/RiskEvaluationTreatment";
 import AnnexASoA from "./pages/AnnexASoA";
+import ActionPlanImplementation from "./pages/ActionPlanImplementation";
 /** import ActionPlan from "./pages/ActionPlan";
  import MonitoringImprovement from "./pages/MonitoringImprovement";
  import FinalDeliverables from "./pages/FinalDeliverables";
-*/ 
+*/
 
 type RouteKey =
   | "dashboard"
@@ -20,7 +21,8 @@ type RouteKey =
   | "controls"
   | "risk-analysis"
   | "risk-evaluation-treatment"
-  | "annex-a-soa";   
+  | "annex-a-soa"
+  | "action-plan-implementation";
 
 function getRouteFromHash(): RouteKey {
   const h = (window.location.hash || "").toLowerCase();
@@ -31,7 +33,9 @@ function getRouteFromHash(): RouteKey {
   if (h.startsWith("#/controls")) return "controls";
   if (h.startsWith("#/risk-analysis")) return "risk-analysis";
   if (h.startsWith("#/risk-evaluation-treatment")) return "risk-evaluation-treatment";
-  if (h.startsWith("#/annex-a-soa"))  return "annex-a-soa";
+  if (h.startsWith("#/annex-a-soa")) return "annex-a-soa";
+  if (h.startsWith("#/action-plan-implementation")) return "action-plan-implementation";
+
   return "dashboard";
 }
 
@@ -68,9 +72,12 @@ export default function App() {
 
     case "risk-evaluation-treatment":
       return <RiskEvaluationTreatment />;
-          
+
     case "annex-a-soa":
       return <AnnexASoA />;
+
+    case "action-plan-implementation":
+      return <ActionPlanImplementation />;
 
     case "dashboard":
     default:

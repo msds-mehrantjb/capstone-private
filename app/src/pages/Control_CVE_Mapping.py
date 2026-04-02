@@ -199,13 +199,17 @@ def build_control_profile(control_record):
     control_id = control_record["control_id"]
     hints = CONTROL_MAPPINGS.get(control_id, {})
 
+    stopwords = {"and", "or", "the", "of", "for", "to", "in", "a"}
+    
+    if control_record["title"]:
+        title_tokens = tokenize(control_record["title"]) - stopwords
+        title_tokens = list(title_tokens)  # ✅ convert set → list
+    else:
+        title_tokens = []
+    
     keywords = dedupe_keep_order(
-        hints.get("keywords", []) +
-        tokenize(control_record["title"]) -
-        {"and", "or", "the", "of", "for", "to", "in", "a"}
-        if control_record["title"] else hints.get("keywords", [])
+        hints.get("keywords", []) + title_tokens
     )
-
     # Fix mixed type if tokenize() result got concatenated
     normalized_keywords = []
     for item in keywords:

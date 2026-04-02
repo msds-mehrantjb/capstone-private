@@ -2,6 +2,7 @@ from fastapi import APIRouter, Query, HTTPException
 import json
 from pathlib import Path
 from typing import Any
+import requests
 from pydantic import BaseModel
 
 router = APIRouter(
@@ -50,6 +51,12 @@ def find_project_root() -> Path:
 
 BASE_DIR = find_project_root()
 
+NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
+OLLAMA_GEN_URL = "http://localhost:11434/api/generate"
+LLM_MODEL = "llama3"
+
+SESSION = requests.Session()
+
 
 def _work_dir(year: int) -> Path:
     return BASE_DIR / "data" / "work" / str(year)
@@ -63,7 +70,7 @@ def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "SystemStatus.json"
 
 def _action_plan_implementation_file(year: int) -> Path:
-    return _work_dir(year) / "ActionPlanImplementaion.json"
+    return _work_dir(year) / "ActionPlanImplementation.json"
 
 
 def _monitoring_improvement_file(year: int) -> Path:
@@ -329,25 +336,187 @@ def _build_action_plan_record(record: dict) -> dict:
         "date": "",
     }
 
+def _fetch_cve_from_nvd(cve_id: str) -> dict:
+    response = SESSION.get(
+        NVD_API_URL,
+        params={"cveId": cve_id},
+        timeout=120,
+    )
+    response.raise_for_status()
+    data = response.json()
+
+    vulns = data.get("vulnerabilities", [])
+    if not vulns:
+        return {
+            "cve_id": cve_id,
+            "description": "",
+            "severity": "",
+            "cwe": [],
+            "vector": "",
+        }
+
+    cve = vulns[0].get("cve", {})
+
+    description = ""
+    for d in cve.get("descriptions", []):
+        if d.get("lang") == "en":
+            description = d.get("value", "")
+            break
+
+    cwe_values = []
+    for weakness in cve.get("weaknesses", []):
+        for desc in weakness.get("description", []):
+            value = desc.get("value")
+            if value:
+                cwe_values.append(value)
+
+    severity = ""
+    vector = ""
+    metrics = cve.get("metrics", {})
+
+    for key in ["cvssMetricV31", "cvssMetricV30", "cvssMetricV2"]:
+        if key in metrics and metrics[key]:
+            metric = metrics[key][0]
+            cvss = metric.get("cvssData", {})
+            severity = metric.get("baseSeverity") or cvss.get("baseSeverity") or ""
+            vector = cvss.get("vectorString") or ""
+            break
+
+    return {
+        "cve_id": cve_id,
+        "description": description,
+        "severity": severity,
+        "cwe": cwe_values,
+        "vector": vector,
+    }
+
+
+def _ask_llama3_for_monitoring_fields(record: dict, cve_info: dict) -> tuple[str, str]:
+    hostname = str(record.get("hostname") or "").strip()
+    role = str(record.get("role") or "").strip()
+    cia_rating = str(record.get("CIA rating") or "").strip()
+    vulnerability_name = str(record.get("vulnerability_name") or "").strip()
+    cve_id = str(record.get("cve") or "").strip()
+    risk = str(record.get("risk") or "").strip()
+    evaluation = str(record.get("evaluation") or "").strip()
+
+    prompt = f"""
+You are an ISO 27001 cybersecurity expert.
+
+Generate two short fields for a MonitoringImprovement.json record:
+1. justification
+2. recommended_action
+
+Use the host context and the CVE details from NVD.
+Be specific, practical, and concise.
+Do not use markdown.
+Return valid JSON only in this format:
+{{
+  "justification": "...",
+  "recommended_action": "..."
+}}
+
+Host context:
+hostname: {hostname}
+role: {role}
+CIA rating: {cia_rating}
+vulnerability_name: {vulnerability_name}
+cve: {cve_id}
+risk: {risk}
+evaluation: {evaluation}
+
+NVD data:
+description: {cve_info.get("description", "")}
+severity: {cve_info.get("severity", "")}
+cwe: {", ".join(cve_info.get("cwe", []))}
+vector: {cve_info.get("vector", "")}
+"""
+
+    response = SESSION.post(
+        OLLAMA_GEN_URL,
+        json={
+            "model": LLM_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            "keep_alive": "10m",
+        },
+        timeout=180,
+    )
+    response.raise_for_status()
+
+    raw = response.json().get("response", "{}")
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        parsed = {}
+
+    justification = str(parsed.get("justification") or "").strip()
+    recommended_action = str(parsed.get("recommended_action") or "").strip()
+
+    return justification, recommended_action
+
+
+def _safe_generate_monitoring_fields(record: dict) -> tuple[str, str]:
+    cve_id = str(record.get("cve") or "").strip()
+
+    cve_info = {
+        "cve_id": cve_id,
+        "description": "",
+        "severity": "",
+        "cwe": [],
+        "vector": "",
+    }
+
+    if cve_id.upper().startswith("CVE-"):
+        try:
+            cve_info = _fetch_cve_from_nvd(cve_id)
+        except Exception:
+            pass
+
+    try:
+        justification, recommended_action = _ask_llama3_for_monitoring_fields(record, cve_info)
+        return justification, recommended_action
+    except Exception:
+        vulnerability_name = str(record.get("vulnerability_name") or "").strip()
+        risk = str(record.get("risk") or "").strip()
+
+        fallback_justification = (
+            f"Monitoring is recommended for {vulnerability_name or cve_id or 'the identified vulnerability'} "
+            f"because the risk is currently evaluated as {risk or 'Monitor'} and requires follow-up verification."
+        )
+        fallback_action = (
+            "Track remediation progress, review exposure regularly, collect supporting evidence, "
+            "and reassess the risk after control improvements."
+        )
+        return fallback_justification, fallback_action
+    
 
 def _build_monitoring_improvement_record(record: dict) -> dict:
     r = _normalize_existing_record(record)
+    justification, recommended_action = _safe_generate_monitoring_fields(r)
+
     return {
         "hostname": str(r.get("hostname") or "").strip(),
         "ip_address": str(r.get("ip_address") or "").strip(),
         "role": str(r.get("role") or "").strip(),
         "CIA rating": str(r.get("CIA rating") or "").strip(),
         "vulnerability_name": str(r.get("vulnerability_name") or "").strip(),
+        "justification": justification,
+        "recommended_action": recommended_action,
         "cve": str(r.get("cve") or "").strip(),
         "riskid": str(r.get("riskid") or "").strip(),
         "risk": str(r.get("risk") or "").strip(),
         "evaluation": str(r.get("evaluation") or "").strip(),
-        "root_cause": "",
-        "corrective_action": "",
-        "preventive_action": "",
-        "responsible": "",
-        "resources": "",
-        "date": "",
+        "evidence": [
+            {
+                "responsible": "",
+                "resources": "",
+                "date": "",
+                "url": "",
+                "desc": "",
+            }
+        ],
     }
 
 @router.get("/inventory")
@@ -506,7 +675,7 @@ def submit_risk_evaluation_treatment(payload: SubmitRequest):
     ]
 
     _save_json(_risk_evaluation_treatment_file(year), inventory)
-    _save_json(monitoring_path, {"hosts": monitoring_records})
+    _save_json(monitoring_path, monitoring_records)
 
     _set_risk_evaluation_treatment_status(year, "In Progress")
     _set_annex_a_soa_status(year, "In Progress")

@@ -1,365 +1,425 @@
 {
   "controls": [
     {
-      "control_id": "5.2",
+      "control": "5.2",
       "control_name": "Information security roles and responsibilities",
-      "domain": "ISO 27001:2022 Control",
-      "applicable": true,
       "implementation_status": "In Progress",
       "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
-      "related_risks": [
-        "CVE-2020-1472",
-        "CVE-2021-31166",
-        "CVE-2020-1350",
-        "CVE-2022-26923",
-        "CVE-2021-36942"
-      ],
-      "risk_ids": [
-        "R-001",
-        "R-016",
-        "R-002",
-        "R-003",
-        "R-005",
-        "R-014"
-      ],
-      "source_records": [
+      "treatment_action": "",
+      "hosts": [
         {
           "hostname": "SRV-01",
           "ip_address": "",
           "role": "Domain Controller",
           "CIA rating": "",
-          "riskid": "R-001",
-          "risk": "High",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 5.2."
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-04",
           "ip_address": "",
           "role": "Web Server",
           "CIA rating": "",
-          "riskid": "R-016",
-          "risk": "High",
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 5.2."
+          "riskid": "R-016",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
           "ip_address": "",
           "role": "Domain Controller",
           "CIA rating": "",
-          "riskid": "R-002",
-          "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 5.2."
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
           "ip_address": "",
           "role": "Domain Controller",
           "CIA rating": "",
-          "riskid": "R-003",
-          "risk": "High",
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 5.2."
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-02",
           "ip_address": "",
           "role": "DNS Server",
           "CIA rating": "",
-          "riskid": "R-005",
-          "risk": "High",
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 5.2."
+          "riskid": "R-005",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-03",
           "ip_address": "",
           "role": "File Server",
           "CIA rating": "",
-          "riskid": "R-014",
-          "risk": "High",
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 5.2."
+          "riskid": "R-014",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "6.7",
+      "control": "6.7",
       "control_name": "Remote working",
-      "domain": "ISO 27001:2022 Control",
-      "applicable": true,
       "implementation_status": "In Progress",
       "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
-      "related_risks": [
-        "CVE-2020-1472",
-        "CVE-2021-31166",
-        "CVE-2020-1350",
-        "CVE-2022-26923",
-        "CVE-2021-36942"
-      ],
-      "risk_ids": [
-        "R-001",
-        "R-016",
-        "R-002",
-        "R-003",
-        "R-005",
-        "R-014"
-      ],
-      "source_records": [
+      "treatment_action": "",
+      "hosts": [
         {
           "hostname": "SRV-01",
           "ip_address": "",
           "role": "Domain Controller",
           "CIA rating": "",
-          "riskid": "R-001",
-          "risk": "High",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-04",
           "ip_address": "",
           "role": "Web Server",
           "CIA rating": "",
-          "riskid": "R-016",
-          "risk": "High",
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
+          "riskid": "R-016",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
           "ip_address": "",
           "role": "Domain Controller",
           "CIA rating": "",
-          "riskid": "R-002",
-          "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
           "ip_address": "",
           "role": "Domain Controller",
           "CIA rating": "",
-          "riskid": "R-003",
-          "risk": "High",
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-02",
           "ip_address": "",
           "role": "DNS Server",
           "CIA rating": "",
-          "riskid": "R-005",
-          "risk": "High",
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
+          "riskid": "R-005",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-03",
           "ip_address": "",
           "role": "File Server",
           "CIA rating": "",
-          "riskid": "R-014",
-          "risk": "High",
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
+          "riskid": "R-014",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.2",
+      "control": "8.2",
       "control_name": "Network security",
-      "domain": "ISO 27001:2022 Control",
-      "applicable": true,
       "implementation_status": "In Progress",
       "justification": "This control helps protect the domain controller from unauthorized access and exploitation of the vulnerability.",
-      "related_risks": [
-        "CVE-2020-1472"
-      ],
-      "risk_ids": [
-        "R-001"
-      ],
-      "source_records": [
+      "treatment_action": "",
+      "hosts": [
         {
           "hostname": "SRV-01",
+          "ip_address": "",
           "role": "Domain Controller",
-          "riskid": "R-001",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "reason": "This control helps protect the domain controller from unauthorized access and exploitation of the vulnerability."
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.21",
+      "control": "8.21",
       "control_name": "Network services security",
-      "domain": "ISO 27001:2022 Control",
-      "applicable": true,
       "implementation_status": "In Progress",
       "justification": "To secure the network services vulnerable to the high HTTP protocol stack remote code execution",
-      "related_risks": [
-        "CVE-2021-31166"
-      ],
-      "risk_ids": [
-        "R-016"
-      ],
-      "source_records": [
+      "treatment_action": "",
+      "hosts": [
         {
           "hostname": "SRV-04",
+          "ip_address": "",
           "role": "Web Server",
-          "riskid": "R-016",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
-          "reason": "To secure the network services vulnerable to the high HTTP protocol stack remote code execution"
+          "riskid": "R-016",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.28",
+      "control": "8.28",
       "control_name": "Secure coding",
-      "domain": "ISO 27001:2022 Control",
-      "applicable": true,
       "implementation_status": "In Progress",
       "justification": "This vulnerability is a technical vulnerability and secure coding practices can help reduce the risk of similar vulnerabilities in the future.",
-      "related_risks": [
-        "CVE-2020-1350"
-      ],
-      "risk_ids": [
-        "R-002"
-      ],
-      "source_records": [
+      "treatment_action": "",
+      "hosts": [
         {
           "hostname": "SRV-01",
+          "ip_address": "",
           "role": "Domain Controller",
-          "riskid": "R-002",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "This vulnerability is a technical vulnerability and secure coding practices can help reduce the risk of similar vulnerabilities in the future."
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.29",
+      "control": "8.29",
       "control_name": "Security testing",
-      "domain": "ISO 27001:2022 Control",
-      "applicable": true,
       "implementation_status": "In Progress",
       "justification": "Regular security testing can help identify and validate the effectiveness of controls to mitigate this remote code execution vulnerability.",
-      "related_risks": [
-        "CVE-2020-1350"
-      ],
-      "risk_ids": [
-        "R-002"
-      ],
-      "source_records": [
+      "treatment_action": "",
+      "hosts": [
         {
           "hostname": "SRV-01",
+          "ip_address": "",
           "role": "Domain Controller",
-          "riskid": "R-002",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "Regular security testing can help identify and validate the effectiveness of controls to mitigate this remote code execution vulnerability."
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.8",
+      "control": "8.8",
       "control_name": "Technical vulnerability management",
-      "domain": "ISO 27001:2022 Control",
-      "applicable": true,
       "implementation_status": "In Progress",
       "justification": "This control ensures that the vulnerability is properly assessed, reported and remediated in a timely manner to prevent exploitation.",
-      "related_risks": [
-        "CVE-2020-1472",
-        "CVE-2022-26923",
-        "CVE-2021-36942"
-      ],
-      "risk_ids": [
-        "R-001",
-        "R-003",
-        "R-005",
-        "R-014"
-      ],
-      "source_records": [
+      "treatment_action": "",
+      "hosts": [
         {
           "hostname": "SRV-01",
+          "ip_address": "",
           "role": "Domain Controller",
-          "riskid": "R-001",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "reason": "This control ensures that the vulnerability is properly assessed, reported and remediated in a timely manner to prevent exploitation."
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
+          "ip_address": "",
           "role": "Domain Controller",
-          "riskid": "R-003",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
-          "reason": "This high-severity privilege escalation vulnerability requires immediate attention and remediation to prevent unauthorized access and data breaches."
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-02",
+          "ip_address": "",
           "role": "DNS Server",
-          "riskid": "R-005",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
-          "reason": "To manage and mitigate the High Windows LSA Spoofing Vulnerability CVE-2021-36942, which is a technical vulnerability that requires timely identification, assessment, and resolution."
+          "riskid": "R-005",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-03",
+          "ip_address": "",
           "role": "File Server",
-          "riskid": "R-014",
-          "risk": "High",
+          "CIA rating": "",
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
-          "reason": "This high Windows LSA Spoofing Vulnerability (CVE-2021-36942) requires a proactive approach to identify and remediate technical vulnerabilities."
+          "riskid": "R-014",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     }

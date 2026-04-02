@@ -45,8 +45,8 @@
       "cve": "CVE-2020-1350",
       "riskid": "R-004",
       "risk": "Medium",
-      "evaluation": "Treat",
-      "treatment": "Mitigate"
+      "evaluation": "Monitor",
+      "treatment": "-"
     },
     {
       "hostname": "SRV-02",
@@ -69,8 +69,8 @@
       "cve": "CVE-2019-1040",
       "riskid": "R-006",
       "risk": "Medium",
-      "evaluation": "Treat",
-      "treatment": "Avoid"
+      "evaluation": "Monitor",
+      "treatment": "-"
     },
     {
       "hostname": "WS-01",
@@ -81,8 +81,8 @@
       "cve": "CVE-2022-30190",
       "riskid": "R-007",
       "risk": "Medium",
-      "evaluation": "Treat",
-      "treatment": "Mitigate"
+      "evaluation": "Monitor",
+      "treatment": "-"
     },
     {
       "hostname": "WS-01",
@@ -93,8 +93,8 @@
       "cve": "CVE-2024-21413",
       "riskid": "R-008",
       "risk": "Medium",
-      "evaluation": "Treat",
-      "treatment": "Mitigate"
+      "evaluation": "Monitor",
+      "treatment": "-"
     },
     {
       "hostname": "WS-02",
@@ -105,8 +105,8 @@
       "cve": "CVE-2022-30190",
       "riskid": "R-009",
       "risk": "Medium",
-      "evaluation": "Treat",
-      "treatment": "Avoid"
+      "evaluation": "Monitor",
+      "treatment": "-"
     },
     {
       "hostname": "WS-02",
@@ -117,8 +117,8 @@
       "cve": "CVE-2019-1040",
       "riskid": "R-010",
       "risk": "Medium",
-      "evaluation": "Treat",
-      "treatment": "Avoid"
+      "evaluation": "Monitor",
+      "treatment": "-"
     },
     {
       "hostname": "WS-03",
@@ -166,7 +166,7 @@
       "riskid": "R-014",
       "risk": "High",
       "evaluation": "Treat",
-      "treatment": "Avoid"
+      "treatment": "Mitigate"
     },
     {
       "hostname": "SRV-03",
@@ -190,7 +190,7 @@
       "riskid": "R-016",
       "risk": "High",
       "evaluation": "Treat",
-      "treatment": "Avoid"
+      "treatment": "Mitigate"
     },
     {
       "hostname": "SRV-04",

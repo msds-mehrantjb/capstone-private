@@ -1,5 +1,3 @@
-# /app/main.py
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,6 +15,7 @@ from app.api.routes_controls_postures import router as controls_postures_router
 from app.api.routes_risk_analysis import router as risk_analysis_router
 from app.api.routes_risk_evaluation_treatment import router as risk_evaluation_treatment_router
 from app.api.routes_annex_a_soa import router as annex_a_soa_router
+from app.api.routes_action_plan_implementation import router as action_plan_implementation_router
 
 
 def create_app() -> FastAPI:
@@ -51,6 +50,7 @@ def create_app() -> FastAPI:
     app.include_router(risk_analysis_router)
     app.include_router(risk_evaluation_treatment_router)
     app.include_router(annex_a_soa_router)
+    app.include_router(action_plan_implementation_router)
 
     return app
 
