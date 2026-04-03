@@ -1,0 +1,35 @@
+Audit Readiness Score — Base Score only
+
+Total base score = 80%
+
+Scoring
+Scope & Context → +5
+Asset Inventory & CIA → +10
+Threats & Vulnerabilities → +10
+Existing Controls & Posture → +5
+Risk Analysis → +10
+Risk Evaluation / Treatment → +10
+Annex A & SoA → +10
+Action Plan / Implementation → +10
+Monitoring & Improvement → +10
+Existence rule
+
+For existence, use the actual table contents on each page, not status.
+
+Special rule for Scope & Context
+
+Count Scope & Context only if the scope JSON file is not v0.
+
+So:
+
+2026-Scope-Draft-v0.json → does not count
+any later scope file, not v0 → counts
+Meaning of “exists” for each section
+Asset Inventory & CIA → table has rows
+Threats & Vulnerabilities → table has rows
+Existing Controls & Posture → table has rows
+Risk Analysis → table has rows
+Risk Evaluation / Treatment → table has rows
+Annex A & SoA → table has rows
+Action Plan / Implementation → table has rows
+Monitoring & Improvement → table has rows

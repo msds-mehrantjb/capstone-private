@@ -365,7 +365,7 @@ export default function AnnexASoA() {
       { step: 6, name: "Risk Evaluation/Treatment", href: "#/risk-evaluation-treatment" },
       { step: 7, name: "Annex A & SoA", href: "#/annex-a-soa" },
       { step: 8, name: "Action Plan / Implementation", href: "#/action-plan-implementation" },
-      { step: 9, name: "Monitoring & Improvement", href: "#/" },
+      { step: 9, name: "Monitoring & Improvement", href: "#/monitoring-improvement" },
       { step: 10, name: "Final Deliverables", href: "#/" },
     ],
     []

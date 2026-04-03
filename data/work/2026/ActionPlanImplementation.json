@@ -1,10 +1,11 @@
 {
   "controls": [
     {
+      "control_id": "5.2",
       "control": "5.2",
       "control_name": "Information security roles and responsibilities",
-      "implementation_status": "In Progress",
       "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
+      "implementation_status": "In Progress",
       "treatment_action": "",
       "hosts": [
         {
@@ -15,13 +16,22 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "5.2",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
           "evidence": [
             {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
+              "responsible": "a",
+              "resources": "a",
+              "date": "2026-04-01",
+              "url": "a",
+              "desc": "a"
             }
           ]
         },
@@ -33,15 +43,16 @@
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
           "riskid": "R-016",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "5.2",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-01",
@@ -51,15 +62,16 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "5.2",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-01",
@@ -69,15 +81,16 @@
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
           "riskid": "R-003",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "5.2",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-02",
@@ -87,15 +100,16 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-005",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "5.2",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-03",
@@ -105,23 +119,25 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-014",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "5.2",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         }
       ]
     },
     {
+      "control_id": "6.7",
       "control": "6.7",
       "control_name": "Remote working",
-      "implementation_status": "In Progress",
       "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
+      "implementation_status": "In Progress",
       "treatment_action": "",
       "hosts": [
         {
@@ -132,15 +148,16 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "6.7",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-04",
@@ -150,15 +167,16 @@
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
           "riskid": "R-016",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "6.7",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-01",
@@ -168,15 +186,16 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "6.7",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-01",
@@ -186,15 +205,16 @@
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
           "riskid": "R-003",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "6.7",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-02",
@@ -204,15 +224,16 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-005",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "6.7",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-03",
@@ -222,23 +243,25 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-014",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "6.7",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         }
       ]
     },
     {
+      "control_id": "8.2",
       "control": "8.2",
       "control_name": "Network security",
-      "implementation_status": "In Progress",
       "justification": "This control helps protect the domain controller from unauthorized access and exploitation of the vulnerability.",
+      "implementation_status": "In Progress",
       "treatment_action": "",
       "hosts": [
         {
@@ -249,23 +272,25 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.2",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         }
       ]
     },
     {
+      "control_id": "8.21",
       "control": "8.21",
       "control_name": "Network services security",
-      "implementation_status": "In Progress",
       "justification": "To secure the network services vulnerable to the high HTTP protocol stack remote code execution",
+      "implementation_status": "In Progress",
       "treatment_action": "",
       "hosts": [
         {
@@ -276,23 +301,25 @@
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
           "riskid": "R-016",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.21",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         }
       ]
     },
     {
+      "control_id": "8.28",
       "control": "8.28",
       "control_name": "Secure coding",
-      "implementation_status": "In Progress",
       "justification": "This vulnerability is a technical vulnerability and secure coding practices can help reduce the risk of similar vulnerabilities in the future.",
+      "implementation_status": "In Progress",
       "treatment_action": "",
       "hosts": [
         {
@@ -303,23 +330,25 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.28",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         }
       ]
     },
     {
+      "control_id": "8.29",
       "control": "8.29",
       "control_name": "Security testing",
-      "implementation_status": "In Progress",
       "justification": "Regular security testing can help identify and validate the effectiveness of controls to mitigate this remote code execution vulnerability.",
+      "implementation_status": "In Progress",
       "treatment_action": "",
       "hosts": [
         {
@@ -330,23 +359,25 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.29",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         }
       ]
     },
     {
+      "control_id": "8.8",
       "control": "8.8",
       "control_name": "Technical vulnerability management",
-      "implementation_status": "In Progress",
       "justification": "This control ensures that the vulnerability is properly assessed, reported and remediated in a timely manner to prevent exploitation.",
+      "implementation_status": "In Progress",
       "treatment_action": "",
       "hosts": [
         {
@@ -357,15 +388,16 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.8",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-01",
@@ -375,15 +407,16 @@
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
           "riskid": "R-003",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.8",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-02",
@@ -393,15 +426,16 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-005",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.8",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         },
         {
           "hostname": "SRV-03",
@@ -411,15 +445,16 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-014",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "risk": "High",
+          "evaluation": "",
+          "treatment": "",
+          "treatment_action": "",
+          "control": "8.8",
+          "responsible": "",
+          "resources": "",
+          "date": "",
+          "implementation_status": "In Progress",
+          "evidence": []
         }
       ]
     }

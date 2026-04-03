@@ -41,8 +41,7 @@ type DashboardRawDTO = {
     };
     soa?: {
       status?: StepStatus;
-      label?: string;
-      pending_approvals?: number;
+      count?: number;
     };
   };
   scope_context_section2?: {
@@ -59,12 +58,10 @@ const NAV_STEPS = [
   { step: 3, name: "Threats & Vulnerabilities", href: "#/threats" },
   { step: 4, name: "Existing Controls & Posture", href: "#/controls" },
   { step: 5, name: "Risk Analysis", href: "#/risk-analysis" },
-  { step: 6, name: "Risk Evaluation", href: "#/risk-evaluation-treatment" },
-  { step: 7, name: "Risk Treatment", href: "#/risk-evaluation-treatment" },
-  { step: 8, name: "Annex A & SoA", href: "#/annex-a-soa" },
-  { step: 9, name: "Action Plan / Implementation", href: "#/" },
-  { step: 10, name: "Monitoring & Improvement", href: "#/" },
-  { step: 11, name: "Final Deliverables", href: "#/" },
+  { step: 6, name: "Risk Evaluation/Treatment", href: "#/risk-evaluation-treatment" },
+  { step: 7, name: "Annex A & SoA", href: "#/annex-a-soa" },
+  { step: 8, name: "Action Plan / Implementation", href: "#/action-plan-implementation" },
+  { step: 9, name: "Monitoring & Improvement", href: "#/monitoring-improvement" },
 ] as const;
 
 const LEFT_MENU_STEPS = [
@@ -76,7 +73,7 @@ const LEFT_MENU_STEPS = [
   { step: 6, name: "Risk Evaluation/Treatment", href: "#/risk-evaluation-treatment" },
   { step: 7, name: "Annex A & SoA", href: "#/annex-a-soa" },
   { step: 8, name: "Action Plan / Implementation", href: "#/action-plan-implementation" },
-  { step: 9, name: "Monitoring & Improvement", href: "#/" },
+  { step: 9, name: "Monitoring & Improvement", href: "#/monitoring-improvement" },
   { step: 10, name: "Final Deliverables", href: "#/" },
 ] as const;
 
@@ -86,12 +83,10 @@ const STEP_TO_SECTION_KEY: Record<number, string> = {
   3: "threats_vulns",
   4: "controls_posture",
   5: "risk_analysis",
-  6: "risk_evaluation",
-  7: "risk_treatment",
-  8: "soa",
-  9: "action_plan",
-  10: "monitoring",
-  11: "reports",
+  6: "risk_evaluation_treatment",
+  7: "annex_a_soa",
+  8: "action_plan_implementation",
+  9: "monitoring_improvement",
 };
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
@@ -281,15 +276,18 @@ export default function Dashboard() {
   useEffect(() => {
     const syncSelectedStep = () => {
       const h = (window.location.hash || "").toLowerCase();
-
+    
       if (h.startsWith("#/scope")) setSelectedStep(1);
       else if (h.startsWith("#/assets")) setSelectedStep(2);
       else if (h.startsWith("#/threats")) setSelectedStep(3);
       else if (h.startsWith("#/controls")) setSelectedStep(4);
       else if (h.startsWith("#/risk-analysis")) setSelectedStep(5);
+      else if (h.startsWith("#/risk-evaluation-treatment")) setSelectedStep(6);
+      else if (h.startsWith("#/annex-a-soa")) setSelectedStep(7);
+      else if (h.startsWith("#/action-plan-implementation")) setSelectedStep(8);
+      else if (h.startsWith("#/monitoring-improvement")) setSelectedStep(9);
       else setSelectedStep(0);
     };
-
     syncSelectedStep();
     void refreshAll();
 
@@ -765,12 +763,7 @@ export default function Dashboard() {
                 }
                 subtitle={
                   <>
-                    {dashboardRaw.kpis.readiness_score?.label ?? "NA"} •{" "}
-                    <span className="text-slate-100">
-                      {(dashboardRaw.kpis.readiness_score?.delta_7d ?? 0) >= 0 ? "+" : ""}
-                      {dashboardRaw.kpis.readiness_score?.delta_7d ?? 0}
-                    </span>{" "}
-                    in 7 days
+                    {dashboardRaw.kpis.readiness_score?.label ?? "NA"}
                   </>
                 }
                 icon={<BadgeCheck className="h-6 w-6" />}
@@ -799,38 +792,50 @@ export default function Dashboard() {
               />
 
               <KpiCard
-                title="Open High/Critical Risks"
-                value={dashboardRaw.kpis.open_high_critical?.count ?? 0}
-                subtitle={
-                  <span className="text-rose-200">
-                    {dashboardRaw.kpis.open_high_critical?.unresolved ?? 0} unresolved risks
-                  </span>
+                title="High Risk / Critical Impact"
+                value={
+                  <>
+                    {dashboardRaw?.kpis?.high_risk_critical_impact?.high_risk_count ?? 0}
+                    <span className="text-slate-400">
+                      /{dashboardRaw?.kpis?.high_risk_critical_impact?.critical_impact_count ?? 0}
+                    </span>
+                  </>
                 }
+                subtitle=""
                 icon={<AlertTriangle className="h-6 w-6" />}
-                accent="rose"
+                accent="emerald"
                 progressTone="rose"
                 progressPct={Math.min(
                   100,
-                  (dashboardRaw.kpis.open_high_critical?.count ?? 0) * 5
+                  (dashboardRaw?.kpis?.high_risk_critical_impact?.high_risk_count ?? 0) * 5
                 )}
               />
-
               <KpiCard
                 title="SoA Status"
-                value={dashboardRaw.kpis.soa?.status ?? "NA"}
-                subtitle={
-                  <>
-                    {dashboardRaw.kpis.soa?.label ?? "NA"} •{" "}
-                    {dashboardRaw.kpis.soa?.pending_approvals ?? 0} pending approvals
-                  </>
-                }
+                value={dashboardRaw?.kpis?.soa?.status ?? "Not Started"}
+                subtitle={`${dashboardRaw?.kpis?.soa?.count ?? 0} controls`}
                 icon={<FileText className="h-6 w-6" />}
-                accent="amber"
-                progressTone="amber"
-                progressPct={Math.min(
-                  100,
-                  (dashboardRaw.kpis.soa?.pending_approvals ?? 0) * 7
-                )}
+                accent={
+                  (dashboardRaw?.kpis?.soa?.status ?? "Not Started") === "Completed"
+                    ? "emerald"
+                    : (dashboardRaw?.kpis?.soa?.status ?? "Not Started") === "In Progress"
+                    ? "amber"
+                    : "sky"
+                }
+                progressTone={
+                  (dashboardRaw?.kpis?.soa?.status ?? "Not Started") === "Completed"
+                    ? "emerald"
+                    : (dashboardRaw?.kpis?.soa?.status ?? "Not Started") === "In Progress"
+                    ? "amber"
+                    : "rose"
+                }
+                progressPct={
+                  (dashboardRaw?.kpis?.soa?.status ?? "Not Started") === "Completed"
+                    ? 100
+                    : (dashboardRaw?.kpis?.soa?.status ?? "Not Started") === "In Progress"
+                    ? 60
+                    : 15
+                }
               />
             </div>
           </div>

@@ -18,10 +18,9 @@ type ChatMessage = {
     | "submit_annex";
 };
 
-type ActionPlanControl = {
-  control_id?: string;
-  control: string;
-  control_name: string;
+type MonitoringImprovementCVE = {
+  CVE: string;
+  vulnerability: string;
   implementation_status:
     | ""
     | "Not Implemented"
@@ -30,11 +29,11 @@ type ActionPlanControl = {
     | "Implemented"
     | "Not Applicable";
   justification?: string;
-  treatment_action?: string;
-  hosts?: ActionPlanHost[];
+  recommended_action?: string;
+  hosts?: MonitoringImprovementHost[];
 };
 
-type ActionPlanEvidenceForm = {
+type MonitoringImprovementEvidenceForm = {
   responsible: string;
   date: string;
   resources: string;
@@ -42,7 +41,27 @@ type ActionPlanEvidenceForm = {
   desc: string;
 };
 
-type ActionPlanEvidence = {
+type RecommendActionResponse = {
+  success?: boolean;
+  message?: string;
+  inventory?: MonitoringInventoryResponse;
+  control?: MonitoringImprovementCVE;
+};
+
+async function apiRecommendAction(
+  year: number,
+  control_id: string
+): Promise<RecommendActionResponse> {
+  return apiPostJSONBody<RecommendActionResponse>(
+    "/api/monitoring-improvement/recommend",
+    {
+      year,
+      control_id,
+    }
+  );
+}
+
+type MonitoringImprovementEvidence = {
   responsible?: string;
   resources?: string;
   date?: string;
@@ -50,7 +69,7 @@ type ActionPlanEvidence = {
   desc?: string;
 };
 
-type ActionPlanRecommendResponse = {
+type MonitoringImprovementRecommendResponse = {
   success?: boolean;
   message?: string;
   recommended_evidence?: string[];
@@ -58,15 +77,18 @@ type ActionPlanRecommendResponse = {
     control_id: string;
     control_name: string;
   } | null;
-  inventory?: AnnexInventoryResponse;
+  inventory?: MonitoringInventoryResponse;
 };
 
-type ActionPlanHost = {
+// 9) FIX host type so table data matches backend
+type MonitoringImprovementHost = {
   hostname?: string;
+  ip_address?: string;
   role?: string;
-  vulnerability_name?: string;
-  evidence?: ActionPlanEvidence[];
+  ["CIA rating"]?: string;
+  evidence?: MonitoringImprovementEvidence[];
 };
+
 
 type SystemStatusDTO = {
   meta: { name: string; version: string };
@@ -101,36 +123,36 @@ type AnnexRecommendResponse = {
 type AnnexAddResponse = {
   success?: boolean;
   message?: string;
-  inventory?: AnnexInventoryResponse;
+  inventory?: MonitoringInventoryResponse;
 };
 
-type AnnexInventoryResponse = {
-  controls?: ActionPlanControl[];
+type MonitoringInventoryResponse = {
+  cves?: MonitoringImprovementCVE[];
 };
 
 type AnnexCreateResponse = {
   success?: boolean;
   message?: string;
-  inventory?: AnnexInventoryResponse;
+  inventory?: MonitoringInventoryResponse;
 };
 
 type AnnexUpdateResponse = {
   success?: boolean;
   message?: string;
-  inventory?: AnnexInventoryResponse;
+  inventory?: MonitoringInventoryResponse;
 };
 
 type AnnexSubmitResponse = {
   success?: boolean;
   message?: string;
-  inventory?: AnnexInventoryResponse;
+  inventory?: MonitoringInventoryResponse;
   requires_confirmation?: boolean;
 };
 
 type AddEvidenceResponse = {
   success?: boolean;
   message?: string;
-  inventory?: AnnexInventoryResponse;
+  inventory?: MonitoringInventoryResponse;
 };
 
   type EditEvidenceForm = {
@@ -156,7 +178,7 @@ async function apiAddEvidence(
   }
 ): Promise<AddEvidenceResponse> {
   return apiPostJSONBody<AddEvidenceResponse>(
-    "/api/action-plan-implementation/add-evidence",
+    "/api/monitoring-improvement/add-evidence",
     {
       year,
       control_id,
@@ -182,7 +204,7 @@ async function apiEditEvidence(
   }
 ): Promise<AnnexUpdateResponse> {
   return apiPostJSONBody<AnnexUpdateResponse>(
-    "/api/action-plan-implementation/edit-evidence",
+    "/api/monitoring-improvement/edit-evidence",
     {
       year,
       control_id,
@@ -210,7 +232,7 @@ async function apiDeleteEvidence(
   evidence_index: number
 ): Promise<AnnexUpdateResponse> {
   return apiPostJSONBody<AnnexUpdateResponse>(
-    "/api/action-plan-implementation/delete-evidence",
+    "/api/monitoring-improvement/delete-evidence",
     {
       year,
       control_id,
@@ -220,6 +242,8 @@ async function apiDeleteEvidence(
     }
   );
 }
+
+
 
 
 async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
@@ -259,7 +283,7 @@ async function apiUploadEvidence(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/api/action-plan-implementation/upload-evidence`, {
+  const res = await fetch(`${API_BASE}/api/monitoring-improvement/upload-evidence`, {
     method: "POST",
     body: formData,
   });
@@ -268,49 +292,48 @@ async function apiUploadEvidence(file: File): Promise<string> {
   return data.path;
 }
 
-async function apiDeleteActionPlanControl(
+async function apiDeleteMonitoringImprovementControl(
   year: number,
   control_id: string
 ): Promise<AnnexUpdateResponse> {
-  return apiPostJSONBody<AnnexUpdateResponse>("/api/action-plan-implementation/delete", {
+  return apiPostJSONBody<AnnexUpdateResponse>("/api/monitoring-improvement/delete", {
     year,
     control_id,
   });
 }
 
-async function apiGetActionPlanInventory(year: number): Promise<AnnexInventoryResponse> {
-  return apiGetJSON<AnnexInventoryResponse>(
-    `/api/action-plan-implementation/inventory?year=${encodeURIComponent(String(year))}`
+async function apiGetMonitoringImprovementInventory(year: number): Promise<MonitoringInventoryResponse> {
+  return apiGetJSON<MonitoringInventoryResponse>(
+    `/api/monitoring-improvement/inventory?year=${encodeURIComponent(String(year))}`
   );
 }
-
-async function apiCreateActionPlanInventory(year: number): Promise<AnnexCreateResponse> {
-  return apiPostJSONBody<AnnexCreateResponse>("/api/action-plan-implementation/create", {
+async function apiCreateMonitoringImprovementInventory(year: number): Promise<AnnexCreateResponse> {
+  return apiPostJSONBody<AnnexCreateResponse>("/api/monitoring-improvement/create", {
     year,
   });
 }
 
-async function apiUpdateActionPlanStatus(
+async function apiUpdateMonitoringImprovementStatus(
   year: number,
   control_id: string,
-  implementation_status: ActionPlanControl["implementation_status"]
+  implementation_status: MonitoringImprovementCVE["implementation_status"]
 ): Promise<AnnexUpdateResponse> {
-  return apiPostJSONBody<AnnexUpdateResponse>("/api/action-plan-implementation/update-status", {
+  return apiPostJSONBody<AnnexUpdateResponse>("/api/monitoring-improvement/update-status", {
     year,
     control_id,
     implementation_status,
   });
 }
 
-async function apiResetActionPlan(year: number, confirm = false): Promise<AnnexUpdateResponse> {
-  return apiPostJSONBody<AnnexUpdateResponse>("/api/action-plan-implementation/reset", {
+async function apiResetMonitoringImprovement(year: number, confirm = false): Promise<AnnexUpdateResponse> {
+  return apiPostJSONBody<AnnexUpdateResponse>("/api/monitoring-improvement/reset", {
     year,
     confirm,
   });
 }
 
-async function apiSubmitActionPlan(year: number, confirm = false): Promise<AnnexSubmitResponse> {
-  return apiPostJSONBody<AnnexSubmitResponse>("/api/action-plan-implementation/submit", {
+async function apiSubmitMonitoringImprovement(year: number, confirm = false): Promise<AnnexSubmitResponse> {
+  return apiPostJSONBody<AnnexSubmitResponse>("/api/monitoring-improvement/submit", {
     year,
     confirm,
   });
@@ -326,25 +349,6 @@ async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
   );
 }
 
-type TreatmentRecommendResponse = {
-  success?: boolean;
-  message?: string;
-  inventory?: AnnexInventoryResponse;
-  control?: ActionPlanControl;
-};
-
-async function apiRecommendTreatmentAction(
-  year: number,
-  control_id: string
-): Promise<TreatmentRecommendResponse> {
-  return apiPostJSONBody<TreatmentRecommendResponse>(
-    "/api/action-plan-implementation/recommend-treatment",
-    {
-      year,
-      control_id,
-    }
-  );
-}
 
 function ShellCard({
   children,
@@ -448,8 +452,8 @@ function AddEvidenceModal({
 }: {
   open: boolean;
   hostLabel: string;
-  form: ActionPlanEvidenceForm;
-  onChange: (field: keyof ActionPlanEvidenceForm, value: string) => void;
+  form: MonitoringImprovementEvidenceForm;
+  onChange: (field: keyof MonitoringImprovementEvidenceForm, value: string) => void;
   onCancel: () => void;
   onSubmit: () => void;
   submitting?: boolean;
@@ -704,24 +708,24 @@ function EditEvidenceModal({
   );
 }
 
-export default function ActionPlanImplentation() {
+export default function MonitoringImprovement() {
   const YEAR = 2026;
 
   const [confirmRecreateOpen, setConfirmRecreateOpen] = useState(false);
 
   const [confirmDeleteEvidenceOpen, setConfirmDeleteEvidenceOpen] = useState(false);
     
-  const [selectedStep, setSelectedStep] = useState<number>(8);
+  const [selectedStep, setSelectedStep] = useState<number>(9);
   const [selectedControlIndex, setSelectedControlIndex] = useState<number | null>(null);
 
   const [selectedHostIndex, setSelectedHostIndex] = useState<number | null>(null);
   const [selectedEvidenceIndex, setSelectedEvidenceIndex] = useState<number | null>(null);
-  const [controls, setControls] = useState<ActionPlanControl[]>([]);
+  const [monitoringImprovementControls, setMonitoringImprovementControls] = useState<MonitoringImprovementCVE[]>([]);
 
   // Reset when data refreshes
   useEffect(() => {
     setSelectedEvidenceIndex(null);
-  }, [controls]);
+  }, [monitoringImprovementControls]);
 
   // Reset when user changes selection
   useEffect(() => {
@@ -732,7 +736,8 @@ export default function ActionPlanImplentation() {
   const [dashboardRaw, setDashboardRaw] = useState<DashboardRawDTO | null>(null);
   const [scopeErr, setScopeErr] = useState<string | null>(null);
 
-
+  const [assistantMode, setAssistantMode] = useState<null | "awaiting_add_control_id">(null);
+  const [recommendedControls, setRecommendedControls] = useState<AnnexRecommendItem[]>([]);
 
   const [editEvidenceForm, setEditEvidenceForm] = useState<EditEvidenceForm>({
     responsible: "",
@@ -752,9 +757,10 @@ export default function ActionPlanImplentation() {
     {
       role: "assistant",
       content:
-        "Action Plan / Implementation — Command Mode\n\n" +
+        "Monitoring and Improvement — Command Mode\n\n" +
         "Available commands:\n" +
-        "/treatment  → Recommend the treatment action for selected control / Implementation table\n" +
+        "/create     → Create new Monitoring / Improvement table\n" +
+        "/recommend  → Recommend the monitoring action for the selected vulnerability\n" +
         "/delete     → Delete the selected evidence\n" +
         "/add        → Add an evidence for selected host\n" +
         "/edit       → Edit evidence for selected host\n" +
@@ -770,7 +776,7 @@ export default function ActionPlanImplentation() {
   const [addEvidenceModalOpen, setAddEvidenceModalOpen] = useState(false);
 
   const [editEvidenceModalOpen, setEditEvidenceModalOpen] = useState(false);
-  const [evidenceForm, setEvidenceForm] = useState<ActionPlanEvidenceForm>({
+  const [evidenceForm, setEvidenceForm] = useState<MonitoringImprovementEvidenceForm>({
     responsible: "",
     date: "",
     resources: "",
@@ -812,7 +818,7 @@ export default function ActionPlanImplentation() {
       return;
     }
 
-    const control = controls[selectedControlIndex];
+    const control = monitoringImprovementControls[selectedControlIndex];
     const host = control?.hosts?.[selectedHostIndex];
 
     if (!control || !host?.hostname) {
@@ -832,13 +838,15 @@ export default function ActionPlanImplentation() {
 
       const data = await apiDeleteEvidence(
         YEAR,
-        control.control,
+        control.CVE,
         host.hostname,
         host.vulnerability_name || "",
         selectedEvidenceIndex
       );
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      setMonitoringImprovementControls(
+        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
+      );
       setSelectedEvidenceIndex(null);
 
       setMessages((prev) => [
@@ -872,15 +880,15 @@ export default function ActionPlanImplentation() {
     });
   };
 
-  const selectedControl =
-    selectedControlIndex !== null ? controls[selectedControlIndex] : null;
+  const selectedMonitoringImprovementControl =
+    selectedControlIndex !== null ? monitoringImprovementControls[selectedControlIndex] : null;
 
   const selectedHost =
-    selectedControl &&
+    selectedMonitoringImprovementControl &&
     selectedHostIndex !== null &&
-    Array.isArray(selectedControl.hosts) &&
-    selectedControl.hosts[selectedHostIndex]
-      ? selectedControl.hosts[selectedHostIndex]
+    Array.isArray(selectedMonitoringImprovementControl.hosts) &&
+    selectedMonitoringImprovementControl.hosts[selectedHostIndex]
+      ? selectedMonitoringImprovementControl.hosts[selectedHostIndex]
       : null;
 
   const selectedEvidence =
@@ -894,10 +902,10 @@ export default function ActionPlanImplentation() {
   const selectedHostLabel = selectedHost?.hostname?.trim() || "selected host";
  
   const handleOpenAddEvidence = () => {
-    if (!selectedControl) {
+    if (!selectedMonitoringImprovementControl) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Please select a control row first." },
+        { role: "assistant", content: "Please select a CVE row first." },
       ]);
       scrollChatToBottom();
       return;
@@ -931,7 +939,7 @@ export default function ActionPlanImplentation() {
   };
 
   const handleEvidenceFormChange = (
-    field: keyof ActionPlanEvidenceForm,
+    field: keyof MonitoringImprovementEvidenceForm,
     value: string
   ) => {
     setEvidenceForm((prev) => ({
@@ -941,7 +949,7 @@ export default function ActionPlanImplentation() {
   };
 
   const handleSubmitAddEvidence = async () => {
-    if (!selectedControl || !selectedHost) {
+    if (!selectedMonitoringImprovementControl || !selectedHost) {
       setAddEvidenceModalOpen(false);
       return;
     }
@@ -961,7 +969,7 @@ export default function ActionPlanImplentation() {
 
       const data = await apiAddEvidence(
         YEAR,
-        selectedControl.control,
+        selectedMonitoringImprovementControl.CVE,
         selectedHost.hostname || "",
         selectedHost.vulnerability_name || "",
         {
@@ -973,7 +981,7 @@ export default function ActionPlanImplentation() {
         }
       );
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => [
         ...prev,
@@ -1001,20 +1009,20 @@ export default function ActionPlanImplentation() {
   };
 
 
-  const handleTreatmentForSelectedControl = async () => {
-    if (selectedControlIndex === null || !controls[selectedControlIndex]) {
+  const handleRecommendForSelectedControl = async () => {
+    if (selectedControlIndex === null || !monitoringImprovementControls[selectedControlIndex]) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Please select a control row first.",
+          content: "Please select a CVE row first.",
         },
       ]);
       scrollChatToBottom();
       return;
     }
 
-    const selectedControl = controls[selectedControlIndex];
+    const selectedControl = monitoringImprovementControls[selectedControlIndex];
     setSending(true);
 
     setMessages((prev) => [
@@ -1022,14 +1030,16 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to generate treatment action recommendations for   the selected control.",
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to generate recommended monitoring actions for the selected vulnerability.",
       },
     ]);
 
     try {
-      const data = await apiRecommendTreatmentAction(YEAR, selectedControl.control);
+      const data = await apiRecommendAction(YEAR, selectedControl.CVE);
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      setMonitoringImprovementControls(
+        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
+      );
 
       setMessages((prev) => {
         const updated = [...prev];
@@ -1037,7 +1047,7 @@ export default function ActionPlanImplentation() {
           role: "assistant",
           content:
             data.message ||
-            `Treatment action was generated and saved for control ${selectedControl.control}.`,
+            `Recommended monitoring action was generated and saved for CVE ${selectedControl.CVE}.`,
         };
         return updated;
       });
@@ -1049,7 +1059,7 @@ export default function ActionPlanImplentation() {
           content:
             e instanceof Error
               ? e.message
-              : "Backend error while generating treatment action.",
+              : "Backend error while generating recommended monitoring action.",
         };
         return updated;
       });
@@ -1057,18 +1067,18 @@ export default function ActionPlanImplentation() {
       setSending(false);
       scrollChatToBottom();
     }
-  };
+  };    
     
   const handleConfirmRecreateYes = async () => {
     setConfirmRecreateOpen(false);
-    await createAnnexTableConfirmed();
+    await createMonitoringImprovementTableConfirmed();
   };
 
   const handleConfirmRecreateNo = () => {
     setConfirmRecreateOpen(false);
   };
 
-  const hasAnyImplementationStatus = controls.some(
+  const hasAnyMonitoringImprovementStatus = monitoringImprovementControls.some(
     (c) => (c.implementation_status ?? "").trim() !== ""
   );
 
@@ -1077,7 +1087,7 @@ export default function ActionPlanImplentation() {
       setPendingAssistantAction(null);
 
       setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
-      await createAnnexTableConfirmed();
+      await createMonitoringImprovementTableConfirmed();
       return;
     }
 
@@ -1085,7 +1095,7 @@ export default function ActionPlanImplentation() {
       setPendingAssistantAction(null);
 
       setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
-      await handleResetAnnex();
+      await handleResetMonitoringImprovement();
       return;
     }
 
@@ -1093,7 +1103,7 @@ export default function ActionPlanImplentation() {
       setPendingAssistantAction(null);
 
       setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
-      await handleDeleteSelectedRow();
+      await handleDeleteSelectedMonitoringImprovementRow();
       return;
     }
 
@@ -1101,7 +1111,7 @@ export default function ActionPlanImplentation() {
       setPendingAssistantAction(null);
 
       setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
-      await handleSubmitAnnex();
+      await handleSubmitMonitoringImprovement();
     }
   };
 
@@ -1126,7 +1136,7 @@ export default function ActionPlanImplentation() {
   };
 
   const handleOpenEditEvidence = () => {
-    if (!selectedControl) {
+    if (!selectedMonitoringImprovementControl) {
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: "Please select a control row first." },
@@ -1179,7 +1189,7 @@ export default function ActionPlanImplentation() {
   };
 
   const handleSubmitEditEvidence = async () => {
-    if (!selectedControl || !selectedHost || selectedEvidenceIndex === null) {
+    if (!selectedMonitoringImprovementControl || !selectedHost || selectedEvidenceIndex === null) {
       setEditEvidenceModalOpen(false);
       return;
     }
@@ -1199,7 +1209,7 @@ export default function ActionPlanImplentation() {
 
       const data = await apiEditEvidence(
         YEAR,
-        selectedControl.control,
+        selectedMonitoringImprovementControl.CVE,
         selectedHost.hostname || "",
         selectedHost.vulnerability_name || "",
         selectedEvidenceIndex,
@@ -1212,7 +1222,7 @@ export default function ActionPlanImplentation() {
         }
       );
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => [
         ...prev,
@@ -1292,17 +1302,17 @@ export default function ActionPlanImplentation() {
     }
   };
 
-  const actionPlanStatus: StepStatus = useMemo(() => {
-    const backendStatus = systemStatus?.sections?.action_plan_implementation?.status;
+  const monitoringImprovementStatus: StepStatus = useMemo(() => {
+    const backendStatus = systemStatus?.sections?.monitoring_improvement?.status ?? systemStatus?.sections?.action_plan_implementation?.status;
     if (backendStatus === "Completed") return "Completed";
     if (backendStatus === "Blocked") return "Blocked";
     if (backendStatus === "In Progress") return "In Progress";
-    if (controls.length > 0) return "In Progress";
+    if (monitoringImprovementControls.length > 0) return "In Progress";
     return "Not Started";
-  }, [systemStatus, controls.length]);
+  }, [systemStatus, monitoringImprovementControls.length]);
 
   const displayScopeName = dashboardRaw?.scope?.name ?? "NA";
-  const controlCount = controls.length;
+  const monitoringImprovementCount = monitoringImprovementControls.length;
 
   const orgBoundaryItems = useMemo(() => {
     return dashboardRaw?.scope_context_section2?.bullets ?? [];
@@ -1325,16 +1335,16 @@ export default function ActionPlanImplentation() {
     }
   };
 
-  const refreshActionPlanControls = async () => {
+  const refreshMonitoringImprovementControls = async () => {
     try {
-      const doc = await apiGetActionPlanInventory(YEAR);
-      setControls(Array.isArray(doc?.controls) ? doc.controls : []);
+      const doc = await apiGetMonitoringImprovementInventory(YEAR);
+      setMonitoringImprovementControls(Array.isArray(doc?.cves) ? doc.cves : []);
     } catch {
-      setControls([]);
+      setMonitoringImprovementControls([]);
     }
   };
 
-  const createAnnexTableConfirmed = async () => {
+  const createMonitoringImprovementTableConfirmed = async () => {
     setSending(true);
 
     setMessages((prev) => [
@@ -1342,20 +1352,20 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using Llama3 reasoning and RAG technology to find most accurate controls",
+          "Please wait, while system is using Llama3 reasoning and RAG technology to create the Monitoring / Improverment table",
       },
     ]);
 
     try {
-      const data = await apiCreateActionPlanInventory(YEAR);
+      const data = await apiCreateMonitoringImprovementInventory(YEAR);
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: "assistant",
-          content: data.message || "Action Plan / Implementation table initialized successfully.",
+          content: data.message || "Monitoring and Improvement table initialized successfully.",
         };
         return updated;
       });
@@ -1367,7 +1377,7 @@ export default function ActionPlanImplentation() {
           content:
             e instanceof Error
               ? e.message
-              : "Backend error while creating Action Plan / Implementation table.",
+              : "Backend error while creating Monitoring and Improvement table.",
         };
         return updated;
       });
@@ -1377,8 +1387,8 @@ export default function ActionPlanImplentation() {
     }
   };
 
-  const handleDeleteSelectedRow = async () => {
-    if (selectedControlIndex === null || !controls[selectedControlIndex]) {
+  const handleDeleteSelectedMonitoringImprovementRow = async () => {
+    if (selectedControlIndex === null || !monitoringImprovementControls[selectedControlIndex]) {
       setMessages((prev) => [
         ...prev,
         {
@@ -1390,13 +1400,13 @@ export default function ActionPlanImplentation() {
       return;
     }
 
-    const selectedControl = controls[selectedControlIndex];
+    const selectedControl = monitoringImprovementControls[selectedControlIndex];
     setSending(true);
 
     try {
-      const data = await apiDeleteActionPlanControl(YEAR, selectedControl.control);
+      const data = await apiDeleteMonitoringImprovementControl(YEAR, selectedControl.CVE);
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
       setSelectedControlIndex(null);
 
       setMessages((prev) => [
@@ -1404,7 +1414,7 @@ export default function ActionPlanImplentation() {
         {
           role: "assistant",
           content:
-            data.message || `Selected row ${selectedControl.control} was deleted successfully.`,
+            data.message || `Selected row ${selectedControl.CVE} was deleted successfully.`,
         },
       ]);
     } catch (e) {
@@ -1422,18 +1432,18 @@ export default function ActionPlanImplentation() {
     }
   };
 
-  const handleResetAnnex = async () => {
+  const handleResetMonitoringImprovement = async () => {
     setSending(true);
 
     try {
-      const data = await apiResetActionPlan(YEAR, true);
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      const data = await apiResetMonitoringImprovement(YEAR, true);
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.message || "Action Plan / Implementation table has been reset.",
+          content: data.message || "Monitoring and Improvement table has been reset.",
         },
       ]);
     } catch (e) {
@@ -1444,7 +1454,7 @@ export default function ActionPlanImplentation() {
           content:
             e instanceof Error
               ? e.message
-              : "Backend error while resetting Action Plan / Implementation.",
+              : "Backend error while resetting Monitoring and Improvement.",
         },
       ]);
     } finally {
@@ -1497,7 +1507,7 @@ export default function ActionPlanImplentation() {
     try {
       const data = await apiAddAnnexControl(YEAR, controlId);
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => {
         const updated = [...prev];
@@ -1525,27 +1535,18 @@ export default function ActionPlanImplentation() {
     }
   };
 
-  const handleSubmitAnnex = async () => {
+  const handleSubmitMonitoringImprovement = async () => {
     setSending(true);
 
     try {
-      const data = await apiSubmitActionPlan(YEAR, true);
-
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
-
-      try {
-        const sys = await apiGetSystemStatus();
-        setSystemStatus(sys);
-      } catch {
-        // keep previous state if refresh fails
-      }
+      const data = await apiSubmitMonitoringImprovement(YEAR, true);
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            data.message || "The Action Plan / Implementation table data submitted succcesfully.",
+          content: data.message || "The Monitoring / Improvement table data submitted succcesfully.",
         },
       ]);
     } catch (e) {
@@ -1556,7 +1557,7 @@ export default function ActionPlanImplentation() {
           content:
             e instanceof Error
               ? e.message
-              : "Backend error while submitting Action Plan / Implementation.",
+              : "Backend error while submitting Monitoring and Improvement.",
         },
       ]);
     } finally {
@@ -1564,17 +1565,23 @@ export default function ActionPlanImplentation() {
       scrollChatToBottom();
     }
   };
-    
+
   const handleStatusChange = async (
     index: number,
-    value: ActionPlanControl["implementation_status"]
+    value: MonitoringImprovementCVE["implementation_status"]
   ) => {
-    const control = controls[index];
+    const control = monitoringImprovementControls[index];
     if (!control) return;
 
     try {
-      const data = await apiUpdateActionPlanStatus(YEAR, control.control, value);
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      const data = await apiUpdateMonitoringImprovementStatus(
+        YEAR,
+        control.CVE,
+        value
+      );
+      setMonitoringImprovementControls(
+        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
+      );
     } catch (e) {
       setMessages((prev) => [
         ...prev,
@@ -1584,7 +1591,7 @@ export default function ActionPlanImplentation() {
         },
       ]);
       scrollChatToBottom();
-    }
+     }
   };
 
   const onSend = async () => {
@@ -1602,7 +1609,8 @@ export default function ActionPlanImplentation() {
           role: "assistant",
           content:
             "Available commands:\n" +
-            "/treatment  → Recommend the treatment action for selected control / Implementation table\n" +
+            "/create     → Create new Monitoring / Improvement table\n" +
+            "/recommend  → Recommend the monitoring action for the selected vulnerability \n" +
             "/delete     → Delete the selected evidence\n" +
             "/add        → Add an evidence for selected host\n" +
             "/edit       → Edit evidence for selected host\n" +
@@ -1615,6 +1623,21 @@ export default function ActionPlanImplentation() {
       return;
     }
 
+    if (trimmed === "/create") {
+      setPendingAssistantAction("recreate_annex");
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Existing Monitoring and Improvement table will be replaced. Are your sure?",
+          confirmAction: "recreate_annex",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+      
     if (trimmed === "/add") {
       handleOpenAddEvidence();
       return;
@@ -1648,8 +1671,8 @@ export default function ActionPlanImplentation() {
       return;
     }
    
-    if (trimmed === "/treatment") {
-      await handleTreatmentForSelectedControl();
+    if (trimmed === "/recommend") {
+      await handleRecommendForSelectedControl();
       return;
     }
 
@@ -1659,7 +1682,7 @@ export default function ActionPlanImplentation() {
         ...prev,
         {
           role: "assistant",
-          content: "Are you sure you want to submit the Action Plan / Implementation table?",
+          content: "Are you sure you want to submit the Monitoring and Improvement table?",
           confirmAction: "submit_annex",
         },
       ]);
@@ -1673,19 +1696,21 @@ export default function ActionPlanImplentation() {
         {
           role: "assistant",
           content:
-            "Action Plan / Implementation — Overview\n\n" +
-            "This section focuses on executing the selected ISO 27001 controls from Annex A & SoA and tracking their implementation across the organization.\n\n" +
-            "The Action Plan / Implementation table connects each control to affected assets (hosts), identified vulnerabilities, and defined treatment actions. It allows you to:\n\n" +
-            "- Assign and track implementation status for each control\n" +
-            "- Apply treatment actions to mitigate identified risks\n" +
-            "- Record evidence proving implementation (logs, screenshots, tickets, reports, etc.)\n" +
-            "- Maintain traceability between risks, controls, and remediation activities\n\n" +
-            "This stage ensures that all planned security controls are properly implemented, validated, and documented before final submission.",
+            "Monitoring and Improvement — Overview\n\n" +
+            "This section focuses on monitoring the effectiveness of implemented ISO 27001 controls and continuously improving the organization's security posture.\n\n" +
+            "The Monitoring and Improvement table builds on the Action Plan / Implementation stage and tracks how well controls are operating in practice across assets (hosts), vulnerabilities, and applied treatments. It allows you to:\n\n" +
+            "- Monitor the implementation status of each control over time\n" +
+            "- Evaluate whether controls are effectively reducing identified risks\n" +
+            "- Record and manage evidence of control operation (logs, screenshots, reports, tickets, etc.)\n" +
+            "- Identify gaps, weaknesses, or failures in control implementation\n" +
+            "- Trigger corrective and improvement actions when needed\n" +
+            "- Maintain full traceability between risks, controls, assets, and real-world outcomes\n\n" +
+            "This stage ensures that implemented controls are continuously assessed, validated, and improved in alignment with ISO 27001:2022 monitoring and continual improvement requirements.",
         },
       ]);
       scrollChatToBottom();
       return;
-    }
+    } 
       
     setMessages((prev) => [
       ...prev,
@@ -1699,7 +1724,7 @@ export default function ActionPlanImplentation() {
 
     
   useEffect(() => {
-    void refreshActionPlanControls();
+    void refreshMonitoringImprovementControls();
   }, []);
 
   useEffect(() => {
@@ -1744,22 +1769,22 @@ export default function ActionPlanImplentation() {
     scrollChatToBottom("smooth");
   }, [messages, sending]);
 
-  const actionPlanTable = (
+  const monitoringImprovementTable = (
     <div className="mt-4 overflow-x-auto">
       <div className="min-w-full rounded-2xl border border-white/10 bg-[#0a0f1d] ring-1 ring-white/10">
         <div className="grid grid-cols-[2fr_3fr_2.5fr] bg-[#16213a] text-xs font-semibold uppercase tracking-wide text-slate-300">
-          <div className="px-3 py-3">Control</div>
-          <div className="px-3 py-3">Control Name</div>
+          <div className="px-3 py-3">CVE</div>
+          <div className="px-3 py-3">Vulnerability</div>
           <div className="px-3 py-3">Implementation Status</div>
         </div>
 
-        {controls.length === 0 ? (
+        {monitoringImprovementControls.length === 0 ? (
           <div className="px-4 py-6 text-sm text-slate-400">
-            No Action Plan / Implementation records available.
+            No Monitoring and Improvement records available.
           </div>
         ) : (
-          controls.map((c, idx) => (
-            <React.Fragment key={c.control}>
+          monitoringImprovementControls.map((c, idx) => (
+            <React.Fragment key={c.CVE}>
               <div
                 onClick={() => {
                   setSelectedControlIndex((prev) => (prev === idx ? null : idx));
@@ -1772,9 +1797,8 @@ export default function ActionPlanImplentation() {
                     : "text-slate-200 hover:bg-white/5"
                 }`}
               >
-                <div className="px-3 py-3">{c.control}</div>
-                <div className="px-3 py-3">{c.control_name}</div>
-
+                <div className="px-3 py-3">{c.CVE || "-"}</div>
+                <div className="px-3 py-3">{c.vulnerability || "-"}</div>
                 <div className="px-3 py-3">
                   <select
                     onClick={(e) => e.stopPropagation()}
@@ -1782,7 +1806,7 @@ export default function ActionPlanImplentation() {
                     onChange={(e) =>
                       handleStatusChange(
                         idx,
-                        e.target.value as ActionPlanControl["implementation_status"]
+                        e.target.value as MonitoringImprovementCVE["implementation_status"]
                       )
                     }
                     className="w-full rounded-lg border border-white/10 bg-[#0f172a] px-2 py-1 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
@@ -1799,24 +1823,25 @@ export default function ActionPlanImplentation() {
                 {selectedControlIndex === idx ? (
                   <div className="border-t border-white/10 bg-[#0b1220] px-4 py-4">
                     <div className="overflow-x-auto rounded-xl border border-white/10">
-                      <div className="grid grid-cols-[1.2fr_2fr] bg-[#1a2540] text-xs font-semibold uppercase tracking-wide text-slate-300">
-                        <div className="px-3 py-3">Justification</div>
-                        <div className="px-3 py-3">Treatment Action</div>
-                      </div>
+                        <div className="grid grid-cols-[1.2fr_2fr] bg-[#1a2540] text-xs font-semibold uppercase tracking-wide text-slate-300">
+                          <div className="px-3 py-3">Justification</div>
+                          <div className="px-3 py-3">Recommended Action</div>
+                        </div>
                 
                       <div className="grid grid-cols-[1.2fr_2fr] border-t border-white/10 text-sm text-slate-200">
                         <div className="px-3 py-3">
                           {c.justification?.trim() ? c.justification : "-"}
                         </div>
                         <div className="px-3 py-3">
-                          {c.treatment_action?.trim() ? c.treatment_action : "-"}
+                          {c.recommended_action?.trim() ? c.recommended_action : "-"}
                         </div>
                       </div>
                 
-                      <div className="grid grid-cols-[15%_30%_55%] border-t border-white/10 bg-[#16213a] text-xs font-semibold uppercase tracking-wide text-slate-300">
+                      <div className="grid grid-cols-[20%_25%_25%_30%] border-t border-white/10 bg-[#16213a] text-xs font-semibold uppercase tracking-wide text-slate-300">  
                         <div className="px-3 py-3">Host Name</div>
                         <div className="px-3 py-3">Role</div>
-                        <div className="px-3 py-3">Vulnerability</div>
+                        <div className="px-3 py-3">Location</div>
+                        <div className="px-3 py-3">Risk</div>
                       </div>
                 
                         {!c.hosts || c.hosts.length === 0 ? (
@@ -1842,7 +1867,7 @@ export default function ActionPlanImplentation() {
                                   )
                               : [];                        
                             return (
-                              <React.Fragment key={`${c.control}-${hostIdx}`}>
+                              <React.Fragment key={`${c.CVE}-${hostIdx}`}>
                                 <div
                                   onClick={() => {
                                     setSelectedHostIndex((prev) => (prev === hostIdx ? null : hostIdx));
@@ -1856,7 +1881,7 @@ export default function ActionPlanImplentation() {
                                 >
                                   <div className="px-3 py-3">{host.hostname || "-"}</div>
                                   <div className="px-3 py-3">{host.role || "-"}</div>
-                                  <div className="px-3 py-3">{host.vulnerability_name || "-"}</div>
+                                  <div className="px-3 py-3">{host["CIA rating"] || "-"}</div>
                                 </div>
                         
                                 {validEvidence.length > 0 && (
@@ -1871,7 +1896,7 @@ export default function ActionPlanImplentation() {
                         
                                     {validEvidence.map(({ ev, rawIndex }, evIdx) => (
                                       <div
-                                        key={`${c.control}-${hostIdx}-evidence-${evIdx}`}
+                                        key={`${c.CVE}-${hostIdx}-evidence-${evIdx}`}
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setSelectedControlIndex(idx);
@@ -1985,7 +2010,7 @@ export default function ActionPlanImplentation() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /treatment /delete /add /edit /submit /help /commands
+          Command mode: /create /recommend /delete /add /edit /submit /help /commands
         </div>
       </div>
     </ShellCard>
@@ -1997,8 +2022,8 @@ export default function ActionPlanImplentation() {
       <ConfirmModal
         open={confirmRecreateOpen}
         title="Confirm Recreate"
-        text="The table will be recreated, are you sure?"
-        onYes={() => void handleConfirmRecreateYes()}
+        text="Existing Monitoring and Improvement table data will be replaced. Are you sure?"
+        onYes={handleConfirmRecreateYes}
         onNo={handleConfirmRecreateNo}
       />
       <AddEvidenceModal
@@ -2096,7 +2121,7 @@ export default function ActionPlanImplentation() {
           <header className="mb-4">
             <div className="rounded-2xl border border-white/10 bg-[#070A12] py-4 text-center ring-1 ring-white/10">
               <h1 className="text-2xl font-bold tracking-tight text-slate-100">
-                Action Plan / Implementation
+                Monitoring and Improvement
               </h1>
             </div>
           </header>
@@ -2120,10 +2145,10 @@ export default function ActionPlanImplentation() {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm text-slate-300">({controlCount} controls)</span>
+                    <span className="text-sm text-slate-300">({monitoringImprovementCount} controls)</span>
                     <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
                       <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                      {actionPlanStatus}
+                      {monitoringImprovementStatus}
                     </span>
                   </div>
                 </div>
@@ -2155,8 +2180,8 @@ export default function ActionPlanImplentation() {
             </ShellCard>
 
             <ShellCard className="flex min-h-[420px] flex-col p-5">
-              <div className="shrink-0 text-lg font-semibold">Action Plan / Implementation</div>
-              {actionPlanTable}
+              <div className="shrink-0 text-lg font-semibold">Monitoring and Improvement</div>
+              {monitoringImprovementTable}
             </ShellCard>
 
             <div className="min-h-[700px]">{assistantPanel}</div>
@@ -2226,7 +2251,7 @@ export default function ActionPlanImplentation() {
         <header className="col-[3/5] row-[1] border-b border-white/10 bg-[#070A12]">
           <div className="flex h-[89px] items-center justify-center px-6">
             <h1 className="text-center text-3xl font-bold tracking-tight text-slate-100 md:text-4xl">
-              Action Plan / Implementation
+              Monitoring and Improvement
             </h1>
           </div>
         </header>
@@ -2250,16 +2275,33 @@ export default function ActionPlanImplentation() {
                     <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
 
-                  <span className="text-sm text-slate-300">- ({controlCount} controls)</span>
+                  <span className="text-sm text-slate-300">- ({monitoringImprovementCount} CVEs)</span>
 
                   <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
                     <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                    {actionPlanStatus}
+                    {monitoringImprovementStatus}
                   </span>
                 </div>
               </div>
             </div>
           </ShellCard>
+        </div>
+
+        <div className="col-[4] row-[2] p-3 pl-2">
+          <div className="flex min-h-[71px] items-center justify-end">
+            <button
+              onClick={() => {
+                if (hasAnyMonitoringImprovementStatus) {
+                  setConfirmRecreateOpen(true);
+                } else {
+                  void createMonitoringImprovementTableConfirmed();
+                }
+              }}
+              className="rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-600"
+            >
+              + Create New Monitoring / Improvement Table
+            </button>
+          </div>
         </div>
 
         <div className="col-[3] row-[3] p-3 pr-2 pt-0">
@@ -2290,8 +2332,8 @@ export default function ActionPlanImplentation() {
 
         <div className="col-[3] row-[4/6] min-h-0 p-3 pr-2 pt-0">
           <ShellCard className="flex h-full min-h-0 flex-col p-5">
-            <div className="shrink-0 text-lg font-semibold">Action Plan / Implementation</div>
-            {actionPlanTable}
+            <div className="shrink-0 text-lg font-semibold">Monitoring and Improvement</div>
+            {monitoringImprovementTable}
             <AddEvidenceModal
               open={addEvidenceModalOpen}
               hostLabel={selectedHostLabel}
@@ -2305,6 +2347,7 @@ export default function ActionPlanImplentation() {
               submitting={sending}
             />
           </ShellCard>
+
         </div>
 
         <div className="col-[4] row-[3/6] min-h-0 p-3 pl-2 pt-0">{assistantPanel}</div>

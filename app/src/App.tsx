@@ -8,8 +8,8 @@ import RiskAnalysis from "./pages/RiskAnalysis";
 import RiskEvaluationTreatment from "./pages/RiskEvaluationTreatment";
 import AnnexASoA from "./pages/AnnexASoA";
 import ActionPlanImplementation from "./pages/ActionPlanImplementation";
+import MonitoringImprovement from "./pages/MonitoringImprovement";
 /** import ActionPlan from "./pages/ActionPlan";
- import MonitoringImprovement from "./pages/MonitoringImprovement";
  import FinalDeliverables from "./pages/FinalDeliverables";
 */
 
@@ -22,7 +22,8 @@ type RouteKey =
   | "risk-analysis"
   | "risk-evaluation-treatment"
   | "annex-a-soa"
-  | "action-plan-implementation";
+  | "action-plan-implementation"
+  | "monitoring-improvement";
 
 function getRouteFromHash(): RouteKey {
   const h = (window.location.hash || "").toLowerCase();
@@ -35,6 +36,7 @@ function getRouteFromHash(): RouteKey {
   if (h.startsWith("#/risk-evaluation-treatment")) return "risk-evaluation-treatment";
   if (h.startsWith("#/annex-a-soa")) return "annex-a-soa";
   if (h.startsWith("#/action-plan-implementation")) return "action-plan-implementation";
+  if (h.startsWith("#/monitoring-improvement")) return "monitoring-improvement";
 
   return "dashboard";
 }
@@ -78,6 +80,9 @@ export default function App() {
 
     case "action-plan-implementation":
       return <ActionPlanImplementation />;
+
+    case "monitoring-improvement":
+      return <MonitoringImprovement />;
 
     case "dashboard":
     default:
