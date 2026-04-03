@@ -1147,11 +1147,6 @@ def create_monitoring_improvement(year: int = 2026):
                 f"and shortens the time the weakness remains present in the environment."
             )
 
-        item["severity"] = _normalize_text(nvd_record.get("severity"))
-        item["published"] = _normalize_text(nvd_record.get("published"))
-        item["last_modified"] = _normalize_text(nvd_record.get("last_modified"))
-        item["cwes"] = nvd_record.get("cwes", [])
-        item["cpes"] = nvd_record.get("cpes", [])
         item["justification"] = justification
 
         enriched_cves.append(item)

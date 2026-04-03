@@ -1,11 +1,10 @@
 {
   "controls": [
     {
-      "control_id": "5.2",
       "control": "5.2",
       "control_name": "Information security roles and responsibilities",
-      "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
       "implementation_status": "In Progress",
+      "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
       "treatment_action": "",
       "hosts": [
         {
@@ -16,22 +15,13 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "5.2",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
           "evidence": [
             {
-              "responsible": "a",
-              "resources": "a",
-              "date": "2026-04-01",
-              "url": "a",
-              "desc": "a"
+              "responsible": "Information Security Manager",
+              "resources": "RACI matrix, asset ownership register, vulnerability ticket, change record",
+              "date": "2026-03-10",
+              "url": "/evidence/SRV-01/governance/roles_responsibility_assignment_R-001.pdf",
+              "desc": "Role and responsibility assignment for SRV-01 (Domain Controller) was documented and approved to ensure accountability for remediation and monitoring of Netlogon Elevation of Privilege (CVE-2020-1472)."
             }
           ]
         },
@@ -43,16 +33,15 @@
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
           "riskid": "R-016",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "5.2",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Information Security Manager",
+              "resources": "RACI matrix, asset ownership register, vulnerability ticket, change record",
+              "date": "2026-03-11",
+              "url": "/evidence/SRV-04/governance/roles_responsibility_assignment_R-016.pdf",
+              "desc": "Role and responsibility assignment for SRV-04 (Web Server) was documented and approved to ensure accountability for remediation and monitoring of HTTP Protocol Stack Remote Code Execution (CVE-2021-31166)."
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
@@ -62,16 +51,15 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "5.2",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Information Security Manager",
+              "resources": "RACI matrix, asset ownership register, vulnerability ticket, change record",
+              "date": "2026-03-10",
+              "url": "/evidence/SRV-01/governance/roles_responsibility_assignment_R-002.pdf",
+              "desc": "Role and responsibility assignment for SRV-01 (Domain Controller) was documented and approved to ensure accountability for remediation and monitoring of Windows DNS Server Remote Code Execution (CVE-2020-1350)."
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
@@ -81,16 +69,15 @@
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
           "riskid": "R-003",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "5.2",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Information Security Manager",
+              "resources": "RACI matrix, asset ownership register, vulnerability ticket, change record",
+              "date": "2026-03-10",
+              "url": "/evidence/SRV-01/governance/roles_responsibility_assignment_R-003.pdf",
+              "desc": "Role and responsibility assignment for SRV-01 (Domain Controller) was documented and approved to ensure accountability for remediation and monitoring of Active Directory Domain Services Privilege Escalation (CVE-2022-26923)."
+            }
+          ]
         },
         {
           "hostname": "SRV-02",
@@ -100,16 +87,15 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-005",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "5.2",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Information Security Manager",
+              "resources": "RACI matrix, asset ownership register, vulnerability ticket, change record",
+              "date": "2026-03-10",
+              "url": "/evidence/SRV-02/governance/roles_responsibility_assignment_R-005.pdf",
+              "desc": "Role and responsibility assignment for SRV-02 (DNS Server) was documented and approved to ensure accountability for remediation and monitoring of Windows LSA Spoofing Vulnerability (CVE-2021-36942)."
+            }
+          ]
         },
         {
           "hostname": "SRV-03",
@@ -119,25 +105,23 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-014",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "5.2",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Information Security Manager",
+              "resources": "RACI matrix, asset ownership register, vulnerability ticket, change record",
+              "date": "2026-03-10",
+              "url": "/evidence/SRV-03/governance/roles_responsibility_assignment_R-014.pdf",
+              "desc": "Role and responsibility assignment for SRV-03 (File Server) was documented and approved to ensure accountability for remediation and monitoring of Windows LSA Spoofing Vulnerability (CVE-2021-36942)."
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "6.7",
       "control": "6.7",
       "control_name": "Remote working",
-      "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
       "implementation_status": "In Progress",
+      "justification": "Recommended based on CVE CVE-2021-31166 and related vulnerability context.",
       "treatment_action": "",
       "hosts": [
         {
@@ -148,16 +132,15 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "6.7",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "IT Operations Manager",
+              "resources": "Remote access policy, VPN configuration, privileged access review, endpoint hardening checklist",
+              "date": "2026-03-12",
+              "url": "/evidence/SRV-01/remote-working/secure_remote_access_review_R-001.pdf",
+              "desc": "Secure remote administration requirements for SRV-01 (Domain Controller) were reviewed and enforced, including controlled remote access and hardened endpoints to reduce exposure related to Netlogon Elevation of Privilege."
+            }
+          ]
         },
         {
           "hostname": "SRV-04",
@@ -167,16 +150,15 @@
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
           "riskid": "R-016",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "6.7",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "IT Operations Manager",
+              "resources": "Remote access policy, VPN configuration, privileged access review, endpoint hardening checklist",
+              "date": "2026-03-12",
+              "url": "/evidence/SRV-04/remote-working/secure_remote_access_review_R-016.pdf",
+              "desc": "Secure remote administration requirements for SRV-04 (Web Server) were reviewed and enforced, including controlled remote access and hardened endpoints to reduce exposure related to HTTP Protocol Stack Remote Code Execution."
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
@@ -186,16 +168,15 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "6.7",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "IT Operations Manager",
+              "resources": "Remote access policy, VPN configuration, privileged access review, endpoint hardening checklist",
+              "date": "2026-03-12",
+              "url": "/evidence/SRV-01/remote-working/secure_remote_access_review_R-002.pdf",
+              "desc": "Secure remote administration requirements for SRV-01 (Domain Controller) were reviewed and enforced, including controlled remote access and hardened endpoints to reduce exposure related to Windows DNS Server Remote Code Execution."
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
@@ -205,16 +186,15 @@
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
           "riskid": "R-003",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "6.7",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "IT Operations Manager",
+              "resources": "Remote access policy, VPN configuration, privileged access review, endpoint hardening checklist",
+              "date": "2026-03-12",
+              "url": "/evidence/SRV-01/remote-working/secure_remote_access_review_R-003.pdf",
+              "desc": "Secure remote administration requirements for SRV-01 (Domain Controller) were reviewed and enforced, including controlled remote access and hardened endpoints to reduce exposure related to Active Directory Domain Services Privilege Escalation."
+            }
+          ]
         },
         {
           "hostname": "SRV-02",
@@ -224,16 +204,15 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-005",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "6.7",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "IT Operations Manager",
+              "resources": "Remote access policy, VPN configuration, privileged access review, endpoint hardening checklist",
+              "date": "2026-03-12",
+              "url": "/evidence/SRV-02/remote-working/secure_remote_access_review_R-005.pdf",
+              "desc": "Secure remote administration requirements for SRV-02 (DNS Server) were reviewed and enforced, including controlled remote access and hardened endpoints to reduce exposure related to Windows LSA Spoofing Vulnerability."
+            }
+          ]
         },
         {
           "hostname": "SRV-03",
@@ -243,25 +222,23 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-014",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "6.7",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "IT Operations Manager",
+              "resources": "Remote access policy, VPN configuration, privileged access review, endpoint hardening checklist",
+              "date": "2026-03-12",
+              "url": "/evidence/SRV-03/remote-working/secure_remote_access_review_R-014.pdf",
+              "desc": "Secure remote administration requirements for SRV-03 (File Server) were reviewed and enforced, including controlled remote access and hardened endpoints to reduce exposure related to Windows LSA Spoofing Vulnerability."
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.2",
       "control": "8.2",
       "control_name": "Network security",
-      "justification": "This control helps protect the domain controller from unauthorized access and exploitation of the vulnerability.",
       "implementation_status": "In Progress",
+      "justification": "This control helps protect the domain controller from unauthorized access and exploitation of the vulnerability.",
       "treatment_action": "",
       "hosts": [
         {
@@ -272,25 +249,23 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.2",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Network Security Team",
+              "resources": "Firewall ruleset, network segmentation diagram, ACL change ticket, security logs",
+              "date": "2026-03-15",
+              "url": "/evidence/SRV-01/network-security/segmentation_and_acl_review_R-001.png",
+              "desc": "Network segmentation and access control rules were applied for SRV-01 (Domain Controller) to restrict unauthorized network paths and reduce exploitation risk associated with Netlogon Elevation of Privilege."
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.21",
       "control": "8.21",
       "control_name": "Network services security",
-      "justification": "To secure the network services vulnerable to the high HTTP protocol stack remote code execution",
       "implementation_status": "In Progress",
+      "justification": "To secure the network services vulnerable to the high HTTP protocol stack remote code execution",
       "treatment_action": "",
       "hosts": [
         {
@@ -301,25 +276,23 @@
           "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
           "cve": "CVE-2021-31166",
           "riskid": "R-016",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.21",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Infrastructure Team",
+              "resources": "Service hardening checklist, IIS/HTTP configuration, patch report, service logs",
+              "date": "2026-03-16",
+              "url": "/evidence/SRV-04/network-services/service_hardening_R-016.log",
+              "desc": "Network-facing services on SRV-04 (Web Server) were hardened and reviewed to reduce service exposure and support remediation of HTTP Protocol Stack Remote Code Execution (CVE-2021-31166)."
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.28",
       "control": "8.28",
       "control_name": "Secure coding",
-      "justification": "This vulnerability is a technical vulnerability and secure coding practices can help reduce the risk of similar vulnerabilities in the future.",
       "implementation_status": "In Progress",
+      "justification": "This vulnerability is a technical vulnerability and secure coding practices can help reduce the risk of similar vulnerabilities in the future.",
       "treatment_action": "",
       "hosts": [
         {
@@ -330,25 +303,23 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.28",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "DevSecOps Team",
+              "resources": "Secure coding standard, code review report, static analysis results, remediation ticket",
+              "date": "2026-03-18",
+              "url": "/evidence/SRV-01/secure-coding/code_review_and_sast_R-002.pdf",
+              "desc": "Secure coding and code review evidence was recorded to address root-cause weaknesses related to Windows DNS Server Remote Code Execution affecting SRV-01 (Domain Controller) and to reduce recurrence of similar flaws."
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.29",
       "control": "8.29",
       "control_name": "Security testing",
-      "justification": "Regular security testing can help identify and validate the effectiveness of controls to mitigate this remote code execution vulnerability.",
       "implementation_status": "In Progress",
+      "justification": "Regular security testing can help identify and validate the effectiveness of controls to mitigate this remote code execution vulnerability.",
       "treatment_action": "",
       "hosts": [
         {
@@ -359,25 +330,23 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.29",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Security Testing Team",
+              "resources": "Vulnerability scan report, validation test results, test case evidence, remediation verification log",
+              "date": "2026-03-19",
+              "url": "/evidence/SRV-01/security-testing/validation_test_R-002.pdf",
+              "desc": "Security testing was performed on SRV-01 (Domain Controller) to validate mitigation effectiveness and confirm detection or remediation status for Windows DNS Server Remote Code Execution (CVE-2020-1350)."
+            }
+          ]
         }
       ]
     },
     {
-      "control_id": "8.8",
       "control": "8.8",
       "control_name": "Technical vulnerability management",
-      "justification": "This control ensures that the vulnerability is properly assessed, reported and remediated in a timely manner to prevent exploitation.",
       "implementation_status": "In Progress",
+      "justification": "This control ensures that the vulnerability is properly assessed, reported and remediated in a timely manner to prevent exploitation.",
       "treatment_action": "",
       "hosts": [
         {
@@ -388,16 +357,15 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.8",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Vulnerability Management Team",
+              "resources": "Patch deployment report, scanner findings, exception register, remediation tracking ticket",
+              "date": "2026-03-17",
+              "url": "/evidence/SRV-01/vulnerability-management/remediation_tracking_R-001.xlsx",
+              "desc": "The vulnerability management process recorded identification, assessment, remediation tracking, and closure evidence for Netlogon Elevation of Privilege on SRV-01 (Domain Controller)."
+            }
+          ]
         },
         {
           "hostname": "SRV-01",
@@ -407,16 +375,15 @@
           "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
           "cve": "CVE-2022-26923",
           "riskid": "R-003",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.8",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Vulnerability Management Team",
+              "resources": "Patch deployment report, scanner findings, exception register, remediation tracking ticket",
+              "date": "2026-03-17",
+              "url": "/evidence/SRV-01/vulnerability-management/remediation_tracking_R-003.xlsx",
+              "desc": "The vulnerability management process recorded identification, assessment, remediation tracking, and closure evidence for Active Directory Domain Services Privilege Escalation on SRV-01 (Domain Controller)."
+            }
+          ]
         },
         {
           "hostname": "SRV-02",
@@ -426,16 +393,15 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-005",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.8",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Vulnerability Management Team",
+              "resources": "Patch deployment report, scanner findings, exception register, remediation tracking ticket",
+              "date": "2026-03-17",
+              "url": "/evidence/SRV-02/vulnerability-management/remediation_tracking_R-005.xlsx",
+              "desc": "The vulnerability management process recorded identification, assessment, remediation tracking, and closure evidence for Windows LSA Spoofing Vulnerability on SRV-02 (DNS Server)."
+            }
+          ]
         },
         {
           "hostname": "SRV-03",
@@ -445,16 +411,15 @@
           "vulnerability_name": "Windows LSA Spoofing Vulnerability",
           "cve": "CVE-2021-36942",
           "riskid": "R-014",
-          "risk": "High",
-          "evaluation": "",
-          "treatment": "",
-          "treatment_action": "",
-          "control": "8.8",
-          "responsible": "",
-          "resources": "",
-          "date": "",
-          "implementation_status": "In Progress",
-          "evidence": []
+          "evidence": [
+            {
+              "responsible": "Vulnerability Management Team",
+              "resources": "Patch deployment report, scanner findings, exception register, remediation tracking ticket",
+              "date": "2026-03-17",
+              "url": "/evidence/SRV-03/vulnerability-management/remediation_tracking_R-014.xlsx",
+              "desc": "The vulnerability management process recorded identification, assessment, remediation tracking, and closure evidence for Windows LSA Spoofing Vulnerability on SRV-03 (File Server)."
+            }
+          ]
         }
       ]
     }

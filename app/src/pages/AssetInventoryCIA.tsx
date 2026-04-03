@@ -502,7 +502,7 @@ export default function AssetInventoryCIA() {
       { step: 7, name: "Annex A & SoA", href: "#/annex-a-soa" },
       { step: 8, name: "Action Plan / Implementation", href: "#/action-plan-implementation" },
       { step: 9, name: "Monitoring & Improvement", href: "#/monitoring-improvement" },
-      { step: 10, name: "Final Deliverables", href: "#/" },
+      { step: 10, name: "Final Deliverables", href: "#/final-deliverables" },
     ],
     []
   );

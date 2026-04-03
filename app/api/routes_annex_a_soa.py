@@ -94,20 +94,6 @@ def _legacy_action_plan_implementation_file(year: int) -> Path:
     return _work_dir(year) / "ActionPlanImplementaion.json"
 
 
-def _action_plan_template_file(year: int) -> Path | None:
-    work_dir = _work_dir(year)
-
-    for file_name in (
-        "ActionPlanImplementaion - Copy.json",
-        "ActionPlanImplementation - Copy.json",
-    ):
-        path = work_dir / file_name
-        if path.exists():
-            return path
-
-    return None
-
-
 def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "SystemStatus.json"
 
@@ -958,25 +944,6 @@ def _find_control(doc: dict, control_id: str) -> tuple[int | None, dict | None]:
     return None, None
 
 
-ACTION_PLAN_DEFAULT_FIELDS = [
-    "hostname",
-    "ip_address",
-    "role",
-    "CIA rating",
-    "vulnerability_name",
-    "cve",
-    "riskid",
-    "risk",
-    "evaluation",
-    "treatment",
-    "treatment_action",
-    "control",
-    "responsible",
-    "resources",
-    "date",
-]
-
-
 def _action_plan_field_order(year: int) -> list[str]:
     template_path = _action_plan_template_file(year)
     if template_path is None:
@@ -1038,62 +1005,66 @@ def _build_action_plan_control_lookup(doc: dict) -> tuple[dict[str, list[str]], 
     return controls_by_risk_id, controls_by_cve
 
 
+def _blank_evidence() -> dict:
+    return {
+        "responsible": "",
+        "resources": "",
+        "date": "",
+        "url": "",
+        "desc": ""
+    }
+
+
+def _blank_host_from_record(record: dict) -> dict:
+    return {
+        "hostname": _normalize_text(record.get("hostname")),
+        "ip_address": _normalize_text(record.get("ip_address")),
+        "role": _normalize_text(record.get("role")),
+        "CIA rating": _normalize_text(record.get("CIA rating")),
+        "vulnerability_name": _normalize_text(record.get("vulnerability_name")),
+        "cve": _normalize_text(record.get("cve")),
+        "riskid": _normalize_text(record.get("riskid")),
+        "evidence": [_blank_evidence()]
+    }
+
+
 def _build_action_plan_doc(year: int, annex_doc: dict) -> dict:
     controls = _all_controls(annex_doc)
-    action_plan = []
+    action_plan_controls = []
 
     for control in controls:
-        control_id = _normalize_text(control.get("control_id"))
+        control_id = _normalize_text(control.get("control_id") or control.get("control"))
         control_name = _normalize_text(control.get("control_name"))
+        implementation_status = _normalize_text(control.get("implementation_status")) or "In Progress"
         justification = _normalize_text(control.get("justification"))
-        implementation_status = _normalize_text(control.get("implementation_status")) or ""
+        treatment_action = _normalize_text(control.get("treatment_action"))
 
-        hosts = []
         source_records = control.get("source_records", [])
         if not isinstance(source_records, list):
             source_records = []
 
+        hosts = []
         for record in source_records:
-            if not isinstance(record, dict):
-                continue
+            if isinstance(record, dict):
+                hosts.append(_blank_host_from_record(record))
 
-            host_entry = {
-                "hostname": _normalize_text(record.get("hostname")),
-                "ip_address": _normalize_text(record.get("ip_address")),
-                "role": _normalize_text(record.get("role")),
-                "CIA rating": _normalize_text(record.get("CIA rating")),
-                "vulnerability_name": _normalize_text(record.get("vulnerability_name")),
-                "cve": _normalize_text(record.get("cve")),
-                "riskid": _normalize_text(record.get("riskid")),
-                "evidence": [
-                    {
-                        "responsible": "",
-                        "resources": "",
-                        "date": "",
-                        "url": "",
-                        "desc": ""
-                    }
-                ]
-            }
-
-            hosts.append(host_entry)
-
-        action_plan.append({
+        action_plan_controls.append({
             "control": control_id,
             "control_name": control_name,
             "implementation_status": implementation_status,
             "justification": justification,
-            "treatment_action": "",
+            "treatment_action": treatment_action,
             "hosts": hosts
         })
 
     return {
-        "controls": action_plan
+        "controls": action_plan_controls
     }
 
-def _restore_action_plan_doc_if_missing(year: int, annex_doc: dict) -> tuple[Path, dict, str]:
+def _restore_action_plan_doc_if_missing(year: int, annex_doc: dict, force: bool = False) -> tuple[Path, dict, str]:
     output_path = _action_plan_implementation_file(year)
-    if output_path.exists():
+
+    if output_path.exists() and not force:
         try:
             existing_doc = _load_json(output_path)
             if isinstance(existing_doc, dict):
@@ -1102,7 +1073,7 @@ def _restore_action_plan_doc_if_missing(year: int, annex_doc: dict) -> tuple[Pat
             pass
 
     legacy_output_path = _legacy_action_plan_implementation_file(year)
-    if legacy_output_path.exists():
+    if legacy_output_path.exists() and not force:
         try:
             legacy_doc = _load_json(legacy_output_path)
             if isinstance(legacy_doc, dict):
@@ -1114,7 +1085,7 @@ def _restore_action_plan_doc_if_missing(year: int, annex_doc: dict) -> tuple[Pat
     action_plan_doc = _build_action_plan_doc(year, annex_doc)
     _save_json(output_path, action_plan_doc)
     return output_path, action_plan_doc, "generated"
-
+    
 
 def _format_control_label(control: dict) -> str:
     control_id = _normalize_text(control.get("control_id")) or "Unknown Control"
@@ -2220,37 +2191,35 @@ def submit_annex_a_soa(payload: SubmitRequest):
         }
 
     controls = _all_controls(doc)
-    if len(controls) == 0:
+    if not controls:
         return {
             "success": False,
-            "message": "The Annex A & SoAtable is empty. Run /create first.",
+            "message": "The Annex A & SoA table is empty. Run /create first.",
             "inventory": doc,
         }
 
-    missing_status = []
-    invalid_status = []
+    missing_status: list[str] = []
+    invalid_status: list[str] = []
 
     for control in controls:
         status_value = _normalize_text(control.get("implementation_status"))
 
         if status_value in {"", "-- Select --", "-- select --"}:
             missing_status.append(_format_control_label(control))
-            continue
-
-        if status_value not in VALID_IMPLEMENTATION_STATUSES:
+        elif status_value not in VALID_IMPLEMENTATION_STATUSES:
             invalid_status.append(f"{_format_control_label(control)} -> {status_value}")
 
-    if len(missing_status) > 0:
+    if missing_status:
         return {
             "success": False,
             "message": (
-                "Please select an implementation status for every control before submitting the "
-                f"Annex A & SoA table. Missing selections: {', '.join(missing_status)}"
+                "Please select an implementation status for every control before submitting "
+                f"the Annex A & SoA table. Missing selections: {', '.join(missing_status)}"
             ),
             "inventory": doc,
         }
 
-    if len(invalid_status) > 0:
+    if invalid_status:
         return {
             "success": False,
             "message": (
@@ -2261,7 +2230,11 @@ def submit_annex_a_soa(payload: SubmitRequest):
         }
 
     try:
-        action_plan_doc = _build_action_plan_doc(year, doc)
+        action_plan_path, action_plan_doc, _ = _restore_action_plan_doc_if_missing(
+            year=year,
+            annex_doc=doc,
+            force=True,
+        )
     except FileNotFoundError as e:
         return {
             "success": False,
@@ -2275,9 +2248,6 @@ def submit_annex_a_soa(payload: SubmitRequest):
             "inventory": doc,
         }
 
-    action_plan_path = _action_plan_implementation_file(year)
-    _save_json(action_plan_path, action_plan_doc)
-
     status_doc = _load_system_status_or_default(year)
     status_doc["sections"]["annex_a_soa"]["status"] = "Completed"
 
@@ -2288,7 +2258,7 @@ def submit_annex_a_soa(payload: SubmitRequest):
 
     return {
         "success": True,
-        "message": "Annex A & SoA finalized. ",
+        "message": "Annex A & SoA finalized.",
         "records_finalized": len(controls),
         "action_plan_records_created": len(action_plan_doc.get("controls", [])),
         "action_plan_file": action_plan_path.name,

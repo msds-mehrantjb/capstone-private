@@ -1,178 +1,347 @@
-[
-  {
-    "hostname": "WS-03",
-    "ip_address": "10.0.0.12",
-    "role": "User Workstation",
-    "CIA rating": "Medium",
-    "vulnerability_name": "Microsoft Outlook Elevation of Privilege Vulnerability",
-    "justification": "The Microsoft Outlook Elevation of Privilege Vulnerability (CVE-2023-23397) has a critical severity rating, allowing attackers to elevate privileges without user interaction. Given the medium CIA rating and risk level for this workstation (WS-03), monitoring is currently sufficient. However, further action is needed to ensure proactive remediation.",
-    "recommended_action": "Implement patches or updates for Microsoft Outlook as soon as possible to mitigate the vulnerability's impact on WS-03.",
-    "cve": "CVE-2023-23397",
-    "riskid": "R-011",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  },
-  {
-    "hostname": "WS-03",
-    "ip_address": "10.0.0.12",
-    "role": "User Workstation",
-    "CIA rating": "Medium",
-    "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
-    "justification": "The Microsoft Outlook Remote Code Execution Vulnerability (CVE-2024-21413) is a critical vulnerability with a severity rating of CRITICAL, making it a high-risk issue for the WS-03 User Workstation. As the host has a CIA rating of Medium and the evaluation is to Monitor, this vulnerability requires immediate attention.",
-    "recommended_action": "Implement Microsoft Outlook updates and patches as soon as possible to remediate the Remote Code Execution Vulnerability (CVE-2024-21413) and reduce the risk of exploitation.",
-    "cve": "CVE-2024-21413",
-    "riskid": "R-012",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  },
-  {
-    "hostname": "WS-03",
-    "ip_address": "10.0.0.12",
-    "role": "User Workstation",
-    "CIA rating": "Medium",
-    "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-    "justification": "The remote code execution vulnerability in Microsoft Support Diagnostic Tool (MSDT) could allow an attacker to run arbitrary code with the privileges of the calling application, posing a significant risk to the confidentiality and integrity of sensitive data on the WS-03 User Workstation. Given its high severity rating and potential impact, it is essential to address this vulnerability.",
-    "recommended_action": "Implement a patch or update for the affected Microsoft Support Diagnostic Tool (MSDT) component as soon as possible, following guidance from the MSRC Blog Entry and ensuring that all necessary steps are taken to protect the system from exploitation.",
-    "cve": "CVE-2022-30190",
-    "riskid": "R-013",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  },
-  {
-    "hostname": "SRV-03",
-    "ip_address": "10.0.0.18",
-    "role": "File Server",
-    "CIA rating": "High",
-    "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-    "justification": "The Windows NTLM Tampering Vulnerability (CVE-2019-1040) poses a medium risk to the File Server SRV-03, which has a CIA rating of High. While the vulnerability itself is not critical, it could be exploited by an attacker to downgrade NTLM security features, potentially compromising the confidentiality and integrity of sensitive files.",
-    "recommended_action": "Monitor the File Server SRV-03 for signs of NTLM tampering attempts and consider implementing additional security controls, such as restricting access to sensitive files or folders, to minimize the potential impact of a successful exploitation.",
-    "cve": "CVE-2019-1040",
-    "riskid": "R-015",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  },
-  {
-    "hostname": "SRV-04",
-    "ip_address": "10.0.0.19",
-    "role": "Web Server",
-    "CIA rating": "High",
-    "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-    "justification": "The Windows NTLM Tampering Vulnerability (CVE-2019-1040) has a medium risk level and requires monitoring due to its potential impact on the confidentiality, integrity, and availability of the SRV-04 Web Server.",
-    "recommended_action": "Implement the Microsoft update that hardens NTLM MIC protection on the server-side as soon as possible to mitigate the vulnerability.",
-    "cve": "CVE-2019-1040",
-    "riskid": "R-017",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  },
-  {
-    "hostname": "WS-05",
-    "ip_address": "10.0.0.27",
-    "role": "User Workstation",
-    "CIA rating": "Medium",
-    "vulnerability_name": "Docker Desktop for Windows File Overwrite Vulnerability",
-    "justification": "The Docker Desktop for Windows File Overwrite Vulnerability (CVE-2022-38730) poses a medium-level risk to the WS-05 user workstation due to its potential to overwrite any file through the windowscontainers/start dockerBackendV2 API. Given the CIA rating of Medium, it is essential to monitor this vulnerability and implement necessary mitigations.",
-    "recommended_action": "Configure Docker Desktop for Windows to restrict the data-root field inside the DaemonJSON field in the WindowsContainerStartRequest class, ensuring that only authorized files can be overwritten.",
-    "cve": "CVE-2022-38730",
-    "riskid": "R-019",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  },
-  {
-    "hostname": "WS-05",
-    "ip_address": "10.0.0.27",
-    "role": "User Workstation",
-    "CIA rating": "Medium",
-    "vulnerability_name": "Docker Desktop Installer Argument Injection",
-    "justification": "The justification for monitoring this vulnerability is due to its high severity rating (HIGH) and the potential for local privilege escalation (LPE). As the host's CIA rating is Medium, it requires attention to ensure a moderate level of confidentiality, integrity, and availability.",
-    "recommended_action": "Monitor and patch Docker Desktop on Windows to version 4.12.0 or later as soon as possible to prevent LPE attacks. Additionally, implement secure installer practices to mitigate argument injection vulnerabilities.",
-    "cve": "CVE-2023-0633",
-    "riskid": "R-020",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  },
-  {
-    "hostname": "WS-05",
-    "ip_address": "10.0.0.27",
-    "role": "User Workstation",
-    "CIA rating": "Medium",
-    "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-    "justification": "Given the severity of the vulnerability (HIGH) and the potential impact on user workstations, monitoring this vulnerability is crucial to ensure timely detection and response. The risk level is Medium, but with the CIA rating also being Medium, it's essential to track any potential exploitation.",
-    "recommended_action": "Implement additional logging and monitoring tools to detect potential exploitation attempts. This may include configuration of IDS/IPS systems or implementing custom rules in security information and event management (SIEM) systems.",
-    "cve": "CVE-2022-30190",
-    "riskid": "R-021",
-    "risk": "Medium",
-    "evaluation": "Monitor",
-    "evidence": [
-      {
-        "responsible": "",
-        "resources": "",
-        "date": "",
-        "url": "",
-        "desc": ""
-      }
-    ]
-  }
-]
+{
+  "cves": [
+    {
+      "CVE": "CVE-2020-1350",
+      "vulnerability": "Windows DNS Server Remote Code Execution",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring the Windows DNS Server Remote Code Execution vulnerability (CVE-2020-1350) enables swift detection and verification of patches, thereby containing the risk of exploitation. This proactive approach facilitates exposure tracking, allowing for prompt corrective action to be taken, thereby reducing the window of opportunity for attackers to exploit this critical vulnerability.",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor DNS Server logs for suspicious queries and anomalies.\n- Implement Windows DNS Server query logging to track and analyze incoming requests.\n- Configure IDS/IPS rules to detect and alert on potential exploitation attempts.\n- Set up a SIEM system to collect, correlate, and analyze DNS Server logs and network traffic.\n- Perform regular security scanning of the DNS Server using vulnerability assessment tools.\n- Track patch implementation status for the affected host (SRV-02) and report any delays or issues.\n- Conduct regular security testing (e.g., penetration testing) to validate the effectiveness of patches and controls.",
+      "hosts": [
+        {
+          "hostname": "SRV-02",
+          "ip_address": "10.0.0.3",
+          "role": "DNS Server",
+          "CIA rating": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-004",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Security Operations Team",
+              "resources": "DNS server logs, Windows Event Viewer, patch verification report, SIEM alert dashboard",
+              "date": "2026-03-18",
+              "url": "/monitoring-evidence/SRV-02/dns/R-004_monitoring_review.png",
+              "desc": "Security monitoring evidence for SRV-02 (DNS Server) shows ongoing review of DNS service logs, alerting, and patch verification to detect exploitation attempts related to Windows DNS Server Remote Code Execution (CVE-2020-1350)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2019-1040",
+      "vulnerability": "Windows NTLM Tampering Vulnerability",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring the Windows NTLM Tampering Vulnerability (CVE-2019-1040) enables rapid detection and containment of potential attacks, allowing for swift corrective action to prevent exploitation. By continuously tracking system configurations, network traffic, and authentication processes, monitoring detects tampering attempts in real-time, enabling prompt patch verification and exposure tracking. This proactive approach minimizes the window of vulnerability, reducing the risk of successful attacks and minimizing the impact of a breach.",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Windows NTLM authentication logs for suspicious activity, such as repeated failed login attempts or unusual authentication patterns.\n- Track network traffic and system configuration changes related to the vulnerability.\n- Implement real-time alerting for any potential tampering attempts detected by monitoring systems.\n- Review system logs regularly for signs of exploitation or attempted exploitation.\n- Validate patch levels and vulnerability remediation efforts on affected hosts.\n- Escalate incidents to incident response teams for further analysis and containment.\n- Track exposure and monitoring results to identify trends and areas for improvement.",
+      "hosts": [
+        {
+          "hostname": "SRV-02",
+          "ip_address": "10.0.0.3",
+          "role": "DNS Server",
+          "CIA rating": "High",
+          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-006",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Security Operations Team",
+              "resources": "DNS server logs, Windows Event Viewer, patch verification report, SIEM alert dashboard",
+              "date": "2026-03-18",
+              "url": "/monitoring-evidence/SRV-02/dns/R-006_monitoring_review.png",
+              "desc": "Security monitoring evidence for SRV-02 (DNS Server) shows ongoing review of DNS service logs, alerting, and patch verification to detect exploitation attempts related to Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-02",
+          "ip_address": "10.0.0.11",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-010",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-02/endpoint/R-010_endpoint_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-02 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "10.0.0.18",
+          "role": "File Server",
+          "CIA rating": "High",
+          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-015",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Server Operations Team",
+              "resources": "Authentication logs, file server audit logs, SIEM correlation rules, remediation ticket",
+              "date": "2026-03-19",
+              "url": "/monitoring-evidence/SRV-03/fileserver/R-015_security_monitoring.pdf",
+              "desc": "Monitoring evidence for SRV-03 (File Server) confirms regular review of authentication and server audit logs to detect abuse patterns and track remediation status for Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "10.0.0.19",
+          "role": "Web Server",
+          "CIA rating": "High",
+          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-017",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Web Infrastructure Team",
+              "resources": "Web server logs, IIS/HTTP monitoring dashboard, vulnerability scan report, incident ticket",
+              "date": "2026-03-18",
+              "url": "/monitoring-evidence/SRV-04/web/R-017_service_monitoring.log",
+              "desc": "Monitoring evidence for SRV-04 (Web Server) documents review of web service logs, exposure tracking, and alert validation to identify suspicious activity associated with Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2022-30190",
+      "vulnerability": "Microsoft Support Diagnostic Tool Remote Code Execution",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring the vulnerability risk associated with CVE-2022-30190 enables proactive detection of potential exploitation attempts, facilitating timely patch verification and exposure tracking across affected hosts (WS-01 to WS-05). This monitoring also supports containment efforts by rapidly identifying compromised systems, allowing for swift corrective action and minimizing the attack window. By leveraging monitoring capabilities, organizations can effectively reduce the risk of successful exploitation, preventing unauthorized code execution and potential data breaches.",
+      "recommended_action": "Recommended monitoring actions:\n- Monitor Windows system logs for anomalous authentication attempts and login failures.\n- Implement network intrusion detection systems to detect suspicious traffic related to CVE-2022-30190 exploitation attempts.\n- Configure log collection tools to gather security event logs from affected hosts (WS-01 to WS-05) for centralized review.\n- Establish a vulnerability scanning schedule to regularly check for the presence of the Microsoft Support Diagnostic Tool and identify potential exploitation attempts.\n- Enable Windows Defender Advanced Threat Protection (ATP) or equivalent endpoint detection technology to detect and alert on potentially malicious code.\n- Conduct regular network segment isolation monitoring to quickly identify and contain compromised systems.\n- Set up an incident response plan with defined roles, procedures, and communication protocols for swift response to potential exploitation incidents.\n- Configure email alerts to notify security teams of suspicious login attempts or potential exploits detected by log collection tools or endpoint detection technologies.\n- Schedule weekly vulnerability exposure tracking reports to monitor the status of affected hosts (WS-01 to WS-05) and identify any newly discovered instances.\n- Perform regular validation checks on system configurations, patch levels, and software versions to ensure compliance with organizational security policies.",
+      "hosts": [
+        {
+          "hostname": "WS-01",
+          "ip_address": "10.0.0.10",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-007",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-01/endpoint/R-007_endpoint_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-01 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-02",
+          "ip_address": "10.0.0.11",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-009",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-02/endpoint/R-009_endpoint_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-02 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-03",
+          "ip_address": "10.0.0.12",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-013",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-03/endpoint/R-013_endpoint_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-03 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-05",
+          "ip_address": "10.0.0.27",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-021",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-05/endpoint/R-021_endpoint_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-05 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2024-21413",
+      "vulnerability": "Microsoft Outlook Remote Code Execution Vulnerability",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring the Microsoft Outlook Remote Code Execution Vulnerability (CVE-2024-21413) enables proactive detection and containment of potential attacks. By continuously monitoring for suspicious activity, our organization can quickly identify compromised hosts WS-01 and WS-03, isolate them to prevent lateral movement, and verify patch implementation on affected systems. This proactive approach reduces the risk of data exfiltration, reputational damage, and financial loss, ultimately minimizing the vulnerability's impact on our organization's security posture.",
+      "recommended_action": "Recommended monitoring actions:\n- Monitor Windows hosts WS-01 and WS-03 for suspicious network traffic, login attempts, and file access.\n- Implement file integrity monitoring on affected systems to detect potential modifications or deletions.\n- Conduct regular log reviews of Windows Event Log, DNS logs, and firewall logs for signs of malicious activity.\n- Use data leakage prevention mechanisms to monitor outgoing data transmissions from affected hosts.\n- Track exposure of vulnerable systems through regular vulnerability scans and software inventory updates.\n- Validate patch implementation on affected systems by monitoring system configurations and updating logs regularly.\n- Escalate detected incidents to the incident response team for prompt containment and remediation.\n- Follow up with regular security audits and compliance checks to ensure effective management direction and support for information security.",
+      "hosts": [
+        {
+          "hostname": "WS-01",
+          "ip_address": "10.0.0.10",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-008",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-01/endpoint/R-008_outlook_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-01 (User Workstation) shows alert review, patch compliance validation, and email-related telemetry checks used to track exposure and suspicious behavior for Microsoft Outlook Remote Code Execution Vulnerability (CVE-2024-21413)."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-03",
+          "ip_address": "10.0.0.12",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-012",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-03/endpoint/R-012_outlook_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-03 (User Workstation) shows alert review, patch compliance validation, and email-related telemetry checks used to track exposure and suspicious behavior for Microsoft Outlook Remote Code Execution Vulnerability (CVE-2024-21413)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2023-23397",
+      "vulnerability": "Microsoft Outlook Elevation of Privilege Vulnerability",
+      "implementation_status": "In Progress",
+      "justification": "Regular monitoring of Microsoft Outlook for the elevation of privilege vulnerability (CVE-2023-23397) enables timely detection and verification of patches, allowing for swift corrective action to prevent exploitation. This proactive approach reduces the window of opportunity for attackers to capitalize on the vulnerability, thereby containing and minimizing potential damage. By continuously monitoring affected hosts like WS-03 (10.0.0.12), we can ensure that any signs of malicious activity are quickly identified and addressed, ultimately reducing the risk of a successful attack and minimizing the impact of a potential breach.",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Microsoft Outlook logs for suspicious activity and elevated privilege usage.\n- Implement real-time threat intelligence feeds to detect potential exploit attempts.\n- Configure alerting mechanisms for abnormal login patterns, unusual network traffic, and increased privileged access requests.\n- Perform regular log reviews to identify signs of malicious activity and verify patch installations.\n- Track exposure levels for affected hosts like WS-03 (10.0.0.12) and monitor for any changes in CIA (Confidentiality, Integrity, Availability).\n- Validate patch effectiveness by monitoring system performance and stability post-patch installation.\n- Escalate identified vulnerabilities to relevant teams for prompt remediation and corrective action.\n- Conduct regular security audits and compliance checks to ensure ongoing adherence to organizational security policies.",
+      "hosts": [
+        {
+          "hostname": "WS-03",
+          "ip_address": "10.0.0.12",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Microsoft Outlook Elevation of Privilege Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-011",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-03/endpoint/R-011_outlook_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-03 (User Workstation) shows alert review, patch compliance validation, and email-related telemetry checks used to track exposure and suspicious behavior for Microsoft Outlook Elevation of Privilege Vulnerability (CVE-2023-23397)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2022-38730",
+      "vulnerability": "Docker Desktop for Windows File Overwrite Vulnerability",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring this vulnerability will enable early detection and containment of potential attacks, thereby reducing the risk of data exposure and overwrite. By tracking exposure and patch verification, monitoring will facilitate swift corrective action, ensuring that affected hosts are promptly remediated or isolated to prevent further exploitation. This proactive approach minimizes the window of opportunity for attackers, ultimately controlling the vulnerability's impact and mitigating the risk of a medium-severity attack.",
+      "recommended_action": "Recommended monitoring actions:\n- Monitor WS-05 for suspicious file overwrite attempts using file system auditing.\n- Track exposure and patch verification of affected hosts to ensure timely remediation or isolation.\n- Implement real-time log analysis and alerting for unusual system calls related to the vulnerability (e.g., system calls involving \"C:\\\\Windows\\\\System32\").\n- Conduct regular review of system logs for evidence of potential exploitation attempts.\n- Establish validation protocols to verify effectiveness of implemented mitigations.\n- Escalate detected vulnerabilities or suspicious activity to incident response teams and relevant stakeholders.\n- Follow up on reported incidents with thorough investigations and corrective actions.",
+      "hosts": [
+        {
+          "hostname": "WS-05",
+          "ip_address": "10.0.0.27",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Docker Desktop for Windows File Overwrite Vulnerability",
+          "risk": "Medium",
+          "riskid": "R-019",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-05/endpoint/R-019_docker_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-05 (User Workstation) shows review of Docker Desktop configuration, privilege-related alerts, and patch compliance status to reduce exposure to Docker Desktop for Windows File Overwrite Vulnerability (CVE-2022-38730)."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2023-0633",
+      "vulnerability": "Docker Desktop Installer Argument Injection",
+      "implementation_status": "In Progress",
+      "justification": "Effective monitoring of the Docker Desktop Installer Argument Injection vulnerability (CVE-2023-0633) enables timely detection and containment of attacks, preventing local privilege escalation (LPE). By continuously tracking exposure and verifying patch levels, monitoring ensures that affected hosts like WS-05 (10.0.0.27) are promptly updated to mitigate this HIGH-severity risk. This proactive approach reduces the attack surface, minimizes potential damage, and allows for swift corrective action, ultimately ensuring the confidentiality, integrity, and availability of sensitive data stored on these workstations.",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Docker Desktop Installer logs for suspicious command-line arguments.\n- Set up alerting on unusual or unpatched hosts (e.g., WS-05).\n- Track exposure levels of affected hosts (e.g., WS-05) and verify patch levels.\n- Conduct regular log reviews to detect potential attacks and LPE attempts.\n- Implement escalation procedures for high-severity vulnerabilities like CVE-2023-0633.\n- Monitor supplier-provided services for vulnerabilities and ensure timely updates.\n- Perform physical security monitoring to detect unauthorized access to affected hosts.\n- Manage technical vulnerability exposure by tracking patch levels and implementing updates.\n- Review policies for information security (e.g., 5.1, 5.22, 5.34) and ensure effectiveness in preventing LPE attacks.",
+      "hosts": [
+        {
+          "hostname": "WS-05",
+          "ip_address": "10.0.0.27",
+          "role": "User Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Docker Desktop Installer Argument Injection",
+          "risk": "Medium",
+          "riskid": "R-020",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "responsible": "Endpoint Security Team",
+              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
+              "date": "2026-03-20",
+              "url": "/monitoring-evidence/WS-05/endpoint/R-020_docker_monitoring.png",
+              "desc": "Endpoint monitoring evidence for WS-05 (User Workstation) shows review of Docker Desktop configuration, privilege-related alerts, and patch compliance status to reduce exposure to Docker Desktop Installer Argument Injection (CVE-2023-0633)."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -108,8 +108,7 @@ def _set_scope_status(year: int | None, status: str) -> None:
 # KPI HELPERS
 # =========================================================
 def _asset_inventory_file(year: int) -> Path:
-    return _work_dir(year) / "AssetInventoryCIA.json"
-
+    return _work_dir(year) / "AssetInventory.json"
 
 def _threats_vulns_file(year: int) -> Path:
     return _work_dir(year) / "ThreatsVulnerabilities.json"
@@ -255,12 +254,25 @@ def _normalize_scope(scope: Any, year: int | None = None) -> dict:
     if not isinstance(scope, dict):
         scope = {}
 
+    resolved_year = year if year is not None else get_system_year()
+
+    asset_doc = _read_json(_asset_inventory_file(resolved_year), {})
+
+    asset_count = 0
+    if isinstance(asset_doc, dict):
+        subnets = asset_doc.get("subnets", [])
+        if isinstance(subnets, list):
+            for subnet in subnets:
+                if isinstance(subnet, dict):
+                    assets = subnet.get("assets", [])
+                    if isinstance(assets, list):
+                        asset_count += len([a for a in assets if isinstance(a, dict)])
+
     return {
         "name": scope.get("name", "NA"),
-        "asset_count": scope.get("asset_count", 0),
-        "status": _get_scope_status(year),
+        "asset_count": asset_count,
+        "status": _get_scope_status(resolved_year),
     }
-
 
 def _normalize_section2(section2: Any) -> dict:
     if not isinstance(section2, dict):

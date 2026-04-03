@@ -17,6 +17,7 @@ from app.api.routes_risk_evaluation_treatment import router as risk_evaluation_t
 from app.api.routes_annex_a_soa import router as annex_a_soa_router
 from app.api.routes_action_plan_implementation import router as action_plan_implementation_router
 from app.api.routes_monitoring_improvement import router as monitoring_improvement_router
+from app.api.routes_final_deliverables import router as final_deliverables_router
 
 
 def create_app() -> FastAPI:
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(annex_a_soa_router)
     app.include_router(action_plan_implementation_router)
     app.include_router(monitoring_improvement_router)
+    app.include_router(final_deliverables_router)
 
     return app
 
