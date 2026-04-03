@@ -1492,7 +1492,7 @@ export default function AnnexASoA() {
                 onClick={() => void handleCreateAnnexTable()}
                 disabled={sending}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-14 w-4" />
                 Create New AnnexA & SoA Table
               </button>
             </div>
@@ -1612,7 +1612,7 @@ export default function AnnexASoA() {
               onClick={() => void handleCreateAnnexTable()}
               disabled={sending}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-14 w-4" />
               Create New AnnexA & SoA Table
             </button>
           </div>

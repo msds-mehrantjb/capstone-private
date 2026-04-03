@@ -1835,19 +1835,18 @@ export default function RiskEvaluationTreatment() {
             </ShellCard>
           </div>
         </div>
-
         <div className="col-[4] row-[2] p-3 pl-2">
           <div className="flex justify-end">
             <button
               className="inline-flex items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
               onClick={() => void handleNewRiskEvaluationTreatmentClick()}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-14 w-4" />
               New Risk Evaluation & Treatment
             </button>
           </div>
         </div>
-
+          
         <div className="col-[4] row-[3] min-h-0 p-3 pl-2 pt-0">
           <div className="h-full min-h-0">{assistantPanel}</div>
         </div>
@@ -1855,3 +1854,4 @@ export default function RiskEvaluationTreatment() {
     </div>
   );
 }
+

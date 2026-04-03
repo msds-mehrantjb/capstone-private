@@ -1957,7 +1957,7 @@ export default function RiskAnalysis() {
                 className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
                 onClick={() => void handleNewRiskAnalysisClick()}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-14 w-4" />
                 New Risk Analysis
               </button>
             </div>
@@ -2106,7 +2106,7 @@ export default function RiskAnalysis() {
               className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
               onClick={() => void handleNewRiskAnalysisClick()}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-14 w-4" />
               New Risk Analysis
             </button>
           </div>

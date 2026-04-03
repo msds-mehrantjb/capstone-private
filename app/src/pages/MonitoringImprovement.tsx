@@ -2287,8 +2287,8 @@ export default function MonitoringImprovement() {
           </ShellCard>
         </div>
 
-        <div className="col-[4] row-[2] p-3 pl-2">
-          <div className="flex min-h-[71px] items-center justify-end">
+        <div className="col-[4] row-[2] p-3 pl-2 pb-0">
+          <div className="flex h-14 items-center justify-end">
             <button
               onClick={() => {
                 if (hasAnyMonitoringImprovementStatus) {
@@ -2297,13 +2297,12 @@ export default function MonitoringImprovement() {
                   void createMonitoringImprovementTableConfirmed();
                 }
               }}
-              className="rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-600"
+              className="h-full rounded-xl bg-indigo-600/90 px-4 text-sm font-semibold text-white hover:bg-indigo-600"
             >
               + Create New Monitoring / Improvement Table
             </button>
           </div>
         </div>
-
         <div className="col-[3] row-[3] p-3 pr-2 pt-0">
           <ShellCard className="p-4">
             <div className="text-sm font-semibold text-slate-100">
@@ -2350,7 +2349,7 @@ export default function MonitoringImprovement() {
 
         </div>
 
-        <div className="col-[4] row-[3/6] min-h-0 p-3 pl-2 pt-0">{assistantPanel}</div>
+        <div className="col-[4] row-[3/6] min-h-0 p-1 pl-0 pt-0">{assistantPanel}</div>
       </div>
     </div>
   );

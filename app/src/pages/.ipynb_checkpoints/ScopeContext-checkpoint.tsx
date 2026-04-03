@@ -434,7 +434,7 @@ export default function ScopeContext() {
 
             <div className="flex justify-end">
               <button className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600">
-                <Plus className="h-4 w-4" />
+                <Plus className="h-14 w-4" />
                 New Scope Draft
               </button>
             </div>
@@ -688,7 +688,7 @@ export default function ScopeContext() {
         <div className="col-[4] row-[2] h-full overflow-hidden p-3 pl-2">
           <div className="flex min-h-[71px] items-center justify-end">
             <button className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600">
-              <Plus className="h-4 w-4" />
+              <Plus className="h-14 w-4" />
               New Scope Draft
             </button>
           </div>

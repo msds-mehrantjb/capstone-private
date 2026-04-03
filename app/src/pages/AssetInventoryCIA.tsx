@@ -1672,7 +1672,7 @@ export default function AssetInventoryCIA() {
                   }
                 }}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-14 w-4" />
                 New Inventory Assessment
               </button>
             </div>
@@ -2176,7 +2176,7 @@ export default function AssetInventoryCIA() {
                 }
               }}
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-14 w-4" />
               New Inventory Assessment
             </button>
           </div>
