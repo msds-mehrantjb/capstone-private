@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ShieldCheck, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
@@ -173,6 +174,7 @@ function MarkdownPrintReady({ content }: { content: string }) {
       <div className="w-full rounded-lg bg-white px-10 py-10 text-black shadow-2xl">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw]}
           components={{
             h1: ({ children }) => (
               <h1 className="mb-6 text-3xl font-bold leading-tight text-black">
@@ -222,41 +224,68 @@ function MarkdownPrintReady({ content }: { content: string }) {
                 {children}
               </blockquote>
             ),
-            code: ({ inline, children }: any) =>
-              inline ? (
-                <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[14px] text-black">
-                  {children}
-                </code>
-              ) : (
-                <code className="block overflow-x-auto rounded-lg bg-slate-100 p-4 font-mono text-[14px] text-black">
-                  {children}
-                </code>
-              ),
+            code: ({ children, className, ...props }: any) => (
+              <code
+                className={`rounded bg-slate-100 px-1 py-0.5 font-mono text-[14px] text-black ${className ?? ""}`}
+                {...props}
+              >
+                {children}
+              </code>
+            ),
             pre: ({ children }) => (
               <pre className="mb-4 overflow-x-auto rounded-lg bg-slate-100 p-4">
                 {children}
               </pre>
             ),
+
             table: ({ children }) => (
               <div className="mb-6 overflow-x-auto">
-                <table className="w-full border-collapse text-left text-[14px] text-black">
+                <table className="w-full border-collapse text-[14px] text-black">
                   {children}
                 </table>
               </div>
             ),
+
             thead: ({ children }) => (
               <thead className="bg-slate-100">{children}</thead>
             ),
-            th: ({ children }) => (
-              <th className="border border-slate-300 px-3 py-2 font-semibold text-black">
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td className="border border-slate-300 px-3 py-2 align-top text-black">
-                {children}
-              </td>
-            ),
+
+            th: ({ children, ...props }) => {
+              const isGroupedHeader =
+                props.colSpan && Number(props.colSpan) > 1;
+
+              return (
+                <th
+                  {...props}
+                  className={`border border-slate-300 px-3 py-2 font-semibold text-black ${
+                    isGroupedHeader
+                      ? "text-center bg-slate-200"   // ✅ centered group headers
+                      : "text-left"
+                  }`}
+                >
+                  {children}
+                </th>
+              );
+            },
+
+            td: ({ children, ...props }) => {
+              const value = String(children ?? "").trim();
+
+              const isConfidence =
+                value.match(/^\d+(\.\d+)?$/) ||   // numbers (0.85)
+                ["Very High", "High", "Medium", "Low"].includes(value);
+
+              return (
+                <td
+                  {...props}
+                  className={`border border-slate-300 px-3 py-2 align-top text-black ${
+                    isConfidence ? "text-center" : "text-left"
+                  }`}
+                >
+                  {children}
+                </td>
+              );
+            },
           }}
         >
           {content}
@@ -265,7 +294,6 @@ function MarkdownPrintReady({ content }: { content: string }) {
     </div>
   );
 }
-
 export default function FinalDeliverables() {
   const YEAR = 2026;
 
