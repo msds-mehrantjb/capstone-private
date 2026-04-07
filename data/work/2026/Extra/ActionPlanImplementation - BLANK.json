@@ -1,0 +1,526 @@
+{
+  "controls": [
+    {
+      "control": "5.21",
+      "control_name": "ICT supply chain",
+      "implementation_status": "Implemented",
+      "justification": "To ensure the secure supply of software and hardware components",
+      "treatment_action": "Recommended treatment actions:\n\n- Conduct a thorough risk assessment of the Windows LSA Spoofing Vulnerability on SRV-02 and determine potential impacts.\n- Review ICT supply chain processes to identify areas where vulnerability can be exploited.\n- Implement Supplier Relationship Management (SRM) tool to track supplier information, assess their security posture, and monitor compliance with security standards.\n- Develop a Supplier Monitoring Program to regularly review and assess suppliers' security controls, incident response capabilities, and adherence to agreed-upon security requirements.\n- Establish clear Information Security Roles and Responsibilities for ICT supply chain management, including accountability for ensuring secure software and hardware component procurement.\n- Review and update Operating Procedures for ICT supply chain management to include measures for mitigating the identified vulnerability and other potential risks.",
+      "hosts": [
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-005",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "5.34",
+      "control_name": "Privacy and PII protection",
+      "implementation_status": "Implemented",
+      "justification": "As a high-level vulnerability, it is essential to ensure the confidentiality of sensitive data stored on File Server SRV-03.",
+      "treatment_action": "Recommended treatment actions:\n\n- Implement classification rules for sensitive data stored on File Server SRV-03 based on Control Reference 2 (Classification of information).\n- Ensure understanding of protection needs and develop policies for PII protection based on Control Reference 4 (Policies for information security).\n- Conduct a thorough risk assessment to identify potential impacts of the Windows LSA Spoofing Vulnerability (CVE-2021-36942) on File Server SRV-03.\n- Develop and implement an incident response plan for PII breaches or unauthorized access incidents, based on Control Reference 3 (Technical vulnerability management).\n- Implement technical controls, such as encryption and access controls, to protect PII stored on File Server SRV-03.\n- Conduct regular security audits and compliance checks to ensure the confidentiality of sensitive data.",
+      "hosts": [
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-014",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "6.7",
+      "control_name": "Remote working",
+      "implementation_status": "Implemented",
+      "justification": "This control is necessary due to the risks of unsecured remote connections, weak authentication mechanisms, and exposed services. The identified vulnerabilities highlight the need for stringent controls to prevent unauthorized access, data breaches, and potential attacks on the organization's infrastructure.",
+      "treatment_action": "Recommended treatment actions:\n\n- Implement a Virtual Private Network (VPN) solution to encrypt remote connections for Host=SRV-02, Role=DNS Server, and Host=SRV-04, Role=Web Server.\n- Conduct a risk assessment and develop an incident response plan to address potential attacks on the organization's infrastructure due to unsecured remote connections.\n- Implement multi-factor authentication (MFA) for all remote users to prevent unauthorized access.\n- Segment the network to isolate vulnerable hosts, such as Host=SRV-01, Role=Domain Controller, and Host=SRV-03, Role=File Server.\n- Remediate vulnerabilities on affected hosts, including:\n  - Windows LSA Spoofing Vulnerability (CVE-2021-36942) on Host=SRV-02 and Host=SRV-03\n  - Netlogon Elevation of Privilege (CVE-2020-1472) on Host=SRV-01, Role=Domain Controller\n  - Active Directory Domain Services Privilege Escalation (CVE-2022-26923) on Host=SRV-01, Role=Domain Controller\n  - Windows DNS Server Remote Code Execution (CVE-2020-1350) on Host=SRV-01, Role=Domain Controller\n- Apply patches and updates to affected hosts.\n- Develop a remote working policy that outlines security guidelines for employees, including the use of VPNs, MFA, and secure authentication mechanisms.",
+      "hosts": [
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-005",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-014",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
+          "cve": "CVE-2022-26923",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Web Server",
+          "CIA rating": "",
+          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-016",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "7.4",
+      "control_name": "Physical security monitoring",
+      "implementation_status": "Implemented",
+      "justification": "This control is needed due to identified weaknesses in the organization's physical security posture. The potential for unauthorized access to sensitive areas, equipment, and data storage locations poses a significant risk to the confidentiality, integrity, and availability of organizational assets. Unpatched systems, weak authentication controls, and exposed services have been identified as contributing factors to this vulnerability. Implementing physical security monitoring will help detect and deter such incidents, ensuring the overall security posture is strengthened.",
+      "treatment_action": "Recommended treatment actions:\n- Install video surveillance cameras at all entry points, ensuring real-time monitoring and recording of activities.\n- Implement motion detectors to detect any unauthorized movement within the premises.\n- Conduct regular audits of physical access controls, including locks, keys, and biometric authentication systems.\n- Enforce strict visitor management procedures, requiring all visitors to sign in and out, and ensuring they are escorted by authorized personnel at all times.\n- Implement a system for tracking and monitoring physical access to sensitive areas, equipment, and data storage locations.\n- Conduct regular training sessions for employees on physical security best practices, including reporting suspicious activity and securing sensitive areas.\n- Ensure that all physical security devices are properly configured and maintained, with regular checks for vulnerabilities and updates.",
+      "hosts": [
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-005",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-014",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
+          "cve": "CVE-2022-26923",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Web Server",
+          "CIA rating": "",
+          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-016",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.2",
+      "control_name": "Network security",
+      "implementation_status": "In Progress",
+      "justification": "To protect networks from an attacker establishing a vulnerable Netlogon secure channel connection to a domain controller and obtain domain administrator access.",
+      "treatment_action": "Recommended treatment actions:\n\n- Conduct a risk assessment to prioritize the remediation of Netlogon vulnerabilities on SRV-01.\n- Implement the latest Windows updates and patches to mitigate CVE-2020-1472 and CVE-2022-26923.\n- Configure firewall rules to restrict inbound connections to port 445 (Netlogon) on SRV-01.\n- Disable SMBv1 and SMBv2 protocols on SRV-01 to prevent exploitation of vulnerabilities.\n- Implement strict access controls for remote management of SRV-01, including multi-factor authentication.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of remediation efforts.",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
+          "cve": "CVE-2022-26923",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.21",
+      "control_name": "Network services security",
+      "implementation_status": "In Progress",
+      "justification": "To secure network-based exploitation of the High HTTP Protocol Stack Remote Code Execution vulnerability (CVE-2021-31166) and prevent unauthorized access.",
+      "treatment_action": "Recommended treatment actions:\n- Patch the Web Server (SRV-04) to the latest version that addresses the HTTP Protocol Stack Remote Code Execution vulnerability (CVE-2021-31166).\n- Implement a network-based intrusion detection system (NIDS) to detect and alert on potential exploitation attempts.\n- Restrict access to the Web Server by implementing a Least Privilege Principle, ensuring that only necessary users have access.\n- Configure firewall rules to block incoming traffic on ports associated with the vulnerable protocol stack.\n- Conduct regular vulnerability scanning and penetration testing to identify and remediate other vulnerabilities in the network services.\n- Implement a configuration management system to ensure consistent and secure configurations of network services.\n- Limit the attack surface by disabling unnecessary network services and protocols.\n- Monitor network logs for suspicious activity related to potential exploitation attempts.",
+      "hosts": [
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Web Server",
+          "CIA rating": "",
+          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-016",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.24",
+      "control_name": "Cryptography",
+      "implementation_status": "In Progress",
+      "justification": "To protect against high Windows LSA spoofing vulnerability (CVE-2021-36942)",
+      "treatment_action": "Recommended treatment actions:\n- Validate the existence of encryption algorithms and protocols on all hosts to ensure proper data protection.\n- Implement robust cryptography techniques to prevent unauthorized access to sensitive information.\n- Develop a comprehensive vulnerability management plan that includes regular scanning, patching, and updating of systems (Control Reference 2).\n- Ensure all hosts are running up-to-date versions of operating systems and software patches (Control Reference 3).\n- Conduct regular security audits and penetration testing to identify potential vulnerabilities and weaknesses (Control Reference 4).\n- Implement network segmentation and access controls to limit the spread of malware and unauthorized access (Control Reference 5).\n- Develop an incident response plan to quickly respond to and contain any potential security incidents.",
+      "hosts": [
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-005",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Web Server",
+          "CIA rating": "",
+          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-016",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.28",
+      "control_name": "Secure coding",
+      "implementation_status": "In Progress",
+      "justification": "To reduce vulnerabilities in the Netlogon Remote Protocol (MS-NRPC) and prevent an attacker from running a specially crafted application on a device on the network.",
+      "treatment_action": "Recommended treatment actions:\n\n- Implement secure coding practices and guidelines for developers.\n- Conduct regular code reviews to identify and remediate vulnerabilities.\n- Use static analysis tools to detect and prevent security flaws in software development.\n- Provide training on secure coding principles and best practices for developers.\n- Develop a plan to address the identified vulnerabilities (CVE-2020-1472 and CVE-2020-1350) on SRV-01.",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.29",
+      "control_name": "Security testing",
+      "implementation_status": "In Progress",
+      "justification": "To validate security, security testing should be performed to identify and mitigate the vulnerability and prevent remote code execution on Windows Domain Name System servers.",
+      "treatment_action": "Recommended treatment actions:\n- Perform security testing on SRV-01, a Domain Controller with the vulnerability Windows DNS Server Remote Code Execution (CVE-2020-1350), to identify and mitigate the risk.\n- Validate the effectiveness of implemented patches or mitigations.\n- Implement network segmentation to isolate vulnerable hosts from other networks.\n- Conduct regular network security monitoring to detect and respond to potential attacks.\n- Ensure remote workers use secure connections when accessing the network.\n- Review and update outsourced development contracts to ensure security controls are in place.\n- Secure services provided by third-party vendors, ensuring compliance with organizational security policies.",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.8",
+      "control_name": "Technical vulnerability management",
+      "implementation_status": "In Progress",
+      "justification": "To manage the identified technical vulnerability and reduce the risk of exploitation",
+      "treatment_action": "Recommended treatment actions:\n\n- Conduct a thorough vulnerability assessment on affected hosts (SRV-01 and SRV-03) to identify potential exploitation methods.\n- Prioritize the remediation of the Active Directory Domain Services Privilege Escalation vulnerability (CVE-2022-26923) due to its high risk level.\n- Implement patches or updates for the Windows LSA Spoofing Vulnerability (CVE-2021-36942) on SRV-03, the File Server, as soon as possible.\n- Develop a project plan to address the identified technical vulnerability and involve relevant stakeholders from information security in project management (Control Reference 2).\n- Ensure that equipment protection controls (Control Reference 3) are applied to prevent unauthorized access or manipulation of affected hosts.\n- Document all changes made to affected hosts, including patches and updates, and maintain a change log as per the Change Management control (Control Reference 4).\n- Consider implementing additional endpoint security measures on user endpoint devices (Control Reference 5) to protect against potential exploitation.",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller",
+          "CIA rating": "",
+          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
+          "cve": "CVE-2022-26923",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
+          "cve": "CVE-2021-36942",
+          "riskid": "R-014",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

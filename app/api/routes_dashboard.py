@@ -111,11 +111,11 @@ def _asset_inventory_file(year: int) -> Path:
     return _work_dir(year) / "AssetInventory.json"
 
 def _threats_vulns_file(year: int) -> Path:
-    return _work_dir(year) / "ThreatsVulnerabilities.json"
+    return _work_dir(year) / "AssetVulnerabilitiesThreats.json"
 
 
 def _controls_posture_file(year: int) -> Path:
-    return _work_dir(year) / "ExistingControlsPosture.json"
+    return _work_dir(year) / "ExistingControlsPostures.json"
 
 
 def _risk_analysis_file(year: int) -> Path:
@@ -142,12 +142,23 @@ def _safe_list(value: Any) -> list:
     return value if isinstance(value, list) else []
 
 
-def _count_rows(doc: Any, top_key: str) -> int:
+def _count_asset_inventory_assets(doc: Any) -> int:
     if not isinstance(doc, dict):
         return 0
-    return len([x for x in _safe_list(doc.get(top_key)) if isinstance(x, dict)])
 
+    subnets = doc.get("subnets", [])
+    if not isinstance(subnets, list):
+        return 0
 
+    total = 0
+    for subnet in subnets:
+        if not isinstance(subnet, dict):
+            continue
+        assets = subnet.get("assets", [])
+        if isinstance(assets, list):
+            total += len([a for a in assets if isinstance(a, dict)])
+    return total
+    
 def _scope_exists(scope_file_name: str) -> bool:
     value = str(scope_file_name or "").strip().lower()
     if not value:
@@ -192,6 +203,19 @@ def _build_evidence_coverage(action_plan_doc: dict) -> dict:
         "total": total_controls,
     }
 
+def _count_rows(doc: Any, key: str) -> int:
+    if not isinstance(doc, dict):
+        return 0
+
+    items = doc.get(key, [])
+    if not isinstance(items, list):
+        return 0
+
+    return len([x for x in items if isinstance(x, dict)])
+
+
+# (only showing the cleaned critical part to keep it readable)
+
 def _build_readiness_score(data: dict, year: int) -> dict:
     scope_file_name = str(data.get("scope_file_name", "") or "").strip()
 
@@ -209,7 +233,7 @@ def _build_readiness_score(data: dict, year: int) -> dict:
     if _scope_exists(scope_file_name):
         score += 5
 
-    if _count_rows(asset_doc, "hosts") > 0:
+    if _count_asset_inventory_assets(asset_doc) > 0:
         score += 10
 
     if _count_rows(threats_doc, "hosts") > 0:
@@ -233,23 +257,15 @@ def _build_readiness_score(data: dict, year: int) -> dict:
     if _count_rows(monitoring_doc, "cves") > 0:
         score += 10
 
-    if score == 0:
-        label = "Blocked"
-    elif score < 80:
-        label = "In Progress"
-    else:
-        label = "Completed"
-
-    # normalize score to 100 scale
     normalized_score = int((score / 80) * 100)
-    
+
     return {
         "value": normalized_score,
         "max": 100,
-        "label": "In Progress" if normalized_score < 100 else "Completed",
+        "label": "Completed" if normalized_score == 100 else "In Progress",
         "delta_7d": 0,
     }
-
+    
 def _normalize_scope(scope: Any, year: int | None = None) -> dict:
     if not isinstance(scope, dict):
         scope = {}

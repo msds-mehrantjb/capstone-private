@@ -148,7 +148,7 @@ def build_asset_inventory_markdown(year: int) -> str:
     def _build_grouped_header_table(rows_data: list[list[object]]) -> str:
         if not rows_data:
             return "_No data available._"
-
+    
         def esc(value: object) -> str:
             text = "" if value is None else str(value).strip()
             return (
@@ -156,47 +156,47 @@ def build_asset_inventory_markdown(year: int) -> str:
                 .replace("<", "&lt;")
                 .replace(">", "&gt;")
             )
-
+    
         lines = [
-            '<table>',
+            '<table style="border-collapse: collapse; width: 100%;">',
             '  <thead>',
             '    <tr>',
-            '      <th rowspan="2">Hostname</th>',
-            '      <th colspan="2">Indicator Based</th>',
-            '      <th colspan="2">ML-Based</th>',
-            '      <th colspan="2">Selected</th>',
+            '      <th rowspan="2" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Hostname</th>',
+            '      <th colspan="2" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Indicator Based</th>',
+            '      <th colspan="2" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">ML-Based</th>',
+            '      <th colspan="2" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Selected</th>',
             '    </tr>',
             '    <tr>',
-            '      <th>Role</th>',
-            '      <th>Confidence</th>',
-            '      <th>Role</th>',
-            '      <th>Confidence</th>',
-            '      <th>Role</th>',
-            '      <th>Method</th>',
+            '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Role</th>',
+            '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Confidence</th>',
+            '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Role</th>',
+            '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Confidence</th>',
+            '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Role</th>',
+            '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Method</th>',
             '    </tr>',
             '  </thead>',
             '  <tbody>',
         ]
-
+    
         for row in rows_data:
             normalized = list(row) + [""] * (7 - len(row))
             lines.extend([
                 '    <tr>',
-                f'      <td>{esc(normalized[0])}</td>',
-                f'      <td>{esc(normalized[1])}</td>',
-                f'      <td>{esc(normalized[2])}</td>',
-                f'      <td>{esc(normalized[3])}</td>',
-                f'      <td>{esc(normalized[4])}</td>',
-                f'      <td>{esc(normalized[5])}</td>',
-                f'      <td>{esc(normalized[6])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[0])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[1])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[2])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[3])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[4])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[5])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[6])}</td>',
                 '    </tr>',
             ])
-
+    
         lines.extend([
             '  </tbody>',
             '</table>',
         ])
-
+    
         return "\n".join(lines)
 
     ctx = _load_dashboard_context(year)

@@ -185,14 +185,16 @@ function KpiCard({
   accent,
   progressTone,
   progressPct,
+  showProgress = true,
 }: {
   title: string;
   value: React.ReactNode;
   subtitle: React.ReactNode;
   icon: React.ReactNode;
   accent: "amber" | "emerald" | "rose" | "slate";
-  progressTone: "amber" | "emerald" | "rose" | "slate";
-  progressPct: number;
+  progressTone?: "amber" | "emerald" | "rose" | "slate";
+  progressPct?: number;
+  showProgress?: boolean;
 }) {
   const badge =
     accent === "amber"
@@ -222,12 +224,14 @@ function KpiCard({
           </div>
           <div className="mt-2 text-sm text-slate-300">{subtitle}</div>
 
-          <div className="mt-3 h-2 w-full rounded-full bg-white/10">
-            <div
-              className={`h-2 rounded-full ${fill}`}
-              style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
-            />
-          </div>
+            {showProgress && typeof progressPct === "number" && (
+              <div className="mt-3 h-2 w-full rounded-full bg-white/10">
+                <div
+                  className={`h-2 rounded-full ${fill}`}
+                  style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
+                />
+              </div>
+            )}
         </div>
 
         <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${badge}`}>
@@ -244,6 +248,12 @@ const labelTone = (s: StepStatus): "emerald" | "sky" | "amber" | "rose" => {
   if (s === "Not Started") return "sky";
   return "rose";
 };
+
+function getReadinessTone(pct: number): "emerald" | "amber" | "sky" {
+  if (Math.round(pct) === 100) return "emerald";
+  if (pct >= 50) return "amber";
+  return "sky";
+}
 
 export default function Dashboard() {
   const YEAR = 2026;
@@ -373,6 +383,10 @@ export default function Dashboard() {
     }
   };
 
+  const readinessPct =
+    ((dashboardRaw?.kpis?.readiness_score?.value ?? 0) /
+      Math.max(1, dashboardRaw?.kpis?.readiness_score?.max ?? 100)) *
+    100;
   return (
     <div className="min-h-screen bg-[#070A12] text-slate-50">
       {/* Mobile / small screens */}
@@ -507,24 +521,14 @@ export default function Dashboard() {
                   }
                   subtitle={
                     <>
-                      {dashboardRaw.kpis.readiness_score?.label ?? "NA"} •{" "}
-                      <span className="text-slate-100">
-                        {(dashboardRaw.kpis.readiness_score?.delta_7d ?? 0) >= 0 ? "+" : ""}
-                        {dashboardRaw.kpis.readiness_score?.delta_7d ?? 0}
-                      </span>{" "}
-                      in 7 days
+                      {dashboardRaw.kpis.readiness_score?.label ?? "NA"}
                     </>
                   }
                   icon={<BadgeCheck className="h-6 w-6" />}
-                  accent="amber"
-                  progressTone="amber"
-                  progressPct={
-                    ((dashboardRaw.kpis.readiness_score?.value ?? 0) /
-                      Math.max(1, dashboardRaw.kpis.readiness_score?.max ?? 100)) *
-                    100
-                  }
+                  accent={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
+                  progressTone={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
+                  progressPct={readinessPct}
                 />
-
                 <KpiCard
                   title="Evidence Coverage"
                   value={`${(dashboardRaw.kpis.evidence_coverage?.percent ?? 0).toFixed(1)}%`}
@@ -767,13 +771,9 @@ export default function Dashboard() {
                   </>
                 }
                 icon={<BadgeCheck className="h-6 w-6" />}
-                accent="amber"
-                progressTone="amber"
-                progressPct={
-                  ((dashboardRaw.kpis.readiness_score?.value ?? 0) /
-                    Math.max(1, dashboardRaw.kpis.readiness_score?.max ?? 100)) *
-                  100
-                }
+                accent={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
+                progressTone={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
+                progressPct={readinessPct}
               />
 
               <KpiCard
@@ -809,6 +809,7 @@ export default function Dashboard() {
                   100,
                   (dashboardRaw?.kpis?.high_risk_critical_impact?.high_risk_count ?? 0) * 5
                 )}
+                showProgress={false}
               />
               <KpiCard
                 title="SoA Status"

@@ -65,34 +65,34 @@ def build_risk_register_markdown(year: int) -> str:
 
     def _make_group_table_html(hostname, role, rows, headers, host_span=1):
         def td(v):
-            return f'<td style="border:1px solid #cbd5e1; padding:8px; text-align:left; vertical-align:top;">{_escape_md(v)}</td>'
-
+            return f'<td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_escape_md(v)}</td>'
+    
         header_cells = "".join(
-            f'<th style="text-align:left; border:1px solid #cbd5e1; padding:8px;">{_escape_md(h)}</th>'
+            f'<th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">{_escape_md(h)}</th>'
             for h in headers
         )
-
+    
         body_rows = "".join(
             "<tr>" + "".join(td(v) for v in row) + "</tr>"
             for row in rows
         )
-
+    
         col_count = len(headers)
         host_span = max(1, min(host_span, col_count))
         role_span = max(1, col_count - host_span)
-
+    
         return f"""
-<table style="border-collapse:collapse; width:100%; font-family:Arial, sans-serif; font-size:13px; margin-bottom:20px;">
+<table style="border-collapse: collapse; width: 100%;">
     <thead>
-        <tr style="background-color:#d1d5db; font-weight:bold;">
-            <th colspan="{host_span}" style="text-align:left; border:1px solid #cbd5e1; padding:8px;">
+        <tr>
+            <th colspan="{host_span}" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">
                 Host: {_escape_md(hostname)}
             </th>
-            <th colspan="{role_span}" style="text-align:left; border:1px solid #cbd5e1; padding:8px;">
+            <th colspan="{role_span}" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">
                 Role: {_escape_md(role)}
             </th>
         </tr>
-        <tr style="background-color:#f3f4f6; font-weight:bold;">
+        <tr>
             {header_cells}
         </tr>
     </thead>

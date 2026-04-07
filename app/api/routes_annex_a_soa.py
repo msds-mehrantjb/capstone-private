@@ -239,7 +239,7 @@ def _safe_json_loads(value: str) -> Any:
 
 def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dict]) -> dict:
     """
-    Normalize any LLM output into:
+    Normalize LLM output into:
     {
       "risk": "...",
       "controls": [
@@ -250,27 +250,45 @@ def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dic
         }
       ]
     }
+
+    Accepts these malformed variants too:
+    - {"controls": "8.8"}
+    - {"controls": ["8.8", "8.9"]}
+    - {"controls": {"control_id": "8.8", ...}}
+    - ["8.8", {"control_id": "8.9", ...}]
+    - "8.8"
     """
-    allowed_map = {
-        _normalize_key(item.get("control_id")): {
-            "control_id": _normalize_text(item.get("control_id")),
+    allowed_map = {}
+    for item in allowed_controls:
+        if not isinstance(item, dict):
+            continue
+
+        cid = _normalize_text(item.get("control_id"))
+        if cid == "":
+            continue
+
+        allowed_map[_normalize_key(cid)] = {
+            "control_id": cid,
             "control_name": _normalize_text(item.get("control_name")),
         }
-        for item in allowed_controls
-        if _normalize_text(item.get("control_id")) != ""
-    }
 
     normalized = {
         "risk": "",
         "controls": [],
     }
 
-    if not isinstance(raw_payload, dict):
-        return normalized
+    # allow raw payload itself to be list/string and not only dict
+    if isinstance(raw_payload, dict):
+        normalized["risk"] = _normalize_text(raw_payload.get("risk"))
+        raw_controls = raw_payload.get("controls", [])
+    elif isinstance(raw_payload, list):
+        raw_controls = raw_payload
+    elif isinstance(raw_payload, str):
+        raw_controls = [raw_payload]
+    else:
+        raw_controls = []
 
-    normalized["risk"] = _normalize_text(raw_payload.get("risk"))
-
-    raw_controls = raw_payload.get("controls", [])
+    # normalize controls into a list
     if isinstance(raw_controls, dict):
         raw_controls = [raw_controls]
     elif isinstance(raw_controls, str):
@@ -285,26 +303,56 @@ def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dic
         control_name = ""
         reason = ""
 
+        # valid object case
         if isinstance(item, dict):
-            control_id = _normalize_text(item.get("control_id"))
-            control_name = _normalize_text(item.get("control_name"))
-            reason = _normalize_text(item.get("reason"))
+            control_id = _normalize_text(
+                item.get("control_id")
+                or item.get("id")
+                or item.get("control")
+            )
+            control_name = _normalize_text(
+                item.get("control_name")
+                or item.get("name")
+                or item.get("title")
+            )
+            reason = _normalize_text(
+                item.get("reason")
+                or item.get("justification")
+                or item.get("why")
+            )
+
+        # plain string case: "8.8" or "8.8 - Management of technical vulnerabilities"
         elif isinstance(item, str):
-            control_id = _normalize_text(item)
+            text = _normalize_text(item)
+
+            # first try to extract an ISO control pattern like 8.8 / A.8.8
+            match = re.search(r"\b(?:A\.)?(\d+\.\d+)\b", text, flags=re.IGNORECASE)
+            if match:
+                control_id = _normalize_text(match.group(1))
+            else:
+                # fallback: use full string
+                control_id = text
+
+            reason = "Selected by LLM from allowed controls."
+
         else:
             continue
 
-        key = _normalize_key(control_id)
-        if key == "":
+        if control_id == "":
             continue
+
+        key = _normalize_key(control_id)
+        if key.startswith("a."):
+            key = key[2:]  # normalize A.8.8 -> 8.8
 
         matched_key = None
 
         if key in allowed_map:
             matched_key = key
         else:
+            # tolerant matching: "8.8" vs "A.8.8" or prefix variants
             for ak in allowed_map:
-                if ak.startswith(key) or key.startswith(ak):
+                if ak == key or ak.endswith(key) or key.endswith(ak):
                     matched_key = ak
                     break
 
@@ -312,9 +360,10 @@ def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dic
             continue
 
         resolved_control_id = allowed_map[matched_key]["control_id"]
+        resolved_control_name = allowed_map[matched_key]["control_name"]
 
         if control_name == "":
-            control_name = allowed_map[matched_key]["control_name"]
+            control_name = resolved_control_name
 
         if reason == "":
             reason = "Selected by LLM from allowed controls."
@@ -329,8 +378,12 @@ def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dic
             "reason": reason,
         })
 
+    # fallback only from retrieved/allowed controls, never from malformed arbitrary data
     if len(normalized["controls"]) == 0:
         for item in allowed_controls[:3]:
+            if not isinstance(item, dict):
+                continue
+
             fallback_id = _normalize_text(item.get("control_id"))
             fallback_name = _normalize_text(item.get("control_name"))
 
@@ -350,22 +403,38 @@ def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dic
 
     return normalized
 
+
 def _extract_valid_controls_from_llm_answer(llm_answer: Any) -> list[dict]:
+    """
+    Extract only safe dict controls.
+    Also accepts string controls and converts them to dicts so the caller
+    never does item['control_id'] on a plain string.
+    """
     if not isinstance(llm_answer, dict):
         return []
 
     raw_controls = llm_answer.get("controls", [])
-    if not isinstance(raw_controls, list):
+
+    if isinstance(raw_controls, dict):
+        raw_controls = [raw_controls]
+    elif isinstance(raw_controls, str):
+        raw_controls = [raw_controls]
+    elif not isinstance(raw_controls, list):
         return []
 
     valid_controls = []
-    for item in raw_controls:
-        if not isinstance(item, dict):
-            continue
 
-        control_id = _normalize_text(item.get("control_id"))
-        control_name = _normalize_text(item.get("control_name"))
-        reason = _normalize_text(item.get("reason"))
+    for item in raw_controls:
+        if isinstance(item, dict):
+            control_id = _normalize_text(item.get("control_id"))
+            control_name = _normalize_text(item.get("control_name"))
+            reason = _normalize_text(item.get("reason"))
+        elif isinstance(item, str):
+            control_id = _normalize_text(item)
+            control_name = ""
+            reason = "Selected by LLM."
+        else:
+            continue
 
         if control_id == "":
             continue
@@ -702,7 +771,7 @@ def _get_iso_record_by_control_id(year: int, control_id: str) -> dict | None:
 
 def _infer_controls_from_cves(year: int, ranked_cves: list[dict], exclude_control_ids: set[str]) -> list[dict]:
     iso_records = _load_iso_records_for_recommend(year)
-    embedded_records = build_or_load_embeddings(year)
+    embedded_records = build_or_load_embeddings(year, force_rebuild=True)
 
     embedding_by_control = {}
     for item in embedded_records:
@@ -1320,20 +1389,38 @@ def retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K):
     scored = []
 
     for record in embedded_records:
-        semantic = cosine_similarity(query_embedding, record["embedding"])
+        # 🔥 FIX: skip invalid records
+        if not isinstance(record, dict):
+            print("SKIPPED invalid embedded record:", repr(record))
+            continue
+
+        if "embedding" not in record:
+            print("SKIPPED missing embedding:", record)
+            continue
+
+        if "text" not in record:
+            print("SKIPPED missing text:", record)
+            continue
+
+        try:
+            semantic = cosine_similarity(query_embedding, record["embedding"])
+        except Exception as e:
+            print("SKIPPED bad embedding:", str(e))
+            continue
+
         record_tokens = tokenize(record["text"])
         keyword = len(query_tokens & record_tokens) / max(1, len(query_tokens))
 
         boost = 0.0
-        if "privilege escalation" in traits and record["Control"] == "8.2":
+        if "privilege escalation" in traits and record.get("Control") == "8.2":
             boost += 0.2
-        if "authentication weakness" in traits and record["Control"] == "8.5":
+        if "authentication weakness" in traits and record.get("Control") == "8.5":
             boost += 0.2
-        if "technical vulnerability" in traits and record["Control"] == "8.8":
+        if "technical vulnerability" in traits and record.get("Control") == "8.8":
             boost += 0.2
-        if "configuration weakness" in traits and record["Control"] == "8.9":
+        if "configuration weakness" in traits and record.get("Control") == "8.9":
             boost += 0.2
-        if "network-based exploitation" in traits and record["Control"] in {"8.20", "8.21"}:
+        if "network-based exploitation" in traits and record.get("Control") in {"8.20", "8.21"}:
             boost += 0.2
 
         final_score = (semantic * 0.65) + (keyword * 0.25) + boost
@@ -1345,7 +1432,6 @@ def retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K):
 
     scored.sort(key=lambda x: x["final_score"], reverse=True)
     return scored[:top_k]
-
 
 def _generate_control_info_with_llama3(info_context: dict) -> dict:
     control_id = _normalize_text(info_context.get("control_id"))
@@ -1446,6 +1532,56 @@ Output Requirements:
         "justification": justification_clean,
     }
 
+def _apply_create_like_context_to_control(year: int, control: dict) -> dict:
+    """
+    Enrich a control with the same contextual generation behavior used by
+    the create/info pipeline so /add produces domain + justification
+    from the same source context.
+    """
+    if not isinstance(control, dict):
+        return control
+
+    control_id = _normalize_text(control.get("control_id"))
+    if control_id == "":
+        return control
+
+    try:
+        info_context = _build_recommended_control_info_context(year, control_id)
+    except Exception:
+        info_context = None
+
+    if info_context is None:
+        # Safe fallback: preserve existing values, but ensure domain exists
+        control["domain"] = _normalize_text(control.get("domain")) or _infer_domain_from_control_id(control_id)
+        control["justification"] = _normalize_text(control.get("justification"))
+        return control
+
+    try:
+        llm_info = _generate_control_info_with_llama3(info_context)
+    except Exception:
+        llm_info = None
+
+    control["domain"] = (
+        _normalize_text((llm_info or {}).get("domain"))
+        or _normalize_text(control.get("domain"))
+        or _infer_domain_from_control_id(control_id)
+    )
+
+    control["justification"] = (
+        _normalize_text((llm_info or {}).get("justification"))
+        or _normalize_text(control.get("justification"))
+        or _normalize_text(info_context.get("annex_justification"))
+        or _normalize_text(info_context.get("recommendation_justification"))
+    )
+
+    # Optional but useful: keep control name aligned with the richer context
+    control["control_name"] = (
+        _normalize_text(control.get("control_name"))
+        or _normalize_text(info_context.get("control_name"))
+    )
+
+    return control
+
 def _remove_cve_references(text: str) -> str:
     if not text:
         return ""
@@ -1453,15 +1589,22 @@ def _remove_cve_references(text: str) -> str:
 
     
 def ask_llama3_for_controls(risk_id: str, query_text: str, traits, retrieved_controls):
-    allowed_controls = [
-        {
-            "control_id": item["record"]["Control"],
-            "control_name": item["record"]["Title"],
-            "section": item["record"]["Section"],
-            "purpose": item["record"]["Purpose"]
-        }
-        for item in retrieved_controls
-    ]
+    allowed_controls = []
+
+    for item in retrieved_controls:
+        if not isinstance(item, dict):
+            continue
+
+        record_obj = item.get("record")
+        if not isinstance(record_obj, dict):
+            continue
+
+        allowed_controls.append({
+            "control_id": _normalize_text(record_obj.get("Control")),
+            "control_name": _normalize_text(record_obj.get("Title")),
+            "section": _normalize_text(record_obj.get("Section")),
+            "purpose": _normalize_text(record_obj.get("Purpose")),
+        })
 
     prompt = f"""
 You are an ISO 27001:2022 expert.
@@ -1475,31 +1618,16 @@ You must choose the best fitting controls ONLY from the allowed list below.
 Rules:
 1. Return ONLY valid JSON.
 2. Do NOT return markdown.
-3. Do NOT return a string for controls.
-4. "controls" must be a JSON array.
-5. Each element inside "controls" must be an object with:
+3. "controls" must be a JSON array.
+4. Each element inside "controls" must be an object with:
    - "control_id": string
    - "control_name": string
    - "reason": string
-6. Do not invent control IDs.
-7. Do not rename controls.
-8. Do not duplicate controls.
-9. Prefer the most relevant controls for mitigating the vulnerability.
 
 Allowed controls:
 {json.dumps(allowed_controls, indent=2)}
 
-Return valid JSON only in this exact format:
-{{
-  "risk": "{risk_id}",
-  "controls": [
-    {{
-      "control_id": "8.8",
-      "control_name": "Management of technical vulnerabilities",
-      "reason": "Why this control applies"
-    }}
-  ]
-}}
+Return valid JSON only.
 """
 
     response = SESSION.post(
@@ -1548,22 +1676,38 @@ def map_record_to_controls(record: dict, embedded_records: list[dict]) -> dict:
         query_text = _normalize_text(record.get("risk")) or _normalize_text(record.get("vulnerability_name"))
 
     traits = extract_traits_from_text(query_text, severity)
-    retrieved = retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K)
-    llm_answer = ask_llama3_for_controls(risk_id=risk_id, query_text=query_text, traits=traits, retrieved_controls=retrieved)
 
-    print("RISK_ID:", risk_id)
-    print("LLM_ANSWER:", json.dumps(llm_answer, indent=2))
-    
+    retrieved = retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K)
+
+    llm_answer = ask_llama3_for_controls(
+        risk_id=risk_id,
+        query_text=query_text,
+        traits=traits,
+        retrieved_controls=retrieved,
+    )
+
+    controls = _extract_valid_controls_from_llm_answer(llm_answer)
+
+    if not controls:
+        raise ValueError(f"No valid controls returned for risk {risk_id}")
+
+    for control in controls:
+        if not isinstance(control, dict):
+            raise ValueError(f"Invalid control object for risk {risk_id}")
+        if _normalize_text(control.get('control_id')) == "":
+            raise ValueError(f"Missing control_id for risk {risk_id}")
+
     return {
         "risk_id": risk_id,
         "cve": cve_id,
         "query_text": query_text,
         "traits": traits,
         "retrieved": retrieved,
-        "llm_answer": llm_answer,
+        "llm_answer": {
+            "risk": risk_id,
+            "controls": controls,
+        },
     }
-
-
 # =========================================================
 # BUILD ANNEX A & SOA FROM FILTERED RISK RECORDS USING RAG
 # =========================================================
@@ -1576,7 +1720,7 @@ def _build_annex_from_risk_eval(year: int) -> dict:
         if isinstance(r, dict) and _is_record_applicable(r)
     ]
 
-    embedded_records = build_or_load_embeddings(year)
+    embedded_records = build_or_load_embeddings(year, force_rebuild=True)
 
     matched_controls: dict[str, dict] = {}
 
@@ -1586,12 +1730,17 @@ def _build_annex_from_risk_eval(year: int) -> dict:
             risk_id = result["risk_id"]
             cve_id = result["cve"]
 
-            controls = _extract_valid_controls_from_llm_answer(result.get("llm_answer"))
+            controls = result.get("llm_answer", {}).get("controls", [])
+            if not isinstance(controls, list):
+                raise ValueError(f"Invalid controls format for risk {risk_id}")
 
             for control in controls:
-                control_id = control["control_id"]
-                control_name = control["control_name"]
-                reason = control["reason"]
+                if not isinstance(control, dict):
+                    raise ValueError(f"Invalid control object for risk {risk_id}: {control}")
+
+                control_id = _normalize_text(control.get("control_id"))
+                control_name = _normalize_text(control.get("control_name"))
+                reason = _normalize_text(control.get("reason"))
 
                 if not control_id:
                     continue
@@ -1600,7 +1749,7 @@ def _build_annex_from_risk_eval(year: int) -> dict:
                     matched_controls[control_id] = {
                         "control_id": control_id,
                         "control_name": control_name,
-                        "domain": "ISO 27001:2022 Control",
+                        "domain": _infer_domain_from_control_id(control_id),
                         "applicable": True,
                         "implementation_status": "",
                         "justification": reason,
@@ -1626,25 +1775,9 @@ def _build_annex_from_risk_eval(year: int) -> dict:
                 })
 
         except Exception as e:
-            fallback_key = f"ERROR-{_normalize_text(record.get('riskid')) or _normalize_text(record.get('cve')) or 'UNKNOWN'}"
-            matched_controls[fallback_key] = {
-                "control_id": fallback_key,
-                "control_name": "RAG Mapping Error",
-                "domain": "System",
-                "applicable": False,
-                "implementation_status": "",
-                "justification": f"Failed to map controls automatically: {str(e)}",
-                "related_risks": [_normalize_text(record.get("cve"))],
-                "risk_ids": [_normalize_text(record.get("riskid"))],
-                "source_records": [{
-                    "hostname": _normalize_text(record.get("hostname")),
-                    "role": _normalize_text(record.get("role")),
-                    "riskid": _normalize_text(record.get("riskid")),
-                    "risk": _normalize_text(record.get("risk")),
-                    "vulnerability_name": _normalize_text(record.get("vulnerability_name")),
-                    "cve": _normalize_text(record.get("cve")),
-                }],
-            }
+            print("FAILED RECORD:", json.dumps(record, indent=2))
+            print(f"[ERROR] Control mapping failed for record {record.get('riskid')}: {str(e)}")
+            continue
 
     controls = sorted(
         matched_controls.values(),
@@ -1888,15 +2021,18 @@ def _build_single_control_from_rag(year: int, target_control_id: str) -> dict | 
         if isinstance(r, dict) and _is_record_applicable(r)
     ]
 
-    embedded_records = build_or_load_embeddings(year)
+    embedded_records = build_or_load_embeddings(year, force_rebuild=True)
 
     aggregated = None
 
     for record in applicable_records:
         try:
             result = map_record_to_controls(record, embedded_records)
-            controls = _extract_valid_controls_from_llm_answer(result.get("llm_answer"))
-
+            controls = result.get("llm_answer", {}).get("controls", [])
+            
+            if not isinstance(controls, list):
+                raise ValueError(f"Invalid controls format for risk {risk_id}")
+                
             for c in controls:
                 cid = c["control_id"]
                 cname = c["control_name"]
@@ -2389,20 +2525,20 @@ def add_control_to_annex(payload: AddRequest):
     try:
         rec_key = _normalize_key(control_id)
         rec_item = recommendation_map.get(rec_key)
-        
+    
         rec_justification = ""
         if rec_item:
             rec_justification = _normalize_text(rec_item.get("justification"))
-        
+    
         new_control = _build_single_control_from_annex_recommendation(
-            year,
-            control_id,
-            recommendation_justification=rec_justification
-        )        
-
+            year=year,
+            target_control_id=control_id,
+            recommendation_justification=rec_justification,
+        )
+    
         if not new_control:
             new_control = _build_single_control_from_rag(year, control_id)
-
+    
         if not new_control:
             return {
                 "success": False,
@@ -2412,14 +2548,16 @@ def add_control_to_annex(payload: AddRequest):
                 ),
                 "inventory": doc,
             }
-
+    
+        # apply the same contextual behavior used by create/info
+        new_control = _apply_create_like_context_to_control(year, new_control)
+    
     except Exception as e:
         return {
             "success": False,
             "message": f"Control generation failed: {str(e)}",
             "inventory": doc,
         }
-
     # Add to table
     controls = _all_controls(doc)
     controls.append(new_control)
