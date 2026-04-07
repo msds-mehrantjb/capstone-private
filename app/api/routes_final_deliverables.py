@@ -1,7 +1,12 @@
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import Response
+from pydantic import BaseModel
 from pathlib import Path
 from typing import Any
 import json
+import shutil
+import subprocess
+import tempfile
 
 from app.api.sections.executive_summary import build_executive_summary_markdown
 from app.api.sections.asset_inventory import build_asset_inventory_markdown
@@ -14,9 +19,11 @@ from app.api.sections.monitoring_improvement import build_monitoring_improvement
 router = APIRouter(prefix="/api/final-deliveries", tags=["final-deliveries"])
 
 
-# =========================================================
-# PROJECT ROOT / FILE HELPERS
-# =========================================================
+class ExportPdfRequest(BaseModel):
+    section: str
+    year: int | None = None
+
+
 def find_project_root() -> Path:
     current = Path(__file__).resolve()
     for parent in [current] + list(current.parents):
@@ -65,11 +72,11 @@ def _asset_inventory_file(year: int) -> Path:
 
 
 def _threats_vulns_file(year: int) -> Path:
-    return _work_dir(year) / "ThreatsVulnerabilities.json"
+    return _work_dir(year) / "AssetVulnerabilitiesThreats.json"
 
 
 def _controls_posture_file(year: int) -> Path:
-    return _work_dir(year) / "ExistingControlsPosture.json"
+    return _work_dir(year) / "ExistingControlsPostures.json"
 
 
 def _risk_analysis_file(year: int) -> Path:
@@ -124,7 +131,9 @@ def _md_table(headers: list[str], rows: list[list[Any]]) -> str:
     body_lines = []
     for row in rows:
         normalized = list(row) + [""] * (len(headers) - len(row))
-        body_lines.append("| " + " | ".join(_escape_md(v) for v in normalized[: len(headers)]) + " |")
+        body_lines.append(
+            "| " + " | ".join(_escape_md(v) for v in normalized[: len(headers)]) + " |"
+        )
 
     return "\n".join([header_line, separator_line, *body_lines])
 
@@ -238,9 +247,6 @@ def _load_dashboard_context(year: int) -> dict:
     }
 
 
-# =========================================================
-# SCOPE FILE HELPERS
-# =========================================================
 def _scope_file_from_dashboard(year: int) -> Path | None:
     dashboard = _read_json(_dashboard_file(), {})
     scope_file_name = str(dashboard.get("scope_file_name", "")).strip()
@@ -254,7 +260,7 @@ def _scope_file_from_dashboard(year: int) -> Path | None:
     if raw_path.exists():
         return raw_path
 
-    for file in (_work_dir(year)).glob("*Scope*.json"):
+    for file in _work_dir(year).glob("*Scope*.json"):
         return file
 
     for file in (BASE_DIR / "data" / "raw").glob("*Scope*.json"):
@@ -378,9 +384,6 @@ def _extract_scope_summary(scope_doc: dict, dashboard_ctx: dict, year: int) -> d
     }
 
 
-# =========================================================
-# DATA EXTRACTION HELPERS
-# =========================================================
 def _extract_asset_rows(doc: dict) -> list[dict]:
     if not isinstance(doc, dict):
         return []
@@ -453,7 +456,7 @@ def _risk_treatment_row_to_markdown_row(row: dict) -> list[Any]:
 
 def _annex_row_to_markdown_row(row: dict) -> list[Any]:
     return [
-        row.get("control_id", "NA"),
+        row.get("control_id", row.get("control", "NA")),
         row.get("control_name", "NA"),
         row.get("domain", "NA"),
         row.get("applicable", "NA"),
@@ -464,7 +467,7 @@ def _annex_row_to_markdown_row(row: dict) -> list[Any]:
 
 def _action_plan_row_to_markdown_row(row: dict) -> list[Any]:
     return [
-        row.get("control_id", "NA"),
+        row.get("control_id", row.get("control", "NA")),
         row.get("control_name", "NA"),
         row.get("implementation_status", "NA"),
         row.get("owner", "NA"),
@@ -474,17 +477,14 @@ def _action_plan_row_to_markdown_row(row: dict) -> list[Any]:
 
 def _monitoring_row_to_markdown_row(row: dict) -> list[Any]:
     return [
-        row.get("cve", row.get("id", "NA")),
-        row.get("title", row.get("name", "NA")),
-        row.get("status", "NA"),
+        row.get("cve", row.get("CVE", row.get("id", "NA"))),
+        row.get("title", row.get("name", row.get("vulnerability", "NA"))),
+        row.get("status", row.get("implementation_status", "NA")),
         row.get("owner", "NA"),
         row.get("review_date", row.get("target_date", "NA")),
     ]
 
 
-# =========================================================
-# SECTION BUILDERS
-# =========================================================
 SECTION_BUILDERS = {
     "executive-summary": build_executive_summary_markdown,
     "asset-inventory": build_asset_inventory_markdown,
@@ -496,9 +496,6 @@ SECTION_BUILDERS = {
 }
 
 
-# =========================================================
-# API
-# =========================================================
 @router.get("/system-year")
 def get_final_deliveries_system_year():
     year = get_system_year()
@@ -531,3 +528,157 @@ def get_final_delivery_section(
         "section": section,
         "markdown": markdown,
     }
+
+
+def _render_markdown_to_pdf(markdown: str, output_pdf: Path) -> None:
+    pandoc_path = shutil.which("pandoc")
+    wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+
+    if not pandoc_path:
+        raise HTTPException(
+            status_code=500,
+            detail="PDF export is not available because pandoc is not installed.",
+        )
+
+    if not wkhtmltopdf_path:
+        raise HTTPException(
+            status_code=500,
+            detail="PDF export is not available because wkhtmltopdf is not installed.",
+        )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        md_path = tmpdir_path / "document.md"
+        css_path = tmpdir_path / "pdf_style.css"
+
+        md_path.write_text(markdown, encoding="utf-8")
+
+        css_path.write_text(
+            """
+            @page {
+              size: A4;
+              margin: 3mm 3mm 3mm 3mm;
+            }
+        
+            html, body {
+              width: 100%;
+              max-width: 100%;
+              margin: 0;
+              padding: 0;
+              font-family: Arial, sans-serif;
+              font-size: 12px;
+              line-height: 1.4;
+            }
+        
+            body {
+              box-sizing: border-box;
+            }
+        
+            h1, h2, h3, h4 {
+              margin-top: 10px;
+              margin-bottom: 8px;
+              page-break-after: avoid;
+              break-after: avoid;
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+        
+            h1 + *, h2 + *, h3 + *, h4 + * {
+              page-break-before: avoid;
+              break-before: avoid;
+            }
+        
+            p, ul, ol, blockquote, pre, table {
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
+        
+            p, ul, ol {
+              margin-top: 0;
+              margin-bottom: 8px;
+            }
+        
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              table-layout: fixed;
+              margin-bottom: 12px;
+            }
+        
+            th, td {
+              border: 1px solid #999;
+              padding: 6px;
+              vertical-align: top;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+            }
+        
+            img {
+              max-width: 100%;
+            }
+            """,
+            encoding="utf-8",
+        )
+
+        cmd = [
+            pandoc_path,
+            str(md_path),
+            "-o",
+            str(output_pdf),
+            "--pdf-engine=wkhtmltopdf",
+            "--css",
+            str(css_path),
+            "-V",
+            "margin-top=8mm",
+            "-V",
+            "margin-bottom=8mm",
+            "-V",
+            "margin-left=8mm",
+            "-V",
+            "margin-right=8mm",
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            raise HTTPException(
+                status_code=500,
+                detail=result.stderr.strip() or "Failed to generate PDF.",
+            )
+
+@router.post("/export-pdf")
+def export_final_delivery_pdf(payload: ExportPdfRequest):
+    resolved_year = payload.year if payload.year is not None else get_system_year()
+
+    section = str(payload.section or "").strip()
+    if not section:
+        raise HTTPException(status_code=400, detail="Section is required.")
+
+    builder = SECTION_BUILDERS.get(section)
+    if builder is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown final delivery section: {section}",
+        )
+
+    markdown = builder(resolved_year)
+    if not str(markdown).strip():
+        raise HTTPException(status_code=400, detail="No markdown content available for export.")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = Path(tmpdir) / f"{section}-{resolved_year}.pdf"
+        _render_markdown_to_pdf(markdown, pdf_path)
+        pdf_bytes = pdf_path.read_bytes()
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{section}-{resolved_year}.pdf"'
+        },
+    )

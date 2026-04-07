@@ -112,6 +112,39 @@ async function apiGetFinalDeliverySection(
   );
 }
 
+async function apiExportFinalDeliveryPdf(
+  section: FinalTabKey,
+  year: number
+): Promise<Blob> {
+  const res = await fetch(`${API_BASE}/api/final-deliveries/export-pdf?_ts=${Date.now()}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+    body: JSON.stringify({ section, year }),
+  });
+
+  if (!res.ok) {
+    let detail = `HTTP ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.detail) detail = body.detail;
+    } catch {
+      try {
+        detail = await res.text();
+      } catch {
+        // ignore
+      }
+    }
+    throw new Error(detail || `HTTP ${res.status}`);
+  }
+
+  return await res.blob();
+}
+
 function getFinalTabFromHash(): FinalTabKey {
   const h = (window.location.hash || "").toLowerCase();
 
@@ -237,7 +270,6 @@ function MarkdownPrintReady({ content }: { content: string }) {
                 {children}
               </pre>
             ),
-
             table: ({ children }) => (
               <div className="mb-6 overflow-x-auto">
                 <table className="w-full border-collapse text-[14px] text-black">
@@ -245,11 +277,9 @@ function MarkdownPrintReady({ content }: { content: string }) {
                 </table>
               </div>
             ),
-
             thead: ({ children }) => (
               <thead className="bg-slate-100">{children}</thead>
             ),
-
             th: ({ children, ...props }) => {
               const isGroupedHeader =
                 props.colSpan && Number(props.colSpan) > 1;
@@ -258,21 +288,17 @@ function MarkdownPrintReady({ content }: { content: string }) {
                 <th
                   {...props}
                   className={`border border-slate-300 px-3 py-2 font-semibold text-black ${
-                    isGroupedHeader
-                      ? "text-center bg-slate-200"   // ✅ centered group headers
-                      : "text-left"
+                    isGroupedHeader ? "bg-slate-200 text-center" : "text-left"
                   }`}
                 >
                   {children}
                 </th>
               );
             },
-
             td: ({ children, ...props }) => {
               const value = String(children ?? "").trim();
-
               const isConfidence =
-                value.match(/^\d+(\.\d+)?$/) ||   // numbers (0.85)
+                value.match(/^\d+(\.\d+)?$/) ||
                 ["Very High", "High", "Medium", "Low"].includes(value);
 
               return (
@@ -294,6 +320,7 @@ function MarkdownPrintReady({ content }: { content: string }) {
     </div>
   );
 }
+
 export default function FinalDeliverables() {
   const YEAR = 2026;
 
@@ -305,6 +332,7 @@ export default function FinalDeliverables() {
   const [sectionData, setSectionData] = useState<FinalDeliveryResponse | null>(null);
   const [sectionLoading, setSectionLoading] = useState(false);
   const [sectionError, setSectionError] = useState<string | null>(null);
+  const [exportBusy, setExportBusy] = useState(false);
 
   const refreshPageData = async () => {
     try {
@@ -319,7 +347,7 @@ export default function FinalDeliverables() {
   useEffect(() => {
     const syncSelectedStep = () => {
       const h = (window.location.hash || "").toLowerCase();
-    
+
       if (
         h.startsWith("#/final-deliverables") ||
         h.startsWith("#/final-deliveries")
@@ -337,6 +365,7 @@ export default function FinalDeliverables() {
       else if (h.startsWith("#/monitoring-improvement")) setSelectedStep(9);
       else setSelectedStep(0);
     };
+
     syncSelectedStep();
     void refreshPageData();
 
@@ -398,6 +427,28 @@ export default function FinalDeliverables() {
       cancelled = true;
     };
   }, [activeTab, selectedStep]);
+
+  const onExportPdf = async () => {
+    try {
+      setPageErr(null);
+      setExportBusy(true);
+
+      const blob = await apiExportFinalDeliveryPdf(activeTab, YEAR);
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${activeTab}-${YEAR}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      setPageErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExportBusy(false);
+    }
+  };
 
   const displayScopeName = dashboardRaw?.scope?.name ?? "NA";
   const displayAssetCount = dashboardRaw?.scope?.asset_count ?? 0;
@@ -527,23 +578,35 @@ export default function FinalDeliverables() {
 
               <ShellCard className="flex flex-1 min-h-0 flex-col overflow-hidden">
                 <div className="shrink-0 border-b border-white/10 p-4">
-                  <div className="flex flex-wrap gap-2">
-                    {FINAL_TABS.map((tab) => (
-                      <TabButton
-                        key={tab.key}
-                        active={activeTab === tab.key}
-                        label={tab.label}
-                        onClick={() => {
-                          window.location.hash = tab.href;
-                        }}
-                      />
-                    ))}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {FINAL_TABS.map((tab) => (
+                        <TabButton
+                          key={tab.key}
+                          active={activeTab === tab.key}
+                          label={tab.label}
+                          onClick={() => {
+                            window.location.hash = tab.href;
+                          }}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={onExportPdf}
+                        disabled={exportBusy || sectionLoading}
+                        className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
+                      >
+                        {exportBusy ? "Exporting..." : "Export PDF"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
                 <div className="flex-1 min-h-0 overflow-hidden p-4">
                   <div className="flex h-full min-h-0 flex-col">
-
                     <div className="flex-1 min-h-0 overflow-hidden">
                       {sectionLoading ? (
                         <div className="text-sm text-slate-300">Loading...</div>
@@ -687,23 +750,33 @@ export default function FinalDeliverables() {
         <div className="col-[3] row-[4] min-h-0 p-3 pt-0">
           <ShellCard className="flex h-full min-h-0 flex-col overflow-hidden">
             <div className="shrink-0 border-b border-white/10 p-5">
-              <div className="flex flex-wrap gap-2">
-                {FINAL_TABS.map((tab) => (
-                  <TabButton
-                    key={tab.key}
-                    active={activeTab === tab.key}
-                    label={tab.label}
-                    onClick={() => {
-                      window.location.hash = tab.href;
-                    }}
-                  />
-                ))}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-2">
+                  {FINAL_TABS.map((tab) => (
+                    <TabButton
+                      key={tab.key}
+                      active={activeTab === tab.key}
+                      label={tab.label}
+                      onClick={() => {
+                        window.location.hash = tab.href;
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onExportPdf}
+                  disabled={exportBusy || sectionLoading}
+                  className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
+                >
+                  {exportBusy ? "Exporting..." : "Export PDF"}
+                </button>
               </div>
             </div>
 
             <div className="flex-1 min-h-0 overflow-hidden p-6">
               <div className="flex h-full min-h-0 flex-col">
-
                 <div className="flex-1 min-h-0 overflow-hidden">
                   {sectionLoading ? (
                     <div className="text-sm text-slate-300">Loading...</div>
