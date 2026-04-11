@@ -126,7 +126,9 @@ def _md_table(headers: list[str], rows: list[list[Any]]) -> str:
         return "_No data available._"
 
     header_line = "| " + " | ".join(_escape_md(h) for h in headers) + " |"
-    separator_line = "| " + " | ".join(["---"] * len(headers)) + " |"
+
+    # ✅ FORCE LEFT ALIGNMENT FOR ALL COLUMNS
+    separator_line = "| " + " | ".join([":---"] * len(headers)) + " |"
 
     body_lines = []
     for row in rows:

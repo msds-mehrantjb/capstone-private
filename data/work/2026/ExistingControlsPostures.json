@@ -20,8 +20,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "Windows Event Logging",
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ],
         "Vulnerability & Patch Management": [
           "Patch Management (WSUS / SCCM)"
@@ -49,8 +48,7 @@
           "DNS Security (DNS filtering / logging)"
         ],
         "Logging, Monitoring & Detection": [
-          "Windows Event Logging",
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ],
         "Vulnerability & Patch Management": [
           "Patch Management (WSUS / SCCM)"
@@ -76,7 +74,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ]
       }
     },
@@ -96,7 +94,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ]
       }
     },
@@ -116,7 +114,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ]
       }
     },
@@ -137,8 +135,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "Windows Event Logging",
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ],
         "Vulnerability & Patch Management": [
           "Patch Management (WSUS / SCCM)"
@@ -165,8 +162,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "Windows Event Logging",
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ],
         "Vulnerability & Patch Management": [
           "Patch Management (WSUS / SCCM)"
@@ -192,7 +188,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ]
       }
     },
@@ -212,7 +208,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ]
       }
     },
@@ -232,7 +228,7 @@
           "Windows Firewall (Host-based)"
         ],
         "Logging, Monitoring & Detection": [
-          "CCTV Monitoring"
+          "Windows Event Logging"
         ]
       }
     }

@@ -1,0 +1,688 @@
+# Implementing “User Activity Behavior” as a New Vulnerability in a NIST SP 800-30 Risk Analysis Model
+
+## 1. Purpose
+
+This design defines how to use NIST SP 800-30 style risk analysis to introduce a new vulnerability category called **User Activity Behavior** into your system.
+
+The goal is to make user behavior a measurable risk factor that can be used in likelihood analysis, impact analysis, and final risk scoring.
+
+This approach fits well with your existing architecture because you already have:
+- asset discovery
+- asset role identification
+- CIA impact assignment
+- machine learning support
+- JSON-based risk processing
+
+---
+
+## 2. NIST SP 800-30 Alignment
+
+NIST SP 800-30 risk assessment is based on identifying:
+
+- assets
+- threat sources
+- vulnerabilities
+- predisposing conditions
+- likelihood
+- impact
+- risk
+
+In this model, **User Activity Behavior** should be treated as both:
+
+- a **vulnerability**, because unsafe or abnormal user activity creates exploitable weakness
+- a **predisposing condition**, because it increases the chance that a threat event will succeed
+
+This means user behavior should not be treated as just a log record or telemetry field. It should be modeled as a risk input that affects the likelihood of compromise.
+
+---
+
+## 3. Proposed New Vulnerability Definition
+
+### Vulnerability Name
+User Activity Behavior
+
+### Definition
+A vulnerability arising from abnormal, inconsistent, suspicious, risky, or policy-violating user actions observed on an endpoint, workstation, or server, where those actions increase the probability of unauthorized access, misuse, insider abuse, credential compromise, or operational disruption.
+
+### Why this is useful
+Traditional vulnerability analysis focuses on:
+- software flaws
+- missing patches
+- open ports
+- insecure configurations
+
+But many real attacks begin through:
+- repeated failed logins
+- unusual login times
+- abnormal session duration
+- irregular access frequency
+- excessive password resets
+- access to unusual files or systems
+- privilege use inconsistent with the user’s baseline
+
+This new vulnerability lets you capture those risks formally.
+
+---
+
+## 4. Recommended Risk Modeling Position
+
+You should model User Activity Behavior as a measurable vulnerability object attached to each user-associated asset.
+
+For example:
+- workstation assets such as WS-01 should have strong user behavior monitoring
+- servers can also include administrator behavior monitoring
+- domain controllers can track privileged user behavior
+- shared systems can track multiple behavior profiles
+
+This means the vulnerability is not simply “present” or “absent.”
+Instead, it has:
+- features
+- a calculated score
+- a likelihood contribution
+- mapped threats
+- mapped controls
+- historical trend
+
+---
+
+## 5. Suggested Behavioral Indicators
+
+I identified a strong starting set of indicators:
+
+- failedLoginAttempts
+- accessFrequency
+- loginConsistency
+- passwordResets
+- sessionDuration
+
+---
+
+## 6. What Each Indicator Means
+
+### failedLoginAttempts
+High values may indicate:
+- brute-force activity
+- credential stuffing
+- forgotten password
+- suspicious account use
+
+### accessFrequency
+Measures how often the user accesses systems, files, or services.
+Risk increases when activity deviates sharply from normal baseline.
+
+### loginConsistency
+Measures how stable the user’s logon pattern is over time.
+Low consistency may indicate shared credentials, misuse, or attacker activity.
+
+### passwordResets
+Frequent resets may suggest:
+- account takeover attempts
+- poor password hygiene
+- abuse of identity processes
+
+### sessionDuration
+Sessions much longer or shorter than baseline may indicate:
+- unattended sessions
+- automated misuse
+- lateral movement preparation
+
+---
+
+## 7. Implementation Recommendation
+
+You should implement this in five stages:
+
+### Stage 1 — Collect user behavior telemetry
+Install or deploy a local agent on WS-01 or other endpoints that gathers behavioral signals daily.
+
+### Stage 2 — Build feature summaries
+Convert raw logs into normalized daily behavior features.
+
+### Stage 3 — Compute a User Activity Behavior score
+Calculate a weighted score or anomaly score.
+
+### Stage 4 — Map score to likelihood
+Translate the score into NIST-style likelihood categories.
+
+### Stage 5 — Combine with CIA impact
+Use your existing CIA asset ratings to compute final risk.
+
+---
+
+## 8. Recommended Architecture
+
+### Endpoint layer
+A Windows agent on WS-01 gathers data from:
+- Windows Event Logs
+- Security logs
+- Logon events
+- PowerShell activity
+- local account management activity
+- session activity
+- file access logs if enabled
+- privileged action logs
+
+### Daily output
+The agent summarizes activity into a JSON file stored locally by date.
+
+### Backend processing
+Your backend reads the daily JSON files and:
+- updates behavior features
+- computes behavior score
+- updates likelihood
+- maps threats
+- computes risk
+- stores results in your central JSON-based workflow
+
+### Integration point
+The output should feed into your existing:
+- risk analysis
+- risk evaluation/treatment pipeline
+
+---
+
+## 9. Suggested JSON Structure
+
+Use a structure like this inside your asset or risk object.
+
+{
+  "hostname": "WS-01",
+  "assetType": "Workstation",
+  "owner": "Assigned User",
+  "cia": {
+    "confidentiality": "Medium",
+    "integrity": "Medium",
+    "availability": "Low"
+  },
+  "userActivityBehavior": {
+    "observationDate": "2026-04-11",
+    "features": {
+      "failedLoginAttempts": 8,
+      "accessFrequency": 0.74,
+      "loginConsistency": 0.42,
+      "passwordResets": 2,
+      "sessionDuration": 0.81,
+     },
+    "normalizedScores": {
+      "failedLoginScore": 0.80,
+      "accessAnomalyScore": 0.60,
+      "loginVarianceScore": 0.58,
+      "passwordResetScore": 0.40,
+      "sessionAnomalyScore": 0.70,
+    },
+    "behaviorRiskScore": 0.63,
+    "likelihood": "High",
+    "mappedThreats": [
+      "Credential Abuse",
+      "Insider Misuse",
+      "Unauthorized Access",
+      "Lateral Movement"
+    ],
+    "recommendedControls": [
+      "MFA Enforcement",
+      "Account Lockout Policy",
+      "User Behavior Monitoring",
+      "Privileged Access Review",
+      "Off-hours Alerting"
+    ]
+  }
+}
+
+---
+
+## 10. How to Compute the Behavior Risk Score
+
+A weighted scoring method is the best first implementation because it is simple, explainable, and auditor-friendly.
+
+### Suggested formula
+
+BehaviorRiskScore =
+(0.20 × failedLoginScore) +
+(0.15 × accessAnomalyScore) +
+(0.10 × loginVarianceScore) +
+(0.10 × passwordResetScore) +
+(0.15 × sessionAnomalyScore) 
+
+### Why weighted scoring is good
+- easy to explain in your report
+- easy to audit
+- easy to tune
+- no black-box dependency
+- can later be replaced or supported by ML
+
+Start with weighted scoring first.
+Then add an ML anomaly score as a second parallel signal.
+
+---
+
+## 11. Alternative ML-Based Scoring
+
+Ue ML to generate the behavior score.
+
+### Good model choices
+- Isolation Forest
+- One-Class SVM
+- Local Outlier Factor
+- Autoencoder
+- LSTM for sequence patterns
+
+### Best practical implementation
+Use this two-layer model:
+
+#### Layer 1
+Rule-based weighted score
+
+#### Layer 2
+ML anomaly score
+
+Then combine them:
+
+FinalBehaviorScore =
+(0.60 × WeightedRuleScore) +
+(0.40 × MLAnomalyScore)
+
+This gives you:
+- explainability
+- adaptability
+- better detection quality
+
+---
+
+## 12. Mapping Behavior Score to NIST Likelihood
+
+Translate the numeric score into likelihood categories.
+
+### Suggested mapping
+- 0.00 to 0.20 = Very Low
+- 0.21 to 0.40 = Low
+- 0.41 to 0.60 = Moderate
+- 0.61 to 0.80 = High
+- 0.81 to 1.00 = Very High
+
+### Why this matters
+In NIST SP 800-30, risk is not just a raw number.
+You need understandable categories for decision-making and treatment.
+
+So the user behavior model should produce both:
+- numeric score
+- verbal likelihood category
+
+---
+
+## 13. Impact Analysis Using CIA
+
+You already have CIA impact ratings in your system.
+That means the behavior model should affect likelihood, while the asset profile affects impact.
+
+### Example
+A suspicious behavior score on a low-value kiosk should not be treated the same as suspicious behavior on:
+- domain controller
+- HR workstation
+- payroll server
+- administrative laptop
+
+### Suggested CIA mapping
+Convert CIA ratings into a numeric impact score.
+
+Example:
+- Low = 1
+- Medium = 2
+- High = 3
+- Very High = 4
+
+Then compute an overall impact value using the highest CIA dimension or a weighted CIA formula.
+
+### Example impact method
+ImpactScore = max(confidentiality, integrity, availability)
+
+This fits your existing “maximum impact resolution” thinking.
+
+---
+
+## 14. Final Risk Computation
+
+After deriving:
+- behavior-based likelihood
+- asset-based impact
+
+compute the final risk.
+
+### Suggested formula
+RiskScore = LikelihoodScore × ImpactScore
+
+### Example scale
+LikelihoodScore:
+- Very Low = 1
+- Low = 2
+- Moderate = 3
+- High = 4
+- Very High = 5
+
+ImpactScore:
+- Low = 1
+- Medium = 2
+- High = 3
+- Very High = 4
+
+### Example
+WS-01 has:
+- behavior likelihood = High = 4
+- impact = Medium = 2
+
+RiskScore = 4 × 2 = 8
+
+Then map final risk:
+- 1 to 3 = Low
+- 4 to 6 = Moderate
+- 8 to 12 = High
+- 15 to 20 = Very High
+
+You can adjust the bands to fit your risk matrix.
+
+---
+
+## 15. Threat Mapping for User Activity Behavior
+
+For NIST alignment, every vulnerability should map to plausible threat events.
+
+### Suggested mappings
+
+#### High failed login attempts
+Mapped threats:
+- brute-force attack
+- password spraying
+- account compromise attempt
+
+#### Irregular login consistency
+Mapped threats:
+- account sharing
+- insider misuse
+- stolen credential use
+
+#### High off-hours login rate
+Mapped threats:
+- unauthorized remote access
+- insider threat
+- attacker persistence
+
+#### Abnormal session duration
+Mapped threats:
+- session hijacking
+- unattended privileged session
+- scripted misuse
+
+#### Unusual new system access
+Mapped threats:
+- reconnaissance
+- lateral movement
+- privilege escalation activity
+
+#### High privilege use frequency
+Mapped threats:
+- privilege abuse
+- malicious administration
+- compromised admin account
+
+This mapping is important because it justifies the risk logic and treatment choices.
+
+---
+
+## 16. Control Recommendations
+
+For each detected behavior issue, define recommended controls.
+
+### Suggested controls by pattern
+
+#### Failed login anomalies
+- account lockout policy
+- MFA
+- failed login alerting
+- password spray detection
+
+#### Off-hours access anomalies
+- scheduled access policy
+- after-hours login alerts
+- geo/time anomaly detection
+
+#### Privilege misuse patterns
+- privileged access management
+- admin session recording
+- least privilege review
+
+#### New system access anomalies
+- east-west traffic monitoring
+- endpoint behavior analytics
+- network segmentation
+
+#### Session duration anomalies
+- idle timeout
+- reauthentication for sensitive actions
+- session monitoring
+
+#### Password reset anomalies
+- stronger identity verification
+- service desk workflow controls
+- reset abuse alerts
+
+These can later feed directly into your RiskEvaluationTreatment section.
+
+---
+
+## 17. Recommended Classification Logic
+
+Define User Activity Behavior vulnerability status as one of these:
+
+- Not Observed
+- Low Concern
+- Moderate Concern
+- High Concern
+- Critical Concern
+
+### Suggested logic
+- 0.00 to 0.20 = Not Observed
+- 0.21 to 0.40 = Low Concern
+- 0.41 to 0.60 = Moderate Concern
+- 0.61 to 0.80 = High Concern
+- 0.81 to 1.00 = Critical Concern
+
+This gives you a vulnerability classification that is separate from overall risk.
+
+That is useful because:
+- vulnerability severity and risk are not always the same
+- high behavior concern on low-impact asset may still be moderate overall risk
+- moderate behavior concern on very high-value server may still be high overall risk
+
+---
+
+## 18. Best Implementation Strategy for my Capstone
+
+### Recommended first implementation
+Implement User Activity Behavior in this order:
+
+1. Define the JSON schema
+2. Collect Windows security events from WS-01
+3. Extract daily summarized features
+4. Normalize those features
+5. Compute weighted behavior score
+6. Map to likelihood
+7. Combine with CIA impact
+8. Store in RiskAnalysis.JSON file
+9. Generate treatment recommendations
+10. Add trend history later
+
+### Why this order is best
+It gives you:
+- a working system quickly
+- something easy to explain in documentation
+- a clear path to later ML enhancement
+
+---
+
+## 19. Suggested Windows Data Sources for WS-01
+
+For a real Windows workstation, collect from:
+
+- Windows Security Event Log
+- System Event Log
+- PowerShell Operational Log
+- Task Scheduler logs
+- local group membership checks
+- login and logout events
+- account lockout events
+- password change/reset events
+- RDP logon events if used
+- process creation logs if enabled
+- removable media events if needed
+
+### High-value event examples
+- successful logon
+- failed logon
+- account lockout
+- password change
+- privilege assignment
+- process execution
+- remote login events
+- administrative group membership changes
+
+---
+
+## 20. Suggested Daily Agent Output Model
+
+The endpoint agent should not store raw logs only.
+It should store a summarized daily profile.
+
+### Recommended daily JSON concept
+- machine identity
+- user identity
+- date
+- feature counts
+- anomaly markers
+- behavior score
+- notable observations
+
+### Example structure
+{
+  "hostname": "WS-01",
+  "date": "2026-04-11",
+  "user": "CORP\\jdoe",
+  "dailyBehaviorSummary": {
+    "failedLoginAttempts": 8,
+    "successfulLoginCount": 14,
+    "accessFrequency": 0.74,
+    "loginConsistency": 0.42,
+    "passwordResets": 2,
+    "sessionDuration": 0.81,
+    "offHoursLoginRate": 0.37,
+    "privilegeUseFrequency": 0.22,
+    "newSystemAccessCount": 4
+  },
+  "observations": [
+    "Multiple failed logons before successful access",
+    "Two off-hours authentications observed",
+    "Access to systems not seen in previous baseline"
+  ]
+}
+
+This daily file can then be consumed by the backend risk engine.
+
+---
+
+## 21. How This Should Influence the Risk Register
+
+When the behavior score crosses a threshold, create or update a vulnerability/risk entry.
+
+### Example risk statement
+Abnormal user activity on WS-01 may indicate credential misuse, insider abuse, or unauthorized access, increasing the likelihood of compromise of workstation resources and connected enterprise systems.
+
+### Example risk entry fields
+- asset: WS-01
+- vulnerability: User Activity Behavior
+- threat: Credential Abuse / Insider Threat / Unauthorized Access
+- likelihood: High
+- impact: Medium
+- risk: High
+- treatment: Monitor, enforce MFA, review account activity, restrict privilege usage
+
+This makes the new vulnerability fully compatible with your existing risk workflow.
+
+---
+
+## 22. Why This Is Strong from an Auditor Perspective
+
+This design is strong because it moves beyond static vulnerabilities and adds:
+- continuous monitoring
+- human factor analysis
+- dynamic likelihood estimation
+- measurable evidence
+- support for ML and automation
+- clear traceability from evidence to risk
+
+Auditors generally like models that are:
+- explainable
+- repeatable
+- documented
+- tied to controls
+- tied to assets
+- tied to business impact
+
+This approach satisfies those points.
+
+---
+
+## 23. What I Suggest You Implement First
+
+My practical recommendation is:
+
+### Implement now
+- daily WS-01 behavior collection
+- weighted behavior scoring
+- likelihood mapping
+- CIA impact integration
+- JSON storage
+- control recommendation mapping
+
+### Implement later
+- anomaly detection model
+- trend-based scoring over 7 or 30 days
+- peer group baseline comparison
+- insider threat confidence score
+- organization-wide user behavior profiling
+
+This keeps the first version realistic and defensible.
+
+---
+
+## 24. Final Recommendation
+
+The best way to define your new vulnerability is this:
+
+### New vulnerability
+User Activity Behavior
+
+### Risk role
+A dynamic, measurable vulnerability and predisposing condition that affects likelihood based on abnormal or risky user behavior observed on enterprise assets.
+
+### Best implementation method
+Use:
+- Windows event collection on WS-01
+- daily feature extraction
+- weighted scoring first
+- ML anomaly scoring second
+- CIA-based impact integration
+- NIST-style likelihood and risk mapping
+
+### Best integration point in your system
+Add it as a formal vulnerability object under each asset or risk record, not as a simple log field.
+
+That will make it usable for:
+- risk analysis
+- treatment planning
+- control justification
+- ML enhancement
+- audit documentation
+
+---
+
+## 25. Short Suggested Design Statement for Your Report
+
+The system introduces a new vulnerability class called User Activity Behavior to represent abnormal or risky user actions that increase the likelihood of threat realization. Behavioral indicators such as failed logons, irregular access frequency, inconsistent login patterns, password resets, session anomalies, and unusual privilege use are collected from monitored endpoints and transformed into a behavior risk score. This score is mapped to NIST-style likelihood levels and combined with CIA-based asset impact ratings to compute final risk. The resulting risk records support treatment planning, monitoring, and continuous assessment within the organization’s ISO 27001 and NIST-aligned risk management process.

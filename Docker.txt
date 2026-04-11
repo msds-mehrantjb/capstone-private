@@ -1,0 +1,63 @@
+Docker
+
+data/docker_lab/scripts/merge_configs.py
+python docker_lab\scripts\merge_configs.py  -> data/lab_output/generated_configs/merged_lab_config.json
+
+This merged file will contain:
+
+subnet structure from OU.json
+gateway addresses from OU.json
+NAT type from OU.json
+hostname, role, OS, services, software, CIA, and behavior from AssetDetails.json
+host IPs from AssetDetails.json
+
+
+data/docker_lab/scripts/validate_lab.py
+
+data/docker_lab/scripts/generate_host_configs.py
+
+data/docker_lab/scripts/generate_compose.py -> data/lab_output/generated_compose/docker-compose.yml
+
+End of step 4:
+✔ Networks are correct:
+
+subnet_a_net → 10.0.0.0/28
+subnet_b_net → 10.0.0.16/28
+
+✔ Gateway configured properly
+
+✔ All 10 hosts defined correctly
+
+✔ Static vs Dynamic NAT reflected
+
+Step 5: Run the Infrastructure
+create_lab_service_files.bat
+
+cd lab_output\generated_compose
+docker compose up -d --build
+
+What is implemented now
+
+Implemented:
+
+folder structure
+merge
+validation
+host configs
+compose generation
+service files
+image builds
+network creation
+root cause identified
+
+Step 6 — Enable Inter-Subnet Routing (CORE NETWORK STEP)
+
+automate routing
+
+
+
+
+Step : Connect to Capstone System
+
+python docker_lab\scripts\assess_network.py
+

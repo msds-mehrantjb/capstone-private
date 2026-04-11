@@ -1,0 +1,226 @@
+WS-01 Preparation for Control & Posture Inference  
+ISO 27001-Based Asset Profiling – Evidence-Driven Configuration
+
+---
+
+## 1. Objective
+
+The objective of preparing WS-01 was to ensure that a remote scanner (Python-based) can infer security controls and posture from real system evidence, without relying on hardcoded profiles or local APIs.
+
+WS-01 represents a **Standard Employee Workstation** and was configured to expose verifiable indicators for:
+
+- Identity & Access Management  
+- Endpoint Security Controls  
+- Network Security Controls  
+- Logging, Monitoring & Detection  
+
+---
+
+## 2. Workstation Configuration (Verified State)
+
+WS-01 is a **domain-joined enterprise workstation**, verified using system commands and actual outputs.
+
+Verification commands:
+
+(Get-CimInstance Win32_ComputerSystem).DomainRole  
+(Get-CimInstance Win32_ComputerSystem).PartOfDomain  
+net accounts  
+gpresult /r  
+
+Observed results :contentReference[oaicite:0]{index=0}:
+
+- DomainRole = 1  
+- PartOfDomain = True  
+- Computer role = WORKSTATION  
+- Domain = CORP  
+- Group Policy applied from: SRV-01.corp.local  
+- Default Domain Policy applied  
+
+Interpretation:
+
+DomainRole values:
+
+0 → Standalone Workstation  
+1 → Member Workstation  
+
+Conclusion:
+
+WS-01 is a **domain-joined workstation managed by Active Directory**, inheriting centralized identity and security policies from SRV-01.
+
+---
+
+## 3. Identity & Access Management
+
+### Password Policies
+
+WS-01 does not define local password policies; it inherits them from the domain.
+
+Verification:
+
+net accounts  
+gpresult /r  
+
+Evidence :contentReference[oaicite:1]{index=1}:
+
+- Password policy enforced (min length, max age, history)  
+- Domain GPO applied  
+- Default Domain Policy active  
+
+Inference:
+
+Password Policies (complexity, rotation)
+
+---
+
+## 4. Endpoint Security Controls
+
+### Antivirus / Anti-malware
+
+Verification:
+
+Get-Service WinDefend  
+Get-MpComputerStatus  
+
+Evidence :contentReference[oaicite:2]{index=2}:
+
+- Microsoft Defender service = Running  
+- AntivirusEnabled = True  
+- RealTimeProtectionEnabled = True  
+- Behavior monitoring enabled  
+- Tamper protection enabled  
+
+Inference:
+
+Antivirus / Anti-malware
+
+---
+
+## 5. Network Security Controls
+
+### Windows Firewall
+
+Verification:
+
+Get-NetFirewallProfile | Select Name, Enabled  
+
+Evidence :contentReference[oaicite:3]{index=3}:
+
+- Domain Profile = True  
+- Private Profile = True  
+- Public Profile = True  
+
+Inference:
+
+Windows Firewall (Host-based)
+
+---
+
+## 6. Logging, Monitoring & Detection
+
+### Event Logging
+
+Verification:
+
+Get-Service EventLog  
+
+Evidence :contentReference[oaicite:4]{index=4}:
+
+- Windows Event Log service = Running  
+
+Inference:
+
+Windows Event Logging  
+
+---
+
+### Audit Policy Configuration
+
+Verification:
+
+auditpol /get /category:*  
+
+Evidence :contentReference[oaicite:5]{index=5}:
+
+Enabled:
+
+Authentication Monitoring  
+- Logon → Success and Failure  
+- Logoff → Success  
+- Account Lockout → Success  
+
+Account Monitoring  
+- User Account Management → Success  
+- Security Group Management → Success  
+
+Policy Monitoring  
+- Audit Policy Change → Success  
+- Authentication Policy Change → Success  
+
+Other Observations:
+
+- Object Access → Not enabled  
+- Process Tracking → Not enabled  
+
+Inference:
+
+- Basic authentication monitoring enabled  
+- Account changes tracked  
+- Policy changes monitored  
+
+Final Mapping:
+
+Logging, Monitoring & Detection → Windows Event Logging  
+
+---
+
+## 7. Evidence-Based Inference Model
+
+The workstation was configured so that posture is derived through:
+
+Evidence → Interpretation → Profile Mapping  
+
+Domain joined → Central identity → Password Policies  
+GPO applied → Policy enforcement → Password Policies  
+Defender running → Endpoint protection → Antivirus  
+Firewall enabled → Network protection → Windows Firewall  
+EventLog running → Logging capability → Windows Event Logging  
+Audit policy enabled → Monitoring capability → Logging & Detection  
+
+---
+
+## 8. Final Control & Posture Profile (Inferred)
+
+Identity & Access Management:
+- Password Policies (complexity, rotation)  
+
+Endpoint Security Controls:
+- Antivirus / Anti-malware  
+
+Network Security Controls:
+- Windows Firewall (Host-based)  
+
+Logging, Monitoring & Detection:
+- Windows Event Logging  
+
+---
+
+## 9. Validation Checklist
+
+Run the following commands:
+
+(Get-CimInstance Win32_ComputerSystem).DomainRole  
+(Get-CimInstance Win32_ComputerSystem).PartOfDomain  
+
+net accounts  
+gpresult /r  
+
+Get-Service WinDefend  
+Get-MpComputerStatus  
+
+Get-NetFirewallProfile | Select Name, Enabled  
+
+Get-Service EventLog  
+
+auditpol /get /category:*  
+
+---

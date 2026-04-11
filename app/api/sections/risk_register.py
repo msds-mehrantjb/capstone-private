@@ -65,24 +65,24 @@ def build_risk_register_markdown(year: int) -> str:
 
     def _make_group_table_html(hostname, role, rows, headers, host_span=1):
         def td(v):
-            return f'<td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_escape_md(v)}</td>'
-    
+            return f'<td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_escape_md(v)}</td>'
+
         header_cells = "".join(
             f'<th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">{_escape_md(h)}</th>'
             for h in headers
         )
-    
+
         body_rows = "".join(
             "<tr>" + "".join(td(v) for v in row) + "</tr>"
             for row in rows
         )
-    
+
         col_count = len(headers)
         host_span = max(1, min(host_span, col_count))
         role_span = max(1, col_count - host_span)
-    
+
         return f"""
-<table style="border-collapse: collapse; width: 100%;">
+<table style="border-collapse: collapse; width: 100%; text-align: left;">
     <thead>
         <tr>
             <th colspan="{host_span}" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">
@@ -118,13 +118,40 @@ def build_risk_register_markdown(year: int) -> str:
         "Likelihood Score",
         "Risk Score",
         "Exposure",
-        "ML Probability",
     ]
-
     register_grouped = OrderedDict()
     analysis_grouped = OrderedDict()
 
     for row in rows:
+        vulnerabilities = _as_list(row.get("vulnerability_name"))
+        if not vulnerabilities:
+            vulnerabilities = _as_list(row.get("vulnerability"))
+        if not vulnerabilities:
+            vulnerabilities = ["NA"]
+
+        # Skip User Activity Behavior rows from both Risk Register and Risk Analysis
+        filtered_vulnerabilities = []
+        filtered_cves = []
+
+        cves = _as_list(row.get("cve"))
+        if not cves:
+            cves = ["NA"]
+
+        max_len = max(len(vulnerabilities), len(cves))
+        vulnerabilities = vulnerabilities + [""] * (max_len - len(vulnerabilities))
+        cves = cves + [""] * (max_len - len(cves))
+
+        for vuln, cve in zip(vulnerabilities, cves):
+            vuln_text = _to_text(vuln, "NA")
+            if vuln_text == "User Activity Behavior - Vulnerability":
+                continue
+            filtered_vulnerabilities.append(vuln_text)
+            filtered_cves.append(_to_text(cve, "NA"))
+
+        # If all vulnerabilities in this row were filtered out, skip the row entirely
+        if not filtered_vulnerabilities:
+            continue
+
         hostname = row.get("hostname", row.get("host", row.get("name", "NA")))
         role = row.get("role", row.get("predicted_role", row.get("asset", "NA")))
         key = (_to_text(hostname), _to_text(role))
@@ -133,16 +160,6 @@ def build_risk_register_markdown(year: int) -> str:
             register_grouped[key] = []
         if key not in analysis_grouped:
             analysis_grouped[key] = []
-
-        vulnerabilities = _as_list(row.get("vulnerability_name"))
-        if not vulnerabilities:
-            vulnerabilities = _as_list(row.get("vulnerability"))
-        if not vulnerabilities:
-            vulnerabilities = ["NA"]
-
-        cves = _as_list(row.get("cve"))
-        if not cves:
-            cves = ["NA"]
 
         exploit_value = _yes_no(row.get("exploit_available"))
         likelihood = _to_text(row.get("likelihood", row.get("Likelihood", "NA")))
@@ -153,16 +170,8 @@ def build_risk_register_markdown(year: int) -> str:
         likelihood_score = _to_text(row.get("likelihood_score"))
         risk_score = _to_text(row.get("risk_score"))
         exposure = _to_text(row.get("exposure"))
-        ml_probability = _to_text(row.get("ml_probability"))
 
-        max_len = max(len(vulnerabilities), len(cves))
-        vulnerabilities = vulnerabilities + [""] * (max_len - len(vulnerabilities))
-        cves = cves + [""] * (max_len - len(cves))
-
-        for vuln, cve in zip(vulnerabilities, cves):
-            vuln_text = _to_text(vuln, "NA")
-            cve_text = _to_text(cve, "NA")
-
+        for vuln_text, cve_text in zip(filtered_vulnerabilities, filtered_cves):
             register_grouped[key].append([
                 vuln_text,
                 cve_text,
@@ -179,14 +188,12 @@ def build_risk_register_markdown(year: int) -> str:
                 likelihood_score,
                 risk_score,
                 exposure,
-                ml_probability,
             ])
 
     register_sections = []
     analysis_sections = []
     total_records = 0
 
-    # Host spans only first column so Role starts above CVE ID
     for (hostname, role), group_rows in register_grouped.items():
         total_records += len(group_rows)
         register_sections.append(
@@ -199,7 +206,6 @@ def build_risk_register_markdown(year: int) -> str:
             )
         )
 
-    # Keep same style for risk analysis
     for (hostname, role), group_rows in analysis_grouped.items():
         analysis_sections.append(
             _make_group_table_html(

@@ -1,0 +1,19 @@
+{
+  "year": 2026,
+  "network_address": "10.0.0.0",
+  "subnet": "10.0.0.0/28",
+  "hosts": [
+    {
+      "hostname": "SRV-01",
+      "ip_address": "10.0.0.2",
+      "username": "CORP\\Administrator",
+      "password": "!MT123456"
+    },
+    {
+      "hostname": "WS-01",
+      "ip_address": "10.0.0.10",
+      "username": "CORP\\Administrator",
+      "password": "!MT123456"
+    }
+  ]
+}

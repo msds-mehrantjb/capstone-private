@@ -158,7 +158,7 @@ def build_asset_inventory_markdown(year: int) -> str:
             )
     
         lines = [
-            '<table style="border-collapse: collapse; width: 100%;">',
+            '<table style="border-collapse: collapse; width: 100%; text-align: left;">',
             '  <thead>',
             '    <tr>',
             '      <th rowspan="2" style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Hostname</th>',
@@ -182,13 +182,13 @@ def build_asset_inventory_markdown(year: int) -> str:
             normalized = list(row) + [""] * (7 - len(row))
             lines.extend([
                 '    <tr>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[0])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[1])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[2])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[3])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[4])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[5])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{esc(normalized[6])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[0])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[1])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[2])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[3])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[4])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[5])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[6])}</td>',
                 '    </tr>',
             ])
     

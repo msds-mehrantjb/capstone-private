@@ -83,7 +83,7 @@ def build_monitoring_improvement_markdown(year: int) -> str:
                 evidence_list = [{}]
 
             lines = [
-                '<table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">',
+                '<table style="border-collapse: collapse; width: 100%; table-layout: fixed; margin-bottom: 20px;">'
                 '  <thead>',
                 '    <tr>',
                 f'      <th style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Host: {_esc(hostname)}</th>',
@@ -96,9 +96,9 @@ def build_monitoring_improvement_markdown(year: int) -> str:
                 '    <tr>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Responsible</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Resources</th>',
-                '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Date</th>',
+                '      <th style="width: 120px; white-space: nowrap; background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Date</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">URL/PATH</th>',
-                '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Desc</th>',
+                '      <th style="width: 30%; background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Desc</th>',
                 '    </tr>',
                 '  </thead>',
                 '  <tbody>',
@@ -118,9 +118,9 @@ def build_monitoring_improvement_markdown(year: int) -> str:
                     '    <tr>',
                     f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(responsible)}</td>',
                     f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(resources)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(date)}</td>',
+                    f'      <td style="width: 120px; white-space: nowrap; padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(date)}</td>',
                     f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(url)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(desc)}</td>',
+                    f'      <td style="width: 30%; padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(desc)}</td>',
                     '    </tr>',
                 ])
 

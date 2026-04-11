@@ -1,0 +1,145 @@
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: gateway.Dockerfile
+    container_name: gateway
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      net.ipv4.ip_forward: "1"
+    networks:
+      subnet_a_net:
+        ipv4_address: 10.0.0.1
+      subnet_b_net:
+        ipv4_address: 10.0.0.17
+
+  srv_01:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: srv_01
+    hostname: SRV-01
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_a_net:
+        ipv4_address: 10.0.0.2
+
+  srv_02:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: srv_02
+    hostname: SRV-02
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_a_net:
+        ipv4_address: 10.0.0.3
+
+  ws_01:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: ws_01
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_a_net:
+        ipv4_address: 10.0.0.10
+
+  ws_02:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: ws_02
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_a_net:
+        ipv4_address: 10.0.0.11
+
+  ws_03:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: ws_03
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_a_net:
+        ipv4_address: 10.0.0.12
+
+  srv_03:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: srv_03
+    hostname: SRV-03
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_b_net:
+        ipv4_address: 10.0.0.18
+
+  srv_04:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: srv_04
+    hostname: SRV-04
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_b_net:
+        ipv4_address: 10.0.0.19
+
+  ws_04:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: ws_04
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_b_net:
+        ipv4_address: 10.0.0.26
+
+  ws_05:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: ws_05
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_b_net:
+        ipv4_address: 10.0.0.27
+
+  ws_06:
+    build:
+      context: .
+      dockerfile: host.Dockerfile
+    container_name: ws_06
+    cap_add:
+      - NET_ADMIN
+    networks:
+      subnet_b_net:
+        ipv4_address: 10.0.0.28
+
+networks:
+  subnet_a_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.0/28
+          gateway: 10.0.0.14
+
+  subnet_b_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.0.16/28
+          gateway: 10.0.0.30

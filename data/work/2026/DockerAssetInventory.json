@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "year": 2026,
+    "name": "Asset Inventory & CIA",
+    "submitted": false,
+    "read_only": false
+  },
+  "subnets": [
+    {
+      "id": "Subnet_A",
+      "subnet_mask": "10.0.0.0/28",
+      "location": {
+        "name": "10.0.0.1",
+        "ip_range": "10.0.0.0/28"
+      },
+      "assets": [
+        {
+          "hostname": "srv_01",
+          "ip_address": "10.0.0.2",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "srv_02",
+          "ip_address": "10.0.0.3",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "WS-01",
+          "ip_address": "10.0.0.10",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "ws_02",
+          "ip_address": "10.0.0.11",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "ws_03",
+          "ip_address": "10.0.0.12",
+          "status": "Active",
+          "detail": {}
+        }
+      ]
+    },
+    {
+      "id": "Subnet_B",
+      "subnet_mask": "10.0.0.16/28",
+      "location": {
+        "name": "10.0.0.17",
+        "ip_range": "10.0.0.16/28"
+      },
+      "assets": [
+        {
+          "hostname": "srv_03",
+          "ip_address": "10.0.0.18",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "srv_04",
+          "ip_address": "10.0.0.19",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "ws_04",
+          "ip_address": "10.0.0.26",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "ws_05",
+          "ip_address": "10.0.0.27",
+          "status": "Active",
+          "detail": {}
+        },
+        {
+          "hostname": "ws_06",
+          "ip_address": "10.0.0.28",
+          "status": "Active",
+          "detail": {}
+        }
+      ]
+    }
+  ]
+}

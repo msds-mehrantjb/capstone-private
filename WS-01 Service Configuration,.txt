@@ -1,0 +1,87 @@
+# 🖥️ WS-01 Service Configuration, Commands, and Validation
+
+---
+
+## 1. Remote Desktop (RDP)
+
+### Enable RDP
+Set-ItemProperty `
+ -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" `
+ -Name "fDenyTSConnections" -Value 0
+
+### Enable Firewall Rules
+Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+### Ensure Service is Running
+Set-Service TermService -StartupType Automatic
+Start-Service TermService
+
+---
+
+## 2. SMB (File Sharing)
+
+### Enable File and Printer Sharing
+Enable-NetFirewallRule -DisplayGroup "File and Printer Sharing"
+
+### Verify SMB Service
+Get-Service LanmanServer
+
+---
+
+## 3. Print Spooler
+
+### Enable and Start Service
+Set-Service Spooler -StartupType Automatic
+Start-Service Spooler
+
+### Verify Service
+Get-Service Spooler
+
+---
+
+# 🧪 Validation
+
+## 1. Verify RDP Port Listening (on WS-01)
+netstat -an | findstr 3389
+
+Expected:
+0.0.0.0:3389   LISTENING
+
+---
+
+## 2. Verify Services Running
+Get-Service TermService, LanmanServer, Spooler
+
+Expected:
+Running
+
+---
+
+## 3. Network Scan from Host / Scanner
+"C:\Program Files (x86)\Nmap\nmap.exe" -Pn -p 135,445,3389 10.0.0.10
+
+Expected:
+135/tcp open
+445/tcp open
+3389/tcp open
+
+---
+
+## 4. Connectivity Test
+ping 10.0.0.10
+
+---
+
+# ✅ Final Result
+
+WS-01 exposes:
+
+- 135 → RPC  
+- 445 → SMB  
+- 3389 → Remote Desktop  
+
+And runs:
+
+- Remote Desktop Services  
+- SMB (LanmanServer)  
+- Print Spooler  

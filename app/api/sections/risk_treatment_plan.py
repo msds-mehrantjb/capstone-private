@@ -18,7 +18,7 @@ def build_risk_treatment_plan_markdown(year: int) -> str:
         return (
             "<tr>"
             + "".join(
-                f'<th style="background-color: {bg_color}; padding: 8px; border: 1px solid #999; text-align: left;">{c}</th>'
+                f'<th style="background-color: {bg_color}; padding: 8px; border: 1px solid #999; text-align: left !important;">{c}</th>'
                 for c in cells
             )
             + "</tr>"
@@ -40,7 +40,7 @@ def build_risk_treatment_plan_markdown(year: int) -> str:
         return (
             f'<tr style="background-color: {bg_color};">'
             + "".join(
-                f'<td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{c}</td>'
+                f'<td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left !important;">{c}</td>'
                 for c in cells
             )
             + "</tr>"
@@ -56,6 +56,10 @@ def build_risk_treatment_plan_markdown(year: int) -> str:
         grouped[host].append(r)
 
     lines = [
+        "<style>",
+        "table, th, td { text-align: left !important; vertical-align: top !important; }",
+        "</style>",
+        "",        
         "# Risk Treatment Plan",
         "",
         f"**Assessment Year:** {year}",
@@ -82,14 +86,14 @@ def build_risk_treatment_plan_markdown(year: int) -> str:
             '<tr>'
             '<th colspan="5" '
             'style="background-color: #d9eaf7; padding: 8px; border: 1px solid #999; '
-            'text-align: left; font-weight: bold;">'
+            'text-align: left !important; font-weight: bold;">'
             f'Host: {host} &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; Role: {role}'
             '</th>'
             '</tr>'
         )
 
         table_html = [
-            '<table style="border-collapse: collapse; width: 100%;">',
+            '<table style="border-collapse: collapse; width: 100%; text-align: left !important;">',
             "<thead>",
             merged_header,
             _shade_row(
@@ -128,4 +132,127 @@ def build_risk_treatment_plan_markdown(year: int) -> str:
         table_html.extend(["</tbody>", "</table>", ""])
         lines.extend(table_html)
 
-    return "\n".join(lines)
+
+
+    writeup = """---
+
+# Risk Evaluation & Treatment Logic
+
+## 1. Overview
+
+The Risk Evaluation & Treatment component is responsible for determining how identified risks should be handled within the organization. This module ensures that all risks are consistently evaluated and that appropriate treatment decisions are enforced in alignment with ISO/IEC 27001:2022 requirements.
+
+The system establishes a strict dependency between **Risk**, **Evaluation**, and **Treatment**, where:
+
+- Risk level determines the initial evaluation  
+- Evaluation determines whether treatment is required  
+- Treatment is only applicable when evaluation mandates it  
+
+---
+
+## 2. Risk Evaluation Logic
+
+### 2.1 Evaluation Categories
+
+Each risk is assigned one of the following evaluation values:
+
+- Accept  
+- Monitor  
+- Treat  
+
+---
+
+### 2.2 Automatic Evaluation Assignment
+
+| Risk Level | Evaluation |
+|:-----------|:-----------|
+| Low        | Accept     |
+| Medium     | Monitor    |
+| High       | Treat      |
+| Critical   | Treat      |
+---
+
+### 2.3 Manual Override
+
+Users can manually update evaluation values, restricted to:
+
+- Accept  
+- Monitor  
+- Treat  
+
+---
+
+## 3. Risk Treatment Logic
+
+### 3.1 Treatment Applicability Rule
+
+Risk treatment is only applicable when:
+
+- **Evaluation = Treat**
+
+Otherwise:
+
+- Treatment = `-`
+
+---
+
+### 3.2 Treatment Options
+
+When treatment is required, valid options are:
+
+- Mitigate  
+- Accept  
+- Transfer  
+- Avoid  
+
+---
+
+## 4. Action and Monitoring Requirements
+
+### 4.1 Action Plan Requirement (Mitigation Path)
+
+If:
+
+- Evaluation = Treat  
+- Treatment = Mitigate  
+
+Then an **Action Plan is required**, including:
+
+- Controls to be implemented  
+- Responsible personnel  
+- Required resources  
+- Implementation timeline  
+
+This ensures mitigation decisions are translated into executable actions.
+
+---
+
+### 4.2 Monitoring Requirement (Monitoring Path)
+
+If:
+
+- Evaluation = Monitor  
+
+Then a **Monitoring record is required**, including:
+
+- Periodic review of the risk  
+- Tracking exposure changes  
+- Evidence collection  
+- Reassessment triggers  
+
+This ensures monitored risks remain under continuous control.
+
+---
+
+## 5. Alignment with ISO 27001
+
+This approach ensures:
+
+- Proper risk evaluation  
+- Controlled treatment application  
+- Mandatory action planning for mitigation  
+- Continuous monitoring of non-treated risks  
+- Audit-ready traceability  
+
+"""
+    return "\n".join(lines) + "\n" + writeup

@@ -1,0 +1,260 @@
+SRV-01 Preparation for Control & Posture Inference  
+ISO 27001-Based Asset Profiling – Evidence-Driven Configuration
+
+---
+
+## 1. Objective
+
+The objective of preparing SRV-01 was to ensure that a remote scanner (Python-based) can infer security controls and posture from real system evidence, without relying on hardcoded profiles or local APIs.
+
+The system was configured to expose verifiable indicators for:
+
+- Identity & Access Management  
+- Endpoint Security Controls  
+- Network Security Controls  
+- Logging, Monitoring & Detection  
+
+---
+
+## 2. Domain Controller Configuration (Verified State)
+
+SRV-01 was already configured as a Domain Controller and verified using:
+
+Get-ADDomain  
+Get-ADForest  
+(Get-CimInstance Win32_ComputerSystem).DomainRole  
+
+Observed results:
+
+- Domain Name: corp.local  
+- Domain Controller: SRV-01.corp.local  
+- Forest: corp.local  
+- Global Catalog: Present  
+- FSMO Roles assigned  
+- DomainRole = 5  
+
+Interpretation:
+
+DomainRole = 5 → Primary Domain Controller  
+
+Conclusion:
+
+SRV-01 is a fully operational Active Directory Domain Controller providing:
+
+- Active Directory Domain Services (AD DS)  
+- Kerberos authentication  
+- Centralized identity management  
+- Group Policy infrastructure  
+
+---
+
+## 3. Identity & Access Management
+
+### Password Policies
+
+Verified using:
+
+Get-ADDefaultDomainPasswordPolicy  
+
+Evidence:
+
+- Password complexity enabled  
+- Minimum password length enforced  
+- Lockout policy configured  
+
+Inference:
+
+Password Policies (complexity, rotation)
+
+---
+
+### Group Policy Objects (GPO)
+
+Verified using:
+
+Get-GPO -All  
+Get-GPInheritance -Target dc=corp,dc=local  
+
+Evidence:
+
+- Default Domain Policy exists  
+- GPOs linked to domain  
+
+Inference:
+
+Group Policy Objects (GPO)
+
+---
+
+### Role-Based Access Control (RBAC)
+
+Verified using:
+
+Get-ADGroup -Filter *  
+Get-ADGroupMember -Identity "Domain Admins"  
+
+Evidence:
+
+- Security groups exist  
+- Membership-based access  
+
+Inference:
+
+Role-Based Access Control (RBAC)
+
+---
+
+### Active Directory Domain Services (AD DS)
+
+Verified using:
+
+Get-WindowsFeature AD-Domain-Services  
+Get-ADDomain  
+
+Evidence:
+
+- AD DS installed  
+- Domain active  
+
+Inference:
+
+Active Directory Domain Services (AD DS)
+
+---
+
+## 4. Network Security Controls
+
+### Windows Firewall
+
+Verified using:
+
+Get-NetFirewallProfile | Select Name, Enabled  
+
+Evidence:
+
+- Firewall enabled  
+
+Inference:
+
+Windows Firewall (Host-based)
+
+---
+
+## 5. Logging, Monitoring & Detection
+
+### Event Logging
+
+Verified using:
+
+Get-Service EventLog  
+
+Evidence:
+
+- Service running  
+
+Inference:
+
+Windows Event Logging
+
+---
+
+### Audit Policy Configuration
+
+Verified using:
+
+auditpol /get /category:*  
+
+Enabled controls:
+
+Authentication Monitoring  
+- Logon → Success and Failure  
+- Logoff → Success and Failure  
+- Account Lockout → Success and Failure  
+- Kerberos Authentication → Success and Failure  
+- Credential Validation → Success and Failure  
+
+Account & RBAC Monitoring  
+- User Account Management → Success and Failure  
+- Security Group Management → Success and Failure  
+
+Policy Monitoring  
+- Audit Policy Change → Success and Failure  
+- Authentication Policy Change → Success and Failure  
+- Authorization Policy Change → Success and Failure  
+
+Object Access Monitoring  
+- File System → Success and Failure  
+- Registry → Success and Failure  
+- File Share → Success and Failure  
+
+Process Monitoring  
+- Process Creation → Success  
+- Process Termination → Success  
+
+Inference:
+
+- Authentication activity is logged  
+- RBAC changes are tracked  
+- Policy changes are monitored  
+- Resource access is audited  
+- Process activity is visible  
+
+Final Mapping:
+
+Logging, Monitoring & Detection → Windows Event Logging  
+
+---
+
+## 6. Evidence-Based Inference Model
+
+The system was configured so that posture is derived through:
+
+Evidence → Interpretation → Profile Mapping  
+
+DomainRole = 5 → Domain Controller → AD DS  
+Domain exists → Identity system → AD DS  
+Password policy → Enforcement → Password Policies  
+GPO exists → Central management → GPO  
+Security groups → Role control → RBAC  
+Firewall enabled → Protection → Windows Firewall  
+EventLog running → Logging → Windows Event Logging  
+Audit enabled → Monitoring → Logging & Detection  
+Object access → Resource monitoring → Logging & Detection  
+Process tracking → Advanced monitoring → Logging & Detection  
+
+---
+
+## 7. Final Control & Posture Profile (Inferred)
+
+Identity & Access Management:
+- Password Policies (complexity, rotation)  
+- Active Directory Domain Services (AD DS)  
+- Group Policy Objects (GPO)  
+- Role-Based Access Control (RBAC)  
+
+Network Security Controls:
+- Windows Firewall (Host-based)  
+
+Logging, Monitoring & Detection:
+- Windows Event Logging  
+
+---
+
+## 9. Validation Checklist
+
+Run the following:
+
+(Get-CimInstance Win32_ComputerSystem).DomainRole  
+Get-ADDomain  
+Get-ADForest  
+Get-ADDefaultDomainPasswordPolicy  
+Get-GPO -All  
+Get-NetFirewallProfile | Select Name, Enabled  
+Get-Service EventLog  
+auditpol /get /category:*  
+Get-Service WinDefend  
+Get-MpComputerStatus  
+Confirm-SecureBootUEFI  
+
+---
+

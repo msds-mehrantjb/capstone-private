@@ -1,718 +1,146 @@
 {
-  "meta": {
-    "year": 2026,
-    "name": "Asset Inventory & CIA",
-    "submitted": false,
-    "read_only": false
-  },
-  "network_mask": null,
-  "subnets": [
+  "year": 2026,
+  "networks": [
     {
-      "id": "Subnet_A",
-      "subnet_mask": "10.0.0.1",
-      "location": {
-        "name": "10.0.0.1",
-        "ip_range": "10.0.0.1"
-      },
-      "assets": [
+      "network_address": "10.0.0.0",
+      "subnets": [
         {
-          "hostname": "SRV-01",
-          "role": "Domain Controller (Active Directory)",
-          "operating_system": "Windows Server 2019",
-          "location": {
-            "name": "10.0.0.1",
-            "ip_address": "10.0.0.2"
-          },
-          "cia_rating": {
-            "criticality": "Critical"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows Server",
-              "os_version": "Windows Server 2019",
-              "is_domain_joined": true,
-              "hostname_pattern": "SRV"
+          "subnet": "10.0.0.0/28",
+          "hosts": [
+            {
+              "hostname": "SRV-01",
+              "ip_address": "10.0.0.2",
+              "device_type": "Server",
+              "status": "Active",
+              "role": "Domain Controller",
+              "cia_impact": {
+                "confidentiality": "High",
+                "integrity": "High",
+                "availability": "High"
+              },
+              "detail": {
+                "device_profile": {
+                  "os_type": "Windows Server",
+                  "os_version": "Microsoft Windows Server 2022 Standard Evaluation",
+                  "is_domain_joined": true
+                },
+                "technical_indicators": {
+                  "open_ports": [
+                    53,
+                    88,
+                    135,
+                    389,
+                    445,
+                    464,
+                    636
+                  ],
+                  "running_services": [
+                    "Active Directory Domain Services",
+                    "DNS Server",
+                    "Kerberos Key Distribution Center",
+                    "LDAP",
+                    "SMB"
+                  ],
+                  "installed_roles": [
+                    "AD DS",
+                    "DNS Server"
+                  ],
+                  "installed_software": [
+                    "Browser",
+                    "Microsoft Edge Update",
+                    "Microsoft Visual C++ (x64)",
+                    "Microsoft Visual C++ (x86)",
+                    "VMware Tools"
+                  ]
+                },
+                "business_context": {
+                  "department": "",
+                  "business_function": "",
+                  "criticality": ""
+                },
+                "indicator_based_role_detection": {
+                  "detected_roles": [],
+                  "confidence": ""
+                },
+                "ml_role_prediction": {
+                  "predicted_roles": [],
+                  "confidence": ""
+                },
+                "rag_based_role_detection": {
+                  "detected_role": "",
+                  "confidence": ""
+                },
+                "selected_role": {
+                  "role": "",
+                  "method": ""
+                }
+              }
             },
-            "technical_indicators": {
-              "open_ports": [
-                53,
-                88,
-                135,
-                389,
-                445,
-                464,
-                636
-              ],
-              "running_services": [
-                "Active Directory Domain Services",
-                "DNS Server",
-                "Kerberos Key Distribution Center",
-                "LDAP",
-                "SMB"
-              ],
-              "installed_roles": [
-                "AD DS",
-                "DNS Server",
-                "Active Directory Certificate Services"
-              ],
-              "installed_software": [
-                "Group Policy Management",
-                "RSAT",
-                "AD CS Management Tools"
-              ]
-            },
-            "business_context": {
-              "department": "IT",
-              "business_function": "Identity Infrastructure",
-              "criticality": "Critical"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Domain Controller (Active Directory)",
-                "DNS Server",
-                "File Server"
-              ],
-              "confidence": "Very High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Domain Controller (Active Directory)"
-              ],
-              "confidence": "0.85",
-              "feature_completeness_ratio": 1.0
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Domain Controller (Active Directory)",
-              "method": "indicator"
+            {
+              "hostname": "WS-01",
+              "ip_address": "10.0.0.10",
+              "device_type": "Workstation",
+              "status": "Active",
+              "role": "User Workstation",
+              "cia_impact": {
+                "confidentiality": "Medium",
+                "integrity": "Medium",
+                "availability": "Low"
+              },
+              "detail": {
+                "device_profile": {
+                  "os_type": "Windows",
+                  "os_version": "Microsoft Windows 11 Pro",
+                  "is_domain_joined": true
+                },
+                "technical_indicators": {
+                  "open_ports": [
+                    135,
+                    445,
+                    3389
+                  ],
+                  "running_services": [
+                    "Remote Desktop Services",
+                    "SMB",
+                    "Print Spooler"
+                  ],
+                  "installed_roles": [],
+                  "installed_software": [
+                    "Adobe Acrobat Reader",
+                    "Browser",
+                    "Microsoft Edge Update",
+                    "Microsoft Edge WebView2 Runtime",
+                    "Microsoft Office",
+                    "Microsoft Visual C++ (x64)",
+                    "Microsoft Visual C++ (x86)",
+                    "QuickBooks Desktop",
+                    "VMware Tools"
+                  ]
+                },
+                "business_context": {
+                  "department": "",
+                  "business_function": "",
+                  "criticality": ""
+                },
+                "indicator_based_role_detection": {
+                  "detected_roles": [],
+                  "confidence": ""
+                },
+                "ml_role_prediction": {
+                  "predicted_roles": [],
+                  "confidence": ""
+                },
+                "rag_based_role_detection": {
+                  "detected_role": "",
+                  "confidence": ""
+                },
+                "selected_role": {
+                  "role": "",
+                  "method": ""
+                }
+              }
             }
-          }
-        },
-        {
-          "hostname": "SRV-02",
-          "role": "DNS Server",
-          "operating_system": "Windows Server 2019",
-          "location": {
-            "name": "10.0.0.1",
-            "ip_address": "10.0.0.3"
-          },
-          "cia_rating": {
-            "criticality": "High"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows Server",
-              "os_version": "Windows Server 2019",
-              "is_domain_joined": true,
-              "hostname_pattern": "SRV"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                53,
-                67,
-                68,
-                135,
-                445
-              ],
-              "running_services": [
-                "DNS Server",
-                "DHCP Server",
-                "RPC Endpoint Mapper",
-                "SMB"
-              ],
-              "installed_roles": [
-                "DNS Server",
-                "DHCP Server"
-              ],
-              "installed_software": [
-                "Windows DNS",
-                "DHCP Management Console",
-                "IP Address Management"
-              ]
-            },
-            "business_context": {
-              "department": "IT",
-              "business_function": "Networking",
-              "criticality": "High"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "DNS Server",
-                "DHCP Server",
-                "File Server"
-              ],
-              "confidence": "Very High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "DHCP Server"
-              ],
-              "confidence": "0.5067",
-              "feature_completeness_ratio": 1.0,
-              "error": "Server ML confidence is below the minimum threshold of 0.60."
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "DNS Server",
-              "method": "indicator"
-            }
-          }
-        },
-        {
-          "hostname": "WS-01",
-          "role": "Standard Employee Workstation",
-          "operating_system": "Windows 11",
-          "location": {
-            "name": "10.0.0.1",
-            "ip_address": "10.0.0.4"
-          },
-          "cia_rating": {
-            "criticality": "Medium"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows",
-              "os_version": "Windows 11",
-              "is_domain_joined": true,
-              "hostname_pattern": "WS"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                3389,
-                445
-              ],
-              "running_services": [
-                "Remote Desktop Services",
-                "SMB",
-                "Print Spooler"
-              ],
-              "installed_roles": [],
-              "installed_software": [
-                "Microsoft Office",
-                "QuickBooks Desktop",
-                "Adobe Acrobat Reader",
-                "Browser"
-              ]
-            },
-            "business_context": {
-              "department": "Finance",
-              "business_function": "End User Computing",
-              "criticality": "Medium"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Standard Employee Workstation",
-                "VDI Client Workstation"
-              ],
-              "confidence": "Medium"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Standard Employee Workstation"
-              ],
-              "confidence": "0.84"
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Standard Employee Workstation",
-              "method": "ml"
-            }
-          }
-        },
-        {
-          "hostname": "WS-02",
-          "role": "Standard Employee Workstation",
-          "operating_system": "Windows 10",
-          "location": {
-            "name": "10.0.0.1",
-            "ip_address": "10.0.0.5"
-          },
-          "cia_rating": {
-            "criticality": "Medium"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows",
-              "os_version": "Windows 10",
-              "is_domain_joined": true,
-              "hostname_pattern": "WS"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                3389,
-                135
-              ],
-              "running_services": [
-                "Remote Desktop Services",
-                "RPC Endpoint Mapper",
-                "Windows Installer"
-              ],
-              "installed_roles": [],
-              "installed_software": [
-                "Workday",
-                "Microsoft Office",
-                "Java Runtime Environment",
-                "Browser"
-              ]
-            },
-            "business_context": {
-              "department": "HR",
-              "business_function": "End User Computing",
-              "criticality": "Medium"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Standard Employee Workstation",
-                "HR Workstation",
-                "VDI Client Workstation"
-              ],
-              "confidence": "Medium"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Standard Employee Workstation"
-              ],
-              "confidence": "0.85"
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Standard Employee Workstation",
-              "method": "ml"
-            }
-          }
-        },
-        {
-          "hostname": "WS-03",
-          "role": "Standard Employee Workstation",
-          "operating_system": "Windows 10",
-          "location": {
-            "name": "10.0.0.1",
-            "ip_address": "10.0.0.6"
-          },
-          "cia_rating": {
-            "criticality": "Medium"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows",
-              "os_version": "Windows 10",
-              "is_domain_joined": true,
-              "hostname_pattern": "WS"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                3389,
-                443
-              ],
-              "running_services": [
-                "Remote Desktop Services",
-                "Microsoft Teams",
-                "Outlook"
-              ],
-              "installed_roles": [],
-              "installed_software": [
-                "Microsoft Office",
-                "Teams",
-                "Outlook",
-                "OneDrive Sync Client"
-              ]
-            },
-            "business_context": {
-              "department": "Operations",
-              "business_function": "End User Computing",
-              "criticality": "Medium"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Standard Employee Workstation",
-                "VDI Client Workstation"
-              ],
-              "confidence": "High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Standard Employee Workstation"
-              ],
-              "confidence": "0.84"
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Standard Employee Workstation",
-              "method": "indicator"
-            }
-          }
-        }
-      ]
-    },
-    {
-      "id": "Subnet_B",
-      "subnet_mask": "10.0.0.17",
-      "location": {
-        "name": "10.0.0.17",
-        "ip_range": "10.0.0.17"
-      },
-      "assets": [
-        {
-          "hostname": "SRV-03",
-          "role": "File Server",
-          "operating_system": "Windows Server 2016",
-          "location": {
-            "name": "10.0.0.17",
-            "ip_address": "10.0.0.18"
-          },
-          "cia_rating": {
-            "criticality": "High"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows Server",
-              "os_version": "Windows Server 2016",
-              "is_domain_joined": true,
-              "hostname_pattern": "SRV"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                445,
-                135,
-                139,
-                5985
-              ],
-              "running_services": [
-                "SMB",
-                "File Services",
-                "Distributed File System",
-                "WinRM"
-              ],
-              "installed_roles": [
-                "File Server",
-                "DFS Namespace",
-                "DFS Replication"
-              ],
-              "installed_software": [
-                "Windows File Services",
-                "Volume Shadow Copy Service",
-                "File Server Resource Manager"
-              ]
-            },
-            "business_context": {
-              "department": "Finance",
-              "business_function": "Data Storage",
-              "criticality": "High"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "File Server"
-              ],
-              "confidence": "High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "File Server"
-              ],
-              "confidence": "0.79",
-              "feature_completeness_ratio": 1.0
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "File Server",
-              "method": "indicator"
-            }
-          }
-        },
-        {
-          "hostname": "SRV-04",
-          "role": "Application Server",
-          "operating_system": "Windows Server 2016",
-          "location": {
-            "name": "10.0.0.17",
-            "ip_address": "10.0.0.19"
-          },
-          "cia_rating": {
-            "criticality": "High"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows Server",
-              "os_version": "Windows Server 2016",
-              "is_domain_joined": false,
-              "hostname_pattern": "SRV"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                80,
-                443,
-                135,
-                5985
-              ],
-              "running_services": [
-                "IIS",
-                "HTTP",
-                "HTTPS",
-                "Windows Process Activation Service",
-                "WinRM"
-              ],
-              "installed_roles": [
-                "Web Server (IIS)",
-                "Application Development",
-                "Management Tools"
-              ],
-              "installed_software": [
-                "Microsoft IIS 10.0",
-                "ASP.NET Core Hosting Bundle",
-                "URL Rewrite Module"
-              ]
-            },
-            "business_context": {
-              "department": "Marketing",
-              "business_function": "Public Website",
-              "criticality": "High"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Application Server"
-              ],
-              "confidence": "High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Application Server"
-              ],
-              "confidence": "0.8967",
-              "feature_completeness_ratio": 1.0
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Application Server",
-              "method": "indicator"
-            }
-          }
-        },
-        {
-          "hostname": "WS-04",
-          "role": "Call Center Workstation",
-          "operating_system": "Windows 11",
-          "location": {
-            "name": "10.0.0.17",
-            "ip_address": "10.0.0.20"
-          },
-          "cia_rating": {
-            "criticality": "Medium"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows",
-              "os_version": "Windows 11",
-              "is_domain_joined": true,
-              "hostname_pattern": "WS"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                3389,
-                5060
-              ],
-              "running_services": [
-                "Remote Desktop Services",
-                "Softphone Client",
-                "VoIP Helper Service"
-              ],
-              "installed_roles": [],
-              "installed_software": [
-                "CRM Desktop Client",
-                "Softphone",
-                "Call Center Agent",
-                "Browser"
-              ]
-            },
-            "business_context": {
-              "department": "Sales",
-              "business_function": "End User Computing",
-              "criticality": "Medium"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Call Center Workstation",
-                "VDI Client Workstation"
-              ],
-              "confidence": "High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Standard Employee Workstation"
-              ],
-              "confidence": "0.68"
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Call Center Workstation",
-              "method": "indicator"
-            }
-          }
-        },
-        {
-          "hostname": "WS-05",
-          "role": "Developer Workstation",
-          "operating_system": "Windows 10",
-          "location": {
-            "name": "10.0.0.17",
-            "ip_address": "10.0.0.21"
-          },
-          "cia_rating": {
-            "criticality": "Medium"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows",
-              "os_version": "Windows 10",
-              "is_domain_joined": true,
-              "hostname_pattern": "WS"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                3389,
-                2375,
-                3000
-              ],
-              "running_services": [
-                "Remote Desktop Services",
-                "Docker Engine",
-                "Node.js Runtime",
-                "Git Credential Manager"
-              ],
-              "installed_roles": [],
-              "installed_software": [
-                "VS Code",
-                "IntelliJ IDEA",
-                "Git",
-                "Docker Desktop",
-                "Node.js"
-              ]
-            },
-            "business_context": {
-              "department": "HR",
-              "business_function": "End User Computing",
-              "criticality": "Medium"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Developer Workstation"
-              ],
-              "confidence": "High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Developer Workstation"
-              ],
-              "confidence": "0.64"
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Developer Workstation",
-              "method": "indicator"
-            }
-          }
-        },
-        {
-          "hostname": "WS-06",
-          "role": "Data Scientist Workstation",
-          "operating_system": "Windows 11",
-          "location": {
-            "name": "10.0.0.17",
-            "ip_address": "10.0.0.22"
-          },
-          "cia_rating": {
-            "criticality": "Medium"
-          },
-          "status": "Active",
-          "detail": {
-            "device_profile": {
-              "os_type": "Windows",
-              "os_version": "Windows 11",
-              "is_domain_joined": true,
-              "hostname_pattern": "WS"
-            },
-            "technical_indicators": {
-              "open_ports": [
-                3389,
-                8888,
-                6006
-              ],
-              "running_services": [
-                "Remote Desktop Services",
-                "Jupyter Server",
-                "TensorBoard",
-                "Python Service Host"
-              ],
-              "installed_roles": [],
-              "installed_software": [
-                "Python",
-                "R",
-                "JupyterLab",
-                "TensorFlow",
-                "Anaconda"
-              ]
-            },
-            "business_context": {
-              "department": "Operations",
-              "business_function": "End User Computing",
-              "criticality": "Medium"
-            },
-            "indicator_based_role_detection": {
-              "detected_roles": [
-                "Data Scientist Workstation"
-              ],
-              "confidence": "Very High"
-            },
-            "ml_role_prediction": {
-              "predicted_roles": [
-                "Data Scientist Workstation"
-              ],
-              "confidence": "0.6833"
-            },
-            "rag_based_role_detection": {
-              "detected_role": "",
-              "confidence": ""
-            },
-            "selected_role": {
-              "role": "Data Scientist Workstation",
-              "method": "indicator"
-            }
-          }
+          ]
         }
       ]
     }
