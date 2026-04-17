@@ -2133,7 +2133,13 @@ export default function AssetInventoryCIA() {
               })}
             </nav>
 
-            <div className="p-4">
+            <div className="p-4 space-y-2">
+              <button
+                onClick={() => (window.location.hash = "#/ai-ml")}
+                className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+              >
+                AI/ML Dashboard
+              </button>
               <button
                 onClick={() => (window.location.hash = "#/dashboard")}
                 className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"

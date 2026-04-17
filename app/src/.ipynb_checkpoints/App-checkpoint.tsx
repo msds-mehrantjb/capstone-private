@@ -10,6 +10,7 @@ import AnnexASoA from "./pages/AnnexASoA";
 import ActionPlanImplementation from "./pages/ActionPlanImplementation";
 import MonitoringImprovement from "./pages/MonitoringImprovement";
 import FinalDeliverables from "./pages/FinalDeliverables";
+import AIMLDashboard from "./pages/AIMLDashboard"; // <-- import AI/ML page
 
 type RouteKey =
   | "dashboard"
@@ -22,7 +23,8 @@ type RouteKey =
   | "annex-a-soa"
   | "action-plan-implementation"
   | "monitoring-improvement"
-  | "final-deliveries";
+  | "final-deliveries"
+  | "ai-ml"; // <-- add ai-ml route key
 
 function getRouteFromHash(): RouteKey {
   const h = (window.location.hash || "").toLowerCase();
@@ -38,6 +40,7 @@ function getRouteFromHash(): RouteKey {
   if (h.startsWith("#/monitoring-improvement")) return "monitoring-improvement";
   if (h.startsWith("#/final-deliveries")) return "final-deliveries";
   if (h.startsWith("#/final-deliverables")) return "final-deliveries";
+  if (h.startsWith("#/ai-ml")) return "ai-ml";
 
   return "dashboard";
 }
@@ -52,7 +55,6 @@ export default function App() {
 
   useEffect(() => {
     const onHashChange = () => setRoute(getRouteFromHash());
-
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
@@ -60,34 +62,26 @@ export default function App() {
   switch (route) {
     case "scope":
       return <ScopeContext />;
-
     case "assets":
       return <AssetInventoryCIA />;
-
     case "threats":
       return <ThreatVulnerabilities />;
-
     case "controls":
       return <ControlsPostures />;
-
     case "risk-analysis":
       return <RiskAnalysis />;
-
     case "risk-evaluation-treatment":
       return <RiskEvaluationTreatment />;
-
     case "annex-a-soa":
       return <AnnexASoA />;
-
     case "action-plan-implementation":
       return <ActionPlanImplementation />;
-
     case "monitoring-improvement":
       return <MonitoringImprovement />;
-
     case "final-deliveries":
       return <FinalDeliverables />;
-
+    case "ai-ml": 
+      return <AIMLDashboard />;
     case "dashboard":
     default:
       return <Dashboard />;
