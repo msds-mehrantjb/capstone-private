@@ -110,10 +110,272 @@ def _save_json(path: Path, data: Any) -> None:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
+def _user_behavior_activity_file(year: int) -> Path:
+    return _work_dir(year) / "UserBehaviorActivity.json"
+
+
+def _is_workstation_record(host_obj: dict) -> bool:
+    hostname = str(host_obj.get("hostname") or "").strip().lower()
+    role = _extract_role(host_obj).strip().lower()
+
+    if hostname.startswith("ws-") or hostname.startswith("ws_"):
+        return True
+
+    return "workstation" in role
+
+
+def _safe_div(a: float, b: float) -> float:
+    if b == 0:
+        return 0.0
+    return a / b
+
+
+def _clamp01(value: float) -> float:
+    return max(0.0, min(1.0, float(value)))
+
+
+def _normalize_failed_login_attempts(v: Any) -> float:
+    return _clamp01(_to_float(v, 0.0) / 10.0)
+
+
+def _normalize_access_frequency(v: Any) -> float:
+    return _clamp01(_to_float(v, 0.0) / 20.0)
+
+
+def _normalize_login_consistency(v: Any) -> float:
+    # higher inconsistency = higher risk
+    return _clamp01(_to_float(v, 0.0))
+
+
+def _normalize_password_resets(v: Any) -> float:
+    return _clamp01(_to_float(v, 0.0) / 5.0)
+
+
+def _normalize_session_duration(v: Any) -> float:
+    return _clamp01(_to_float(v, 0.0) / 12.0)
+
 
 def _normalize_hostname(value: str) -> str:
     return (value or "").strip().lower()
 
+def _compute_behavior_rule_score(user_behavior: dict) -> float:
+    failed_login_score = _normalize_failed_login_attempts(user_behavior.get("failedLoginAttempts"))
+    access_anomaly_score = _normalize_access_frequency(user_behavior.get("accessFrequency"))
+    login_variance_score = _normalize_login_consistency(user_behavior.get("loginConsistency"))
+    password_reset_score = _normalize_password_resets(user_behavior.get("passwordResets"))
+    session_anomaly_score = _normalize_session_duration(user_behavior.get("sessionDuration"))
+
+    score = (
+        0.15 * failed_login_score +
+        0.30 * access_anomaly_score +
+        0.10 * login_variance_score +
+        0.20 * password_reset_score +
+        0.25 * session_anomaly_score
+    )
+
+    return round(_clamp01(score), 4)
+
+def _predict_behavior_ml_score(user_behavior: dict) -> float:
+    model_path = _default_behavior_model_path()
+    encoder_path = _default_behavior_label_encoder_path()
+
+    if not model_path.exists() or not encoder_path.exists():
+        return 0.0
+
+    try:
+        pipeline = joblib.load(model_path)
+        label_encoder = joblib.load(encoder_path)
+
+        row = pd.DataFrame([{
+            "failedLoginAttempts": _to_float(user_behavior.get("failedLoginAttempts"), 0.0),
+            "accessFrequency": _to_float(user_behavior.get("accessFrequency"), 0.0),
+            "loginConsistency": _to_float(user_behavior.get("loginConsistency"), 0.0),
+            "passwordResets": _to_float(user_behavior.get("passwordResets"), 0.0),
+            "sessionDuration": _to_float(user_behavior.get("sessionDuration"), 0.0),
+        }])
+
+        proba = pipeline.predict_proba(row)[0]
+        predicted_idx = int(proba.argmax())
+        predicted_label = str(label_encoder.inverse_transform([predicted_idx])[0]).strip().lower()
+        confidence = float(proba[predicted_idx])
+
+        label_to_score = {
+            "low": 0.25,
+            "medium": 0.60,
+            "high": 0.85,
+            "critical": 1.00,
+        }
+
+        return round(label_to_score.get(predicted_label, confidence), 4)
+    except Exception:
+        return 0.0
+
+def _behavior_likelihood_from_score(score: float) -> str:
+    if score >= 0.90:
+        return "Critical"
+    if score >= 0.80:
+        return "High"
+    if score >= 0.55:
+        return "Medium"
+    return "Low"
+
+
+def _build_user_behavior_payload(raw: dict) -> dict:
+    payload = {
+        "failedLoginAttempts": int(_to_float(raw.get("failedLoginAttempts"), 0)),
+        "accessFrequency": round(_to_float(raw.get("accessFrequency"), 0.0), 4),
+        "loginConsistency": round(_to_float(raw.get("loginConsistency"), 0.0), 4),
+        "passwordResets": int(_to_float(raw.get("passwordResets"), 0)),
+        "sessionDuration": round(_to_float(raw.get("sessionDuration"), 0.0), 4),
+    }
+
+    rule_score = _compute_behavior_rule_score(payload)
+    ml_score = _predict_behavior_ml_score(payload)
+    behavior_risk_score = round((0.60 * rule_score) + (0.40 * ml_score), 4)
+    likelihood = _behavior_likelihood_from_score(behavior_risk_score)
+
+    payload["rule_score"] = rule_score
+    payload["ml_score"] = ml_score
+    payload["behaviorRiskScore"] = behavior_risk_score
+    payload["likelihood"] = likelihood
+
+    return payload
+
+def _build_user_activity_behavior_record(host_obj: dict, activity_obj: dict) -> dict:
+    hostname = str(host_obj.get("hostname", "") or "")
+    ip_address = _extract_ip_address(host_obj)
+    role = _extract_role(host_obj)
+    cia_rating = _extract_cia_rating(host_obj)
+
+    user_behavior = _build_user_behavior_payload(activity_obj or {})
+    likelihood_label = user_behavior["likelihood"]
+
+    likelihood_score_map = {
+        "Low": 0.25,
+        "Medium": 0.60,
+        "High": 0.85,
+        "Critical": 1.00,
+    }
+    likelihood_score = likelihood_score_map.get(likelihood_label, 0.25)
+
+    record = {
+        "hostname": hostname,
+        "ip_address": ip_address,
+        "role": role,
+        "CIA rating": cia_rating,
+        "vulnerability_name": "User Activity Behavior",
+        "severity": "",
+        "cvss_score": 0.0,
+        "exploit_available": "",
+        "patch_status": 0,
+        "cve": f"UB-{hostname}",
+        "open_ports": [],
+        "override": 0,
+        "likelihood": likelihood_label,
+        "risk": "",
+        "likelihood_score": round(likelihood_score, 4),
+        "risk_score": 0.0,
+        "exposure": "",
+        "user_behavior": user_behavior,
+    }
+
+    record["risk_score"] = _compute_risk_score(record, record["likelihood_score"])
+    record["risk"] = _risk_label_from_score(record["risk_score"])
+    return record
+
+def _load_user_behavior_activity_map(year: int) -> dict[str, dict]:
+    path = _user_behavior_activity_file(year)
+    if not path.exists():
+        return {}
+
+    try:
+        data = _load_json(path)
+    except Exception:
+        return {}
+
+    if isinstance(data, dict) and isinstance(data.get("records"), list):
+        items = data["records"]
+    elif isinstance(data, dict) and isinstance(data.get("hosts"), list):
+        items = data["hosts"]
+    elif isinstance(data, list):
+        items = data
+    else:
+        items = []
+
+    latest_by_host: dict[str, dict] = {}
+
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        hostname = _normalize_hostname(str(item.get("hostname", "")))
+        if not hostname:
+            continue
+
+        existing = latest_by_host.get(hostname)
+        current_date = str(item.get("date", "") or "")
+
+        if existing is None:
+            latest_by_host[hostname] = item
+            continue
+
+        existing_date = str(existing.get("date", "") or "")
+        if current_date >= existing_date:
+            latest_by_host[hostname] = item
+
+    results: dict[str, dict] = {}
+
+    for hostname, item in latest_by_host.items():
+        summary = item.get("dailyBehaviorSummary")
+        if not isinstance(summary, dict):
+            summary = {}
+
+        results[hostname] = {
+            "hostname": item.get("hostname", ""),
+            "date": item.get("date", ""),
+            "ip_address": item.get("ip_address", ""),
+            "failedLoginAttempts": _to_float(summary.get("failedLoginAttempts"), 0),
+            "accessFrequency": _to_float(summary.get("accessFrequency"), 0.0),
+            "loginConsistency": _to_float(summary.get("loginConsistency"), 0.0),
+            "passwordResets": _to_float(summary.get("passwordResets"), 0),
+            "sessionDuration": _to_float(summary.get("sessionDuration"), 0.0),
+            "successfulLoginCount": _to_float(summary.get("successfulLoginCount"), 0.0),
+        }
+
+    return results
+
+def _remove_existing_user_behavior_risks(inventory: dict) -> dict:
+    hosts = inventory.get("hosts", [])
+    inventory["hosts"] = [
+        h for h in hosts
+        if str(h.get("vulnerability_name", "")).lower() != "user activity behavior"
+    ]
+    return inventory
+    
+def _append_user_behavior_risks(year: int, inventory: dict) -> dict:
+    path = _asset_vuln_file(year)
+    if not path.exists():
+        return inventory
+
+    source = _load_json(path)
+    source_hosts = _source_hosts_from_asset_vuln_doc(source)
+    behavior_map = _load_user_behavior_activity_map(year)
+
+    hosts = inventory.get("hosts", [])
+    if not isinstance(hosts, list):
+        hosts = []
+
+    for host_obj in source_hosts:
+        if not _is_workstation_record(host_obj):
+            continue
+
+        hostname_key = _normalize_hostname(str(host_obj.get("hostname", "")))
+        activity_obj = behavior_map.get(hostname_key, {})
+
+        hosts.append(_build_user_activity_behavior_record(host_obj, activity_obj))
+
+    inventory["hosts"] = hosts
+    return inventory
 
 def _normalize_risk(value: str) -> str:
     raw = (value or "").strip().lower()
@@ -247,16 +509,24 @@ def _build_risk_evaluation_treatment(inventory: dict) -> dict:
 
     output = []
     for idx, r in enumerate(hosts, start=1):
+        cve = str(r.get("cve", "")).strip()
+        risk = str(r.get("risk", "")).strip().lower()
+
+        # 🔥 YOUR RULE
+        evaluation = ""
+        if cve.startswith("UB-WS-") and risk == "low":
+            evaluation = "Monitor"
+
         output.append({
             "hostname": r.get("hostname", ""),
             "ip_address": r.get("ip_address", ""),
             "role": r.get("role", ""),
             "CIA rating": r.get("CIA rating", ""),
             "vulnerability_name": r.get("vulnerability_name", ""),
-            "cve": r.get("cve", ""),
+            "cve": cve,
             "riskid": f"R-{idx:03d}",
             "risk": r.get("risk", ""),
-            "evaluation": "",
+            "evaluation": evaluation,
             "treatment": "",
         })
 
@@ -658,20 +928,18 @@ def _likelihood_label_from_score(score: float) -> str:
 
 def _compute_risk_score(record: dict, likelihood_score: float) -> float:
     cia_weight = _map_cia_to_numeric_weight(str(record.get("CIA rating") or ""))
-    ml_probability = max(_to_float(record.get("ml_probability"), 0.0), 0.0)
-    score = cia_weight * likelihood_score * (1.0 + ml_probability)
+    score = cia_weight * likelihood_score
     return round(score, 4)
 
 
 def _risk_label_from_score(score: float) -> str:
-    if score >= 15:
+    if score >= 8.5:
         return "Critical"
-    if score >= 10:
+    if score >= 6.5:
         return "High"
-    if score >= 6:
+    if score >= 3.5:
         return "Medium"
     return "Low"
-
 
 def _enrich_record_with_likelihood_and_risk(record: dict) -> dict:
     out = dict(record)
@@ -863,10 +1131,18 @@ def _train_user_behavior_model(dataset_path: Path, model_dir: Path) -> dict:
         })
         
     return {
-         "success": True,
-         "message": "User behavior model trained successfully.",
+        "success": True,
+        "message": "User behavior model trained successfully.",
+        "dataset_path": str(dataset_path),
+        "model_path": str(model_path),
+        "label_encoder_path": str(label_encoder_path),
+        "accuracy": accuracy,
+        "classification_report": report,
+        "confusion_matrix": cm,
+        "feature_importance": feature_importance,
+        "sample_predictions": sample_predictions,
     }
-
+    
 @router.get("/inventory")
 def get_risk_inventory(year: int = Query(2026)):
     return _load_risk_inventory_or_blank(int(year))
@@ -915,6 +1191,9 @@ def run_risk_analysis(payload: AnalysisRequest):
 
     try:
         risk_inventory = _build_risk_inventory_from_asset_vulnerabilities(year)
+        
+        risk_inventory = _remove_existing_user_behavior_risks(risk_inventory)
+        risk_inventory = _append_user_behavior_risks(year, risk_inventory)
     except FileNotFoundError as e:
         return {
             "success": False,
@@ -931,7 +1210,7 @@ def run_risk_analysis(payload: AnalysisRequest):
     if len(_all_hosts(risk_inventory)) == 0:
         return {
             "success": False,
-            "message": "No vulnerability records were found in AssetVulnerabilitiesThreats.json.",
+            "message": "No risk records were generated.",
             "inventory": current,
         }
 
@@ -944,7 +1223,7 @@ def run_risk_analysis(payload: AnalysisRequest):
         "processed_hosts": len(_all_hosts(risk_inventory)),
         "inventory": risk_inventory,
     }
-
+    
 @router.post("/setrisk")
 def set_risk(payload: SetRiskRequest):
     year = int(payload.year or 2026)
@@ -1072,20 +1351,25 @@ def train_user_behavior_model(payload: TrainRequest):
             else _ml_models_dir()
         )
 
-        # force absolute paths
         if not dataset_path.is_absolute():
             dataset_path = BASE_DIR / dataset_path
 
         if not model_dir.is_absolute():
             model_dir = BASE_DIR / model_dir
 
-        _train_user_behavior_model(dataset_path, model_dir)
-
-        return "User behavior model trained successfully."
+        result = _train_user_behavior_model(dataset_path, model_dir)
+        return result
 
     except Exception as e:
-        return f"Training failed: {e}"
-
+        return {
+            "success": False,
+            "message": f"Training failed: {e}",
+            "dataset_path": str(dataset_path) if 'dataset_path' in locals() else None,
+            "model_path": None,
+            "label_encoder_path": None,
+            "accuracy": None,
+        }
+        
 @router.post("/submit")
 def submit_risk_analysis(payload: SubmitRequest):
     year = int(payload.year or 2026)

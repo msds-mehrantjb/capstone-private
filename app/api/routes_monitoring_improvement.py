@@ -8,7 +8,7 @@ import pickle
 import re
 from pathlib import Path
 from typing import Any
-
+from datetime import datetime
 import requests
 
 
@@ -115,7 +115,18 @@ class EditEvidenceRequest(BaseModel):
     evidence_index: int
     evidence: AddEvidenceItem
 
+class EvidenceDefaultsRequest(BaseModel):
+    year: int | None = 2026
+    control_id: str
+    hostname: str
+    vulnerability_name: str = ""
 
+
+class EvidenceDefaultsResponse(BaseModel):
+    success: bool = True
+    message: str = ""
+    evidence: AddEvidenceItem
+    inventory: dict | None = None
 # =========================================================
 # PROJECT PATHS
 # =========================================================
@@ -257,6 +268,507 @@ def _monitoring_improvement_section_is_read_only(year: int) -> bool:
 
 
 # =========================================================
+# USER BEHAVIOR JUSTIFICATION HELPERS
+# =========================================================
+def _to_float(value: Any, default: float = 0.0) -> float:
+    try:
+        if value is None or str(value).strip() == "":
+            return default
+        return float(value)
+    except Exception:
+        return default
+
+
+def _score_level(score: float) -> str:
+    if score >= 8:
+        return "Critical"
+    if score >= 6:
+        return "High"
+    if score >= 4:
+        return "Medium"
+    return "Low"
+
+
+def _extract_behavior_scores_from_host(host: dict) -> dict:
+    user_behavior = host.get("user_behavior") or {}
+
+    return {
+        "failedLoginAttempts": _to_float(user_behavior.get("failedLoginAttempts")),
+        "accessFrequency": _to_float(user_behavior.get("accessFrequency")),
+        "loginConsistency": _to_float(user_behavior.get("loginConsistency")),
+        "passwordResets": _to_float(user_behavior.get("passwordResets")),
+        "sessionDuration": _to_float(user_behavior.get("sessionDuration")),
+    }
+
+
+def _feature_sentence(feature_name: str, score: float) -> str:
+    level = _score_level(score)
+
+    if feature_name == "failedLoginAttempts":
+        if level == "Critical":
+            return f"Failed Login Attempts is {level} ({score:g}), showing a very elevated number of failed logon attempts that may indicate repeated unauthorized access attempts or abnormal credential use"
+        if level == "High":
+            return f"Failed Login Attempts is {level} ({score:g}), indicating a significant number of failed logon attempts that should be investigated"
+        if level == "Medium":
+            return f"Failed Login Attempts is {level} ({score:g}), showing noticeable failed logon activity that should continue to be monitored"
+        return f"Failed Login Attempts is {level} ({score:g}), indicating limited failed logon activity at this time"
+
+    if feature_name == "accessFrequency":
+        if level == "Critical":
+            return f"Access Frequency is {level} ({score:g}), indicating very frequent system access activity that may reflect abnormal workstation usage"
+        if level == "High":
+            return f"Access Frequency is {level} ({score:g}), showing frequent access activity that is above normal expectation and requires review"
+        if level == "Medium":
+            return f"Access Frequency is {level} ({score:g}), indicating moderately increased access activity that should remain under observation"
+        return f"Access Frequency is {level} ({score:g}), suggesting access volume remains within a lower-risk range"
+
+    if feature_name == "loginConsistency":
+        if level == "Critical":
+            return f"Login Consistency is {level} ({score:g}), indicating a strongly abnormal or unstable login pattern compared with expected user behavior"
+        if level == "High":
+            return f"Login Consistency is {level} ({score:g}), showing a notable deviation in login regularity that may reflect suspicious usage behavior"
+        if level == "Medium":
+            return f"Login Consistency is {level} ({score:g}), indicating some irregularity in login behavior that should be monitored"
+        return f"Login Consistency is {level} ({score:g}), suggesting the user's login pattern remains relatively stable"
+
+    if feature_name == "passwordResets":
+        if level == "Critical":
+            return f"Password Resets is {level} ({score:g}), reflecting unusually high password reset activity that may indicate account misuse or credential-related issues"
+        if level == "High":
+            return f"Password Resets is {level} ({score:g}), showing elevated password reset activity that should be validated"
+        if level == "Medium":
+            return f"Password Resets is {level} ({score:g}), indicating moderate password reset activity that warrants continued review"
+        return f"Password Resets is {level} ({score:g}), showing limited password reset activity"
+
+    if feature_name == "sessionDuration":
+        if level == "Critical":
+            return f"Session Duration is {level} ({score:g}), indicating unusually long or abnormal user sessions that may reflect persistent or inappropriate access"
+        if level == "High":
+            return f"Session Duration is {level} ({score:g}), showing extended session behavior that should be reviewed"
+        if level == "Medium":
+            return f"Session Duration is {level} ({score:g}), indicating moderately unusual session length patterns that should continue to be monitored"
+        return f"Session Duration is {level} ({score:g}), suggesting session length remains in a lower-risk range"
+
+    return f"{feature_name} is {level} ({score:g})"
+
+
+def _build_ub_ws_xx_host_justification(host: dict) -> str:
+    hostname = _normalize_text(host.get("hostname")) or "Unknown Host"
+    scores = _extract_behavior_scores_from_host(host)
+
+    failed_login_score = scores["failedLoginAttempts"]
+    access_frequency_score = scores["accessFrequency"]
+    login_consistency_score = scores["loginConsistency"]
+    password_resets_score = scores["passwordResets"]
+    session_duration_score = scores["sessionDuration"]
+
+    # build bullet lines
+    feature_lines = [
+        f"- {_feature_sentence('failedLoginAttempts', failed_login_score)}",
+        f"- {_feature_sentence('accessFrequency', access_frequency_score)}",
+        f"- {_feature_sentence('loginConsistency', login_consistency_score)}",
+        f"- {_feature_sentence('passwordResets', password_resets_score)}",
+        f"- {_feature_sentence('sessionDuration', session_duration_score)}",
+    ]
+
+    highest_feature_name, highest_feature_score = max(scores.items(), key=lambda x: x[1])
+
+    highest_label_map = {
+        "failedLoginAttempts": "Failed Login Attempts",
+        "accessFrequency": "Access Frequency",
+        "loginConsistency": "Login Consistency",
+        "passwordResets": "Password Resets",
+        "sessionDuration": "Session Duration",
+    }
+
+    highest_label = highest_label_map.get(highest_feature_name, highest_feature_name)
+    highest_level = _score_level(highest_feature_score)
+
+    return (
+        f"For workstation {hostname}, monitoring is justified based on user activity behavior features:\n\n"
+        + "\n".join(feature_lines)
+        + f"\n\nThe strongest contributing feature is {highest_label} assessed at {highest_level} ({highest_feature_score:g})."
+    )
+
+def _generate_ub_ws_xx_justification(hosts: list[dict]) -> str:
+    valid_hosts = [h for h in hosts if isinstance(h, dict)]
+
+    if not valid_hosts:
+        return (
+            "Monitoring is justified based on user activity behavior features:\n\n"
+            "- Failed Login Attempts is Low (0), indicating limited failed logon activity at this time\n"
+            "- Access Frequency is Low (0), suggesting access volume remains within a lower-risk range\n"
+            "- Login Consistency is Low (0), suggesting the user's login pattern remains relatively stable\n"
+            "- Password Resets is Low (0), showing limited password reset activity\n"
+            "- Session Duration is Low (0), suggesting session length remains in a lower-risk range"
+        )
+
+    return "\n\n".join(_build_ub_ws_xx_host_justification(host) for host in valid_hosts)
+
+def _risk_analysis_file(year: int) -> Path:
+    return _work_dir(year) / "RiskAnalysis.json"
+
+
+def _load_risk_analysis_doc_or_blank(year: int) -> dict:
+    path = _risk_analysis_file(year)
+
+    if not path.exists():
+        return {"hosts": []}
+
+    try:
+        data = _load_json(path)
+        if not isinstance(data, dict):
+            return {"hosts": []}
+        return data
+    except Exception:
+        return {"hosts": []}
+
+
+def _find_user_behavior_from_risk_analysis(
+    year: int,
+    hostname: str,
+    cve_value: str,
+) -> dict:
+    risk_doc = _load_risk_analysis_doc_or_blank(year)
+    records = risk_doc.get("hosts", [])
+    if not isinstance(records, list):
+        return {}
+
+    target_host = _normalize_key(hostname)
+    target_cve = _normalize_key(cve_value)
+
+    for rec in records:
+        if not isinstance(rec, dict):
+            continue
+
+        rec_host = _normalize_key(rec.get("hostname"))
+        rec_cve = _normalize_key(rec.get("cve") or rec.get("CVE"))
+
+        if rec_host == target_host and rec_cve == target_cve:
+            ub = rec.get("user_behavior")
+            return ub if isinstance(ub, dict) else {}
+
+    return {}
+
+def _generate_user_behavior_monitoring_actions(hosts: list[dict]) -> str:
+    if not hosts:
+        return "Recommended monitoring actions:\n- Monitor user activity logs regularly"
+
+    lines = ["Recommended monitoring actions:"]
+
+    for host in hosts:
+        hostname = _normalize_text(host.get("hostname")) or "Unknown"
+
+        scores = _extract_behavior_scores_from_host(host)
+
+        for feature, score in scores.items():
+            level = _score_level(score)
+
+            # ================================
+            # FAILED LOGIN ATTEMPTS
+            # ================================
+            if feature == "failedLoginAttempts":
+                if level in ["High", "Critical"]:
+                    lines.append(f"- Monitor failed login attempts on {hostname} in real-time and trigger alerts for repeated authentication failures (ISO 27001:2022 - 8.5, 8.16)")
+                elif level == "Medium":
+                    lines.append(f"- Review failed login attempts on {hostname} daily and correlate with authentication logs to detect abnormal patterns (ISO 27001:2022 - 8.15)")
+                else:
+                    lines.append(f"- Periodically review failed login attempts on {hostname} through audit logs to ensure no emerging brute-force patterns (ISO 27001:2022 - 8.15)")
+
+            # ================================
+            # ACCESS FREQUENCY
+            # ================================
+            elif feature == "accessFrequency":
+                if level in ["High", "Critical"]:
+                    lines.append(f"- Monitor access frequency on {hostname} and generate alerts for abnormal spikes in user activity (ISO 27001:2022 - 8.16)")
+                elif level == "Medium":
+                    lines.append(f"- Track access frequency trends on {hostname} and compare against baseline user behavior (ISO 27001:2022 - 8.15)")
+                else:
+                    lines.append(f"- Maintain periodic monitoring of access activity on {hostname} to validate normal usage patterns (ISO 27001:2022 - 8.15)")
+
+            # ================================
+            # LOGIN CONSISTENCY
+            # ================================
+            elif feature == "loginConsistency":
+                if level in ["High", "Critical"]:
+                    lines.append(f"- Detect anomalous login patterns on {hostname} using behavior analytics and trigger alerts for irregular login timing or locations (ISO 27001:2022 - 8.16)")
+                elif level == "Medium":
+                    lines.append(f"- Monitor login consistency deviations on {hostname} and investigate irregular login behavior (ISO 27001:2022 - 8.15)")
+                else:
+                    lines.append(f"- Periodically review login consistency on {hostname} to ensure stable user behavior patterns (ISO 27001:2022 - 8.15)")
+
+            # ================================
+            # PASSWORD RESETS
+            # ================================
+            elif feature == "passwordResets":
+                if level in ["High", "Critical"]:
+                    lines.append(f"- Monitor password reset activity on {hostname} and alert on excessive or unauthorized reset attempts (ISO 27001:2022 - 5.17, 8.5)")
+                elif level == "Medium":
+                    lines.append(f"- Track password reset frequency on {hostname} and validate against user support requests (ISO 27001:2022 - 5.18)")
+                else:
+                    lines.append(f"- Periodically review password reset logs on {hostname} to ensure normal account management activity (ISO 27001:2022 - 5.18)")
+
+            # ================================
+            # SESSION DURATION
+            # ================================
+            elif feature == "sessionDuration":
+                if level in ["High", "Critical"]:
+                    lines.append(f"- Monitor session duration on {hostname} and trigger alerts for unusually long or persistent sessions (ISO 27001:2022 - 8.16)")
+                elif level == "Medium":
+                    lines.append(f"- Analyze session duration trends on {hostname} to detect abnormal user behavior (ISO 27001:2022 - 8.15)")
+                else:
+                    lines.append(f"- Maintain periodic review of session duration logs on {hostname} to confirm normal session patterns (ISO 27001:2022 - 8.15)")
+
+    # remove duplicates
+    unique = []
+    seen = set()
+    for l in lines:
+        if l not in seen:
+            seen.add(l)
+            unique.append(l)
+
+    return "\n".join(unique)
+
+def _generate_user_behavior_monitoring_action_with_llama3(
+    control_id: str,
+    control_name: str,
+    justification: str,
+    hosts: list[dict],
+    retrieved_controls: list[dict],
+) -> str:
+    host_context_blocks = []
+
+    for host in hosts:
+        if not isinstance(host, dict):
+            continue
+
+        hostname = _normalize_text(host.get("hostname")) or "Unknown Host"
+        role = _normalize_text(host.get("role")) or "Unknown Role"
+        cia = _normalize_text(host.get("CIA rating")) or "NA"
+
+        scores = _extract_behavior_scores_from_host(host)
+
+        feature_lines = [
+            f"- Failed Login Attempts: {_score_level(scores['failedLoginAttempts'])} ({scores['failedLoginAttempts']:g})",
+            f"- Access Frequency: {_score_level(scores['accessFrequency'])} ({scores['accessFrequency']:g})",
+            f"- Login Consistency: {_score_level(scores['loginConsistency'])} ({scores['loginConsistency']:g})",
+            f"- Password Resets: {_score_level(scores['passwordResets'])} ({scores['passwordResets']:g})",
+            f"- Session Duration: {_score_level(scores['sessionDuration'])} ({scores['sessionDuration']:g})",
+        ]
+
+        host_context_blocks.append(
+            f"Host: {hostname}\n"
+            f"Role: {role}\n"
+            f"CIA: {cia}\n"
+            f"Feature Levels:\n" + "\n".join(feature_lines)
+        )
+
+    retrieved_text = "\n\n".join(
+        [
+            (
+                f"ISO Reference {i + 1}\n"
+                f"Section: {_normalize_text(rec.get('Section'))}\n"
+                f"Control: {_normalize_text(rec.get('Control'))}\n"
+                f"Title: {_normalize_text(rec.get('Title'))}\n"
+                f"Purpose: {_normalize_text(rec.get('Purpose'))}"
+            )
+            for i, rec in enumerate(retrieved_controls)
+        ]
+    )
+
+    prompt = f"""
+You are an ISO 27001:2022 monitoring and improvement expert.
+
+Generate recommended monitoring actions for a User Activity Behavior vulnerability.
+
+STRICT REQUIREMENTS:
+- First line must be exactly: Recommended monitoring actions:
+- Then provide bullet lines starting with "-"
+- Each bullet must be on its own separate line
+- Create monitoring actions specifically based on the level of EACH of these five features:
+  Failed Login Attempts
+  Access Frequency
+  Login Consistency
+  Password Resets
+  Session Duration
+- Mention all five features
+- Tailor the action to the feature level
+- Use LLM reasoning together with the ISO 27001:2022 references provided
+- Actions must be monitoring-oriented, practical, and auditor-friendly
+- Focus on logging, alerting, anomaly detection, review frequency, threshold checks, escalation, and follow-up
+- No numbering
+- No paragraphs after the bullets
+- No markdown other than the "-" bullet lines
+
+Target Record:
+CVE: {control_id}
+Vulnerability: {control_name}
+Justification:
+{justification or "NA"}
+
+Host Feature Context:
+{chr(10).join(host_context_blocks) or "NA"}
+
+Relevant ISO 27001 / ISO 27002 References:
+{retrieved_text or "NA"}
+""".strip()
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+    }
+
+    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+    res.raise_for_status()
+    data = res.json()
+
+    response_text = _normalize_text(data.get("response"))
+
+    if not response_text.startswith("Recommended monitoring actions:"):
+        lines = [x.strip() for x in response_text.splitlines() if x.strip()]
+        bullets = []
+
+        for line in lines:
+            cleaned = re.sub(r"^[\-\*\d\.\)\(]+\s*", "", line)
+            if cleaned:
+                bullets.append(f"- {cleaned}")
+
+        response_text = "Recommended monitoring actions:\n" + "\n".join(bullets)
+
+    return response_text
+
+
+def _map_responsible_from_role(role: str) -> str:
+    role_l = _normalize_text(role).lower()
+
+    if any(x in role_l for x in ["domain controller", "active directory", "identity", "authentication"]):
+        return "Identity & Access Management Team / ISMS Auditor Team"
+
+    if any(x in role_l for x in ["dns", "dhcp", "network", "firewall", "router", "gateway", "proxy"]):
+        return "Network & Infrastructure Security Team / ISMS Auditor Team"
+
+    if any(x in role_l for x in ["web", "application", "app", "database", "sql", "api"]):
+        return "Application & Platform Security Team / ISMS Auditor Team"
+
+    if any(x in role_l for x in ["mail", "exchange", "messaging"]):
+        return "Messaging & Collaboration Security Team / ISMS Auditor Team"
+
+    if any(x in role_l for x in ["endpoint", "workstation", "desktop", "laptop", "client"]):
+        return "Endpoint Security Team / ISMS Auditor Team"
+
+    if any(x in role_l for x in ["backup", "storage", "file server", "nas"]):
+        return "Infrastructure Operations Team / ISMS Auditor Team"
+
+    if any(x in role_l for x in ["soc", "siem", "monitoring", "security"]):
+        return "Security Operations Center / ISMS Auditor Team"
+
+    return "System Security Team / ISMS Auditor Team"
+
+
+def _build_resources_value(hostname: str, role: str) -> str:
+    host_value = _normalize_text(hostname) or "Unknown Host"
+    role_value = _normalize_text(role) or "Unknown Role"
+    return f"{host_value} / {role_value}"
+
+
+def _build_host_lines_for_rag(hosts: list[dict]) -> list[str]:
+    lines = []
+
+    for h in hosts:
+        if not isinstance(h, dict):
+            continue
+
+        lines.append(
+            f"Hostname: {_normalize_text(h.get('hostname'))}, "
+            f"Role: {_normalize_text(h.get('role'))}, "
+            f"CIA: {_normalize_text(h.get('CIA rating'))}, "
+            f"IP: {_normalize_text(h.get('ip_address'))}, "
+            f"Vulnerability: {_normalize_text(h.get('vulnerability_name'))}"
+        )
+
+    return lines
+
+
+def _generate_evidence_desc_with_llama3(
+    control_id: str,
+    control_name: str,
+    justification: str,
+    hostname: str,
+    role: str,
+    vulnerability_name: str,
+    recommended_action: str,
+    retrieved_controls: list[dict],
+) -> str:
+    retrieved_text = "\n\n".join(
+        [
+            (
+                f"Control Reference {i + 1}\n"
+                f"Section: {_normalize_text(rec.get('Section'))}\n"
+                f"Control: {_normalize_text(rec.get('Control'))}\n"
+                f"Title: {_normalize_text(rec.get('Title'))}\n"
+                f"Purpose: {_normalize_text(rec.get('Purpose'))}"
+            )
+            for i, rec in enumerate(retrieved_controls)
+        ]
+    )
+
+    prompt = f"""
+You are an ISO 27001:2022 and ISO 27002:2022 expert.
+
+Write one meaningful and brief evidence description for a Monitoring and Improvement evidence record.
+
+STRICT RULES:
+- Return only one paragraph
+- 28 to 55 words
+- No bullets
+- No markdown
+- Mention the host
+- Mention the control context
+- Mention the monitoring intent based on the recommended action
+- Must be auditor-friendly
+- Must reflect the vulnerability and role context
+- Do not leave it generic
+- Do not mention 'RAG' or 'LLM'
+
+Control ID: {control_id}
+Control Name: {control_name}
+Justification: {justification}
+Hostname: {hostname}
+Host Role: {role}
+Vulnerability: {vulnerability_name}
+Recommended Monitoring Action: {recommended_action}
+
+Relevant ISO References:
+{retrieved_text or "NA"}
+""".strip()
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+    }
+
+    try:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        text = _normalize_text(data.get("response"))
+        if text:
+            return text
+    except Exception:
+        pass
+
+    # fallback
+    host_value = _normalize_text(hostname) or "the host"
+    vuln_value = _normalize_text(vulnerability_name) or _normalize_text(control_name) or "the identified vulnerability"
+    action_value = _normalize_text(recommended_action) or "the defined monitoring action"
+    return (
+        f"Evidence for {host_value} shows monitoring activities implemented for {vuln_value} "
+        f"under control {control_id}, supporting {action_value.lower()} and follow-up review by the ISMS auditor team."
+    )
+
+# =========================================================
 # MONITORING & IMPROVEMENT DOCUMENT HELPERS
 # =========================================================
 def _load_risk_evaluation_treatment_doc_or_blank(year: int) -> dict:
@@ -309,6 +821,14 @@ def _build_monitoring_improvement_from_risk_evaluation_treatment(year: int) -> d
                 "hosts": [],
             }
 
+
+        user_behavior_data = {}
+        if cve_value.startswith("UB-WS-"):
+            user_behavior_data = _find_user_behavior_from_risk_analysis(
+                year=year,
+                hostname=_normalize_text(item.get("hostname")),
+                cve_value=cve_value,
+            )
         host_obj = {
             "hostname": _normalize_text(item.get("hostname")),
             "ip_address": _normalize_text(item.get("ip_address")),
@@ -319,6 +839,9 @@ def _build_monitoring_improvement_from_risk_evaluation_treatment(year: int) -> d
             "riskid": _normalize_text(item.get("riskid")),
             "evaluation": evaluation,
             "treatment": treatment,
+            
+            "user_behavior": user_behavior_data,  
+            
             "evidence": [],
         }
 
@@ -1119,6 +1642,14 @@ def create_monitoring_improvement(year: int = 2026):
         if not isinstance(hosts, list):
             hosts = []
 
+        # =====================================================
+        # SPECIAL CASE: UB-WS-XX
+        # =====================================================
+        if cve_id.startswith("UB-WS-"):
+            item["justification"] = _generate_ub_ws_xx_justification(hosts)
+            enriched_cves.append(item)
+            continue
+
         try:
             nvd_record = _get_nvd_cve_details(cve_id)
         except Exception:
@@ -1148,7 +1679,6 @@ def create_monitoring_improvement(year: int = 2026):
             )
 
         item["justification"] = justification
-
         enriched_cves.append(item)
 
     new_doc["cves"] = enriched_cves
@@ -1161,7 +1691,6 @@ def create_monitoring_improvement(year: int = 2026):
         "message": "New Monitoring Improvement table created successfully.",
         "inventory": new_doc,
     }
-
 
 @router.get("/details")
 def get_monitoring_improvement_details(control_id: str = Query(...), year: int = Query(2026)):
@@ -1427,16 +1956,18 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
     justification = _normalize_text(control.get("justification"))
 
     hosts = control.get("hosts", [])
+    if not isinstance(hosts, list):
+        hosts = []
+
     host_lines = []
-    if isinstance(hosts, list):
-        for host in hosts:
-            if isinstance(host, dict):
-                host_lines.append(
-                    f"Host={_normalize_text(host.get('hostname'))}, "
-                    f"Role={_normalize_text(host.get('role'))}, "
-                    f"CIA={_normalize_text(host.get('CIA rating'))}, "
-                    f"CVE={control_id}"
-                )
+    for host in hosts:
+        if isinstance(host, dict):
+            host_lines.append(
+                f"Host={_normalize_text(host.get('hostname'))}, "
+                f"Role={_normalize_text(host.get('role'))}, "
+                f"CIA={_normalize_text(host.get('CIA rating'))}, "
+                f"CVE={control_id}"
+            )
 
     try:
         retrieved_controls = _retrieve_relevant_iso_controls(
@@ -1448,13 +1979,24 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
             top_k=5,
         )
 
-        generated_recommended_action = _generate_monitoring_action_with_llama3(
-            control_id=control_id,
-            control_name=control_name,
-            justification=justification,
-            host_lines=host_lines,
-            retrieved_controls=retrieved_controls,
-        )
+        # SPECIAL CASE: USER ACTIVITY BEHAVIOR
+        if control_id.startswith("UB-WS-"):
+            generated_recommended_action = _generate_user_behavior_monitoring_action_with_llama3(
+                control_id=control_id,
+                control_name=control_name,
+                justification=justification,
+                hosts=hosts,
+                retrieved_controls=retrieved_controls,
+            )
+        else:
+            generated_recommended_action = _generate_monitoring_action_with_llama3(
+                control_id=control_id,
+                control_name=control_name,
+                justification=justification,
+                host_lines=host_lines,
+                retrieved_controls=retrieved_controls,
+            )
+
     except Exception as e:
         return {
             "success": False,
@@ -1478,7 +2020,6 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
         "control": control,
         "inventory": doc,
     }
-
 
 @router.post("/add-evidence")
 def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
@@ -1528,12 +2069,50 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
     if not isinstance(existing_evidence, list):
         existing_evidence = []
 
+    control_id = _normalize_text(control.get("CVE"))
+    control_name = _normalize_text(control.get("vulnerability"))
+    justification = _normalize_text(control.get("justification"))
+    recommended_action = _normalize_text(control.get("recommended_action"))
+
+    hostname = _normalize_text(host.get("hostname"))
+    role = _normalize_text(host.get("role"))
+    vulnerability_name = _normalize_text(
+        host.get("vulnerability_name") or payload.vulnerability_name or control_name
+    )
+
+    host_lines = _build_host_lines_for_rag(hosts)
+
+    try:
+        retrieved_controls = _retrieve_relevant_iso_controls(
+            year=year,
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification,
+            host_lines=host_lines,
+            top_k=5,
+        )
+    except Exception:
+        retrieved_controls = []
+
+    auto_responsible = _map_responsible_from_role(role)
+    auto_resources = _build_resources_value(hostname, role)
+    auto_desc = _generate_evidence_desc_with_llama3(
+        control_id=control_id,
+        control_name=control_name,
+        justification=justification,
+        hostname=hostname,
+        role=role,
+        vulnerability_name=vulnerability_name,
+        recommended_action=recommended_action,
+        retrieved_controls=retrieved_controls,
+    )
+
     new_evidence = {
-        "responsible": _normalize_text(payload.evidence.responsible),
-        "resources": _normalize_text(payload.evidence.resources),
+        "responsible": _normalize_text(payload.evidence.responsible) or auto_responsible,
+        "resources": _normalize_text(payload.evidence.resources) or auto_resources,
         "date": _normalize_text(payload.evidence.date),
         "url": _normalize_text(payload.evidence.url),
-        "desc": _normalize_text(payload.evidence.desc),
+        "desc": _normalize_text(payload.evidence.desc) or auto_desc,
     }
 
     if not any(new_evidence.values()):
@@ -1747,4 +2326,119 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest):
         "success": True,
         "message": f"Evidence updated for host '{payload.hostname}'.",
         "inventory": doc,
+    }
+
+@router.post("/evidence-defaults")
+def get_monitoring_evidence_defaults(payload: EvidenceDefaultsRequest):
+    year = int(payload.year or 2026)
+    doc = _load_monitoring_improvement_doc_or_blank(year)
+
+    idx, control = _find_cve(doc, payload.control_id)
+    if control is None or idx is None:
+        return {
+            "success": False,
+            "message": f"CVE '{payload.control_id}' was not found.",
+            "evidence": {
+                "responsible": "",
+                "resources": "",
+                "date": "",
+                "url": "",
+                "desc": "",
+            },
+            "inventory": doc,
+        }
+
+    hosts = control.get("hosts", [])
+    if not isinstance(hosts, list):
+        hosts = []
+
+    selected_host = None
+    for host in hosts:
+        if not isinstance(host, dict):
+            continue
+        if _normalize_key(host.get("hostname")) == _normalize_key(payload.hostname):
+            if (
+                _normalize_key(host.get("vulnerability_name")) in {"", _normalize_key(payload.vulnerability_name)}
+                or _normalize_key(payload.vulnerability_name) == ""
+            ):
+                selected_host = host
+                break
+
+    if not isinstance(selected_host, dict):
+        return {
+            "success": False,
+            "message": f"Host '{payload.hostname}' was not found under '{payload.control_id}'.",
+            "evidence": {
+                "responsible": "",
+                "resources": "",
+                "date": "",
+                "url": "",
+                "desc": "",
+            },
+            "inventory": doc,
+        }
+
+    control_id = _normalize_text(control.get("CVE"))
+    control_name = _normalize_text(control.get("vulnerability"))
+    justification = _normalize_text(control.get("justification"))
+    recommended_action = _normalize_text(control.get("recommended_action"))
+
+    hostname = _normalize_text(selected_host.get("hostname"))
+    role = _normalize_text(selected_host.get("role"))
+    vulnerability_name = _normalize_text(
+        selected_host.get("vulnerability_name") or payload.vulnerability_name or control_name
+    )
+
+    host_lines = _build_host_lines_for_rag(hosts)
+
+    try:
+        retrieved_controls = _retrieve_relevant_iso_controls(
+            year=year,
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification,
+            host_lines=host_lines,
+            top_k=5,
+        )
+    except Exception:
+        retrieved_controls = []
+
+    evidence = {
+        "responsible": _map_responsible_from_role(role),
+        "resources": _build_resources_value(hostname, role),
+        "date": "",
+        "url": "",
+        "desc": _generate_evidence_desc_with_llama3(
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification,
+            hostname=hostname,
+            role=role,
+            vulnerability_name=vulnerability_name,
+            recommended_action=recommended_action,
+            retrieved_controls=retrieved_controls,
+        ),
+    }
+
+    return {
+        "success": True,
+        "message": f"Evidence defaults generated for host {hostname} under {control_id}.",
+        "evidence": evidence,
+        "inventory": doc,
+    }
+
+@router.post("/recommend-all")
+def recommend_all(year: int = 2026):
+    doc = _load_monitoring_improvement_doc_or_blank(year)
+
+    for cve in doc.get("cves", []):
+        # call existing recommend logic internally
+        _recommend_for_single_cve(cve)
+
+    _save_json(_monitoring_improvement_file(year), doc)
+
+    return {
+        "success": True,
+        "message": "Recommended actions generated for all controls",
+        "inventory": doc
     }

@@ -19,13 +19,13 @@
         464,
         636
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
-      "risk": "Critical",
+      "risk": "High",
       "likelihood_score": 1.0,
-      "risk_score": 9.0,
-      "exposure": "Critical"
+      "risk_score": 11.7,
+      "exposure": "Critical",
+      "user_behavior": {}
     },
     {
       "hostname": "SRV-01",
@@ -46,13 +46,13 @@
         464,
         636
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
-      "risk": "Critical",
+      "risk": "High",
       "likelihood_score": 1.0,
-      "risk_score": 9.0,
-      "exposure": "Critical"
+      "risk_score": 11.7,
+      "exposure": "Critical",
+      "user_behavior": {}
     },
     {
       "hostname": "SRV-02",
@@ -70,13 +70,13 @@
         135,
         445
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "High",
       "likelihood_score": 0.9945,
-      "risk_score": 7.956,
-      "exposure": "Critical"
+      "risk_score": 10.3428,
+      "exposure": "Critical",
+      "user_behavior": {}
     },
     {
       "hostname": "WS-01",
@@ -92,13 +92,21 @@
       "open_ports": [
         3389
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
       "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
-      "exposure": "Critical"
+      "risk_score": 7.3109,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-02",
@@ -114,13 +122,21 @@
       "open_ports": [
         3389
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
       "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
-      "exposure": "Critical"
+      "risk_score": 7.3109,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-03",
@@ -136,13 +152,21 @@
       "open_ports": [
         3389
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
       "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
-      "exposure": "Critical"
+      "risk_score": 7.3109,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "SRV-03",
@@ -161,13 +185,13 @@
         445,
         5985
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "High",
       "likelihood_score": 0.9633,
-      "risk_score": 7.7064,
-      "exposure": "Critical"
+      "risk_score": 10.0183,
+      "exposure": "Critical",
+      "user_behavior": {}
     },
     {
       "hostname": "SRV-03",
@@ -186,13 +210,13 @@
         445,
         5985
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
-      "risk": "High",
+      "risk": "Medium",
       "likelihood_score": 0.9035,
-      "risk_score": 7.228,
-      "exposure": "Critical"
+      "risk_score": 9.3964,
+      "exposure": "Critical",
+      "user_behavior": {}
     },
     {
       "hostname": "SRV-04",
@@ -210,13 +234,13 @@
         443,
         5985
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "High",
       "likelihood_score": 0.9945,
-      "risk_score": 7.956,
-      "exposure": "Critical"
+      "risk_score": 10.3428,
+      "exposure": "Critical",
+      "user_behavior": {}
     },
     {
       "hostname": "SRV-04",
@@ -234,13 +258,13 @@
         443,
         5985
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
-      "risk": "High",
+      "risk": "Medium",
       "likelihood_score": 0.9035,
-      "risk_score": 7.228,
-      "exposure": "Critical"
+      "risk_score": 9.3964,
+      "exposure": "Critical",
+      "user_behavior": {}
     },
     {
       "hostname": "WS-04",
@@ -256,13 +280,21 @@
       "open_ports": [
         3389
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
       "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
-      "exposure": "Critical"
+      "risk_score": 7.3109,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-05",
@@ -280,13 +312,21 @@
         3000,
         3389
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
       "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
-      "exposure": "Critical"
+      "risk_score": 7.3109,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-05",
@@ -304,13 +344,21 @@
         3000,
         3389
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "High",
       "risk": "Medium",
       "likelihood_score": 0.8775,
-      "risk_score": 5.265,
-      "exposure": "Critical"
+      "risk_score": 6.8445,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-06",
@@ -328,13 +376,21 @@
         6006,
         8888
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
       "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
-      "exposure": "Critical"
+      "risk_score": 7.3109,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-06",
@@ -352,13 +408,21 @@
         6006,
         8888
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "High",
       "risk": "Medium",
       "likelihood_score": 0.8515,
-      "risk_score": 5.109,
-      "exposure": "Critical"
+      "risk_score": 6.6417,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-06",
@@ -376,192 +440,188 @@
         6006,
         8888
       ],
-      "ml_probability": 0.3,
       "override": 0,
       "likelihood": "Medium",
-      "risk": "Medium",
+      "risk": "Low",
       "likelihood_score": 0.611,
-      "risk_score": 3.666,
-      "exposure": "Critical"
+      "risk_score": 4.7658,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
     },
     {
       "hostname": "WS-01",
       "ip_address": "10.0.0.10",
-      "role": "Standard Employee Workstation",
+      "role": "User Workstation",
       "CIA rating": "Medium",
-      "vulnerability_name": "User Activity Behavior",
-      "severity": "",
-      "cvss_score": 0.0,
-      "exploit_available": "",
+      "vulnerability_name": "User Activity Behavior - Vulnerability",
+      "severity": "High",
+      "cvss_score": 0,
+      "exploit_available": false,
       "patch_status": 0,
-      "cve": "UB-WS-01",
+      "cve": "",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "",
+      "risk": "Medium",
+      "likelihood_score": 0.0,
+      "risk_score": 0.0,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.8013,
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
         "passwordResets": 0,
-        "sessionDuration": 0.0012,
-        "rule_score": 0.1102,
-        "ml_score": 0.85,
-        "behaviorRiskScore": 0.4061,
-        "likelihood": "Low"
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
       }
     },
     {
       "hostname": "WS-02",
       "ip_address": "10.0.0.11",
-      "role": "HR Workstation",
+      "role": "User Workstation",
       "CIA rating": "Medium",
-      "vulnerability_name": "User Activity Behavior",
-      "severity": "",
-      "cvss_score": 0.0,
-      "exploit_available": "",
+      "vulnerability_name": "User Activity Behavior - Vulnerability",
+      "severity": "High",
+      "cvss_score": 0,
+      "exploit_available": false,
       "patch_status": 0,
-      "cve": "UB-WS-02",
+      "cve": "",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "",
+      "risk": "Medium",
+      "likelihood_score": 0.0,
+      "risk_score": 0.0,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.9269,
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
         "passwordResets": 0,
-        "sessionDuration": 0.0015,
-        "rule_score": 0.1227,
-        "ml_score": 0.85,
-        "behaviorRiskScore": 0.4136,
-        "likelihood": "Low"
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
       }
     },
     {
       "hostname": "WS-03",
       "ip_address": "10.0.0.12",
-      "role": "Standard Employee Workstation",
+      "role": "User Workstation",
       "CIA rating": "Medium",
-      "vulnerability_name": "User Activity Behavior",
-      "severity": "",
-      "cvss_score": 0.0,
-      "exploit_available": "",
+      "vulnerability_name": "User Activity Behavior - Vulnerability",
+      "severity": "High",
+      "cvss_score": 0,
+      "exploit_available": false,
       "patch_status": 0,
-      "cve": "UB-WS-03",
+      "cve": "",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "",
+      "risk": "Medium",
+      "likelihood_score": 0.0,
+      "risk_score": 0.0,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.7669,
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
         "passwordResets": 0,
-        "sessionDuration": 0.0063,
-        "rule_score": 0.1068,
-        "ml_score": 0.85,
-        "behaviorRiskScore": 0.4041,
-        "likelihood": "Low"
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
       }
     },
     {
       "hostname": "WS-04",
       "ip_address": "10.0.0.26",
-      "role": "Call Center Workstation",
+      "role": "User Workstation",
       "CIA rating": "Medium",
-      "vulnerability_name": "User Activity Behavior",
-      "severity": "",
-      "cvss_score": 0.0,
-      "exploit_available": "",
+      "vulnerability_name": "User Activity Behavior - Vulnerability",
+      "severity": "High",
+      "cvss_score": 0,
+      "exploit_available": false,
       "patch_status": 0,
-      "cve": "UB-WS-04",
+      "cve": "",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "",
+      "risk": "Medium",
+      "likelihood_score": 0.0,
+      "risk_score": 0.0,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.7669,
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
         "passwordResets": 0,
-        "sessionDuration": 0.0063,
-        "rule_score": 0.1068,
-        "ml_score": 0.85,
-        "behaviorRiskScore": 0.4041,
-        "likelihood": "Low"
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
       }
     },
     {
       "hostname": "WS-05",
       "ip_address": "10.0.0.27",
-      "role": "Developer Workstation",
+      "role": "User Workstation",
       "CIA rating": "Medium",
-      "vulnerability_name": "User Activity Behavior",
-      "severity": "",
-      "cvss_score": 0.0,
-      "exploit_available": "",
+      "vulnerability_name": "User Activity Behavior - Vulnerability",
+      "severity": "High",
+      "cvss_score": 0,
+      "exploit_available": false,
       "patch_status": 0,
-      "cve": "UB-WS-05",
+      "cve": "",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "",
+      "risk": "Medium",
+      "likelihood_score": 0.0,
+      "risk_score": 0.0,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.7669,
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
         "passwordResets": 0,
-        "sessionDuration": 0.0063,
-        "rule_score": 0.1068,
-        "ml_score": 0.85,
-        "behaviorRiskScore": 0.4041,
-        "likelihood": "Low"
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
       }
     },
     {
       "hostname": "WS-06",
       "ip_address": "10.0.0.28",
-      "role": "Data Scientist Workstation",
+      "role": "User Workstation",
       "CIA rating": "Medium",
-      "vulnerability_name": "User Activity Behavior",
-      "severity": "",
-      "cvss_score": 0.0,
-      "exploit_available": "",
+      "vulnerability_name": "User Activity Behavior - Vulnerability",
+      "severity": "High",
+      "cvss_score": 0,
+      "exploit_available": false,
       "patch_status": 0,
-      "cve": "UB-WS-06",
+      "cve": "",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "",
+      "risk": "Medium",
+      "likelihood_score": 0.0,
+      "risk_score": 0.0,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.7669,
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
         "passwordResets": 0,
-        "sessionDuration": 0.0063,
-        "rule_score": 0.1068,
-        "ml_score": 0.85,
-        "behaviorRiskScore": 0.4041,
-        "likelihood": "Low"
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
       }
     }
   ]

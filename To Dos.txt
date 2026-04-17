@@ -1,5 +1,5 @@
 To Dos:
 
-update asset inventory based on dockers and vms
-update risk analysis report - user activity behavior
-Risk analysis form: Details have bug for UAB
+update asset inventory based on dockers and vms done
+update risk analysis report - user activity behavior  
+Risk analysis form: Details have bug for UAB Done

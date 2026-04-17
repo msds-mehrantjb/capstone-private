@@ -391,6 +391,15 @@ def _fetch_cve_from_nvd(cve_id: str) -> dict:
     }
 
 
+def _derive_default_evaluation(record: dict) -> str:
+    cve = str(record.get("cve") or "").strip()
+    risk = _normalize_risk(str(record.get("risk") or ""))
+
+    if cve.startswith("UB-WS-") and risk == "Low":
+        return "Monitor"
+
+    return _derive_risk_evaluation_from_risk(risk)
+
 def _ask_llama3_for_monitoring_fields(record: dict, cve_info: dict) -> tuple[str, str]:
     hostname = str(record.get("hostname") or "").strip()
     role = str(record.get("role") or "").strip()
@@ -659,13 +668,21 @@ def submit_risk_evaluation_treatment(payload: SubmitRequest):
 
     monitoring_path = _monitoring_improvement_file(year)
 
-    if monitoring_path.exists():
+    if monitoring_path.exists() and not payload.confirm:
         return {
             "success": False,
-            "message": "You submitted the risk evaluation and treatment result before",
+            "requires_confirmation": True,
+            "message": "You submitted the risk evaluation and treatment result before, do you want to continue?",
             "inventory": inventory,
         }
 
+    if monitoring_path.exists() and payload.confirm:
+        # overwrite existing monitoring file
+        try:
+            monitoring_path.unlink()
+        except Exception:
+            pass        
+            
     normalized_hosts = [_normalize_existing_record(h) for h in hosts]
 
     monitoring_records = [
@@ -721,9 +738,10 @@ def reinitialize_risk_evaluation_treatment(payload: ReinitializeRequest):
         risk_value = _normalize_risk(str(r.get("risk") or "Unscanned")) or "Unscanned"
 
         r["risk"] = risk_value
-        r["evaluation"] = _derive_risk_evaluation_from_risk(risk_value)
-        r["treatment"] = "-"
-
+        default_evaluation = _derive_default_evaluation(r)
+        
+        r["evaluation"] = default_evaluation
+        r["treatment"] = "" if default_evaluation == "Treat" else "-"
         new_hosts.append(r)
 
     inventory["hosts"] = new_hosts

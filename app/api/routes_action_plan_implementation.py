@@ -165,7 +165,9 @@ class EditEvidenceRequest(BaseModel):
     evidence_index: int
     evidence: AddEvidenceItem
 
-
+class RecommendAllTreatmentRequest(BaseModel):
+    year: int | None = 2026
+    
 # =========================================================
 # PROJECT PATHS
 # =========================================================
@@ -883,8 +885,10 @@ ISO guidance:
         
             for part in parts:
                 part = part.strip()
-                if part:
-                    clean_bullets.append(f"- {part}")
+                if not part:
+                    continue
+            
+                clean_bullets.append(f"- {part}")
         
         seen = set()
         final_bullets = []
@@ -1095,6 +1099,101 @@ Relevant ISO Guidance:
 
     return unique_items[:8]
 
+def _generate_meaningful_evidence_desc_with_llama3(
+    year: int,
+    control_id: str,
+    control_name: str,
+    justification: str,
+    hostname: str,
+    role: str,
+    vulnerability_name: str,
+    cve: str,
+    risk: str,
+    treatment_action: str,
+) -> str:
+    host_lines = [
+        f"Host={hostname}",
+        f"Role={role}",
+        f"Vulnerability={vulnerability_name}",
+        f"CVE={cve}",
+        f"Risk={risk}",
+        f"Treatment Action={treatment_action}",
+    ]
+
+    retrieved_controls = _retrieve_relevant_iso_controls(
+        year=year,
+        control_id=control_id,
+        control_name=control_name,
+        justification=justification,
+        host_lines=host_lines,
+        top_k=5,
+    )
+
+    retrieved_text = "\n\n".join(
+        [
+            (
+                f"Reference {i + 1}\n"
+                f"Section: {_normalize_text(rec.get('Section'))}\n"
+                f"Control: {_normalize_text(rec.get('Control'))}\n"
+                f"Title: {_normalize_text(rec.get('Title'))}\n"
+                f"Purpose: {_normalize_text(rec.get('Purpose'))}"
+            )
+            for i, rec in enumerate(retrieved_controls)
+        ]
+    )
+
+    prompt = f"""
+You are an ISO 27001:2022 implementation expert.
+
+Write ONE short but meaningful evidence description for a host under a selected control.
+
+STRICT RULES:
+- Output exactly one sentence only
+- Keep it concise but meaningful
+- Base it on the treatment action
+- Mention the host
+- Mention the control
+- Describe what the evidence proves
+- Do not use bullets
+- Do not use numbering
+- Do not use markdown
+- Do not mention ISO guidance text directly
+- Do not be generic like "evidence for host under control"
+
+Context:
+Control ID: {control_id or "NA"}
+Control Name: {control_name or "NA"}
+Justification: {justification or "NA"}
+Hostname: {hostname or "NA"}
+Role: {role or "NA"}
+Vulnerability: {vulnerability_name or "NA"}
+CVE: {cve or "NA"}
+Risk: {risk or "NA"}
+Treatment Action: {treatment_action or "NA"}
+
+Relevant ISO Guidance:
+{retrieved_text or "NA"}
+""".strip()
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+    }
+
+    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+    res.raise_for_status()
+    data = res.json()
+
+    desc = _normalize_text(data.get("response"))
+
+    if not desc:
+        desc = (
+            f"Evidence shows treatment action for host {hostname} under control "
+            f"{control_id} ({control_name}) was implemented."
+        )
+
+    return desc.replace("\n", " ").strip()
     
 # =========================================================
 # ROUTES
@@ -1502,15 +1601,67 @@ def add_evidence_to_host(payload: AddEvidenceRequest):
     existing_evidence = host.get("evidence", [])
     if not isinstance(existing_evidence, list):
         existing_evidence = []
-
+    
+    # remove legacy / blank evidence rows
+    cleaned_evidence = []
+    for item in existing_evidence:
+        if not isinstance(item, dict):
+            continue
+    
+        normalized_item = {
+            "responsible": _normalize_text(item.get("responsible")),
+            "resources": _normalize_text(item.get("resources")),
+            "date": _normalize_text(item.get("date")),
+            "url": _normalize_text(item.get("url")),
+            "desc": _normalize_text(item.get("desc")),
+        }
+    
+        if any(normalized_item.values()):
+            cleaned_evidence.append(normalized_item)
+    
+    existing_evidence = cleaned_evidence
+    
+    control_id = _normalize_text(control.get("control_id") or control.get("control"))
+    control_name = _normalize_text(control.get("control_name"))
+    justification = _normalize_text(control.get("justification"))
+    
+    hostname = _normalize_text(host.get("hostname"))
+    role = _normalize_text(host.get("role"))
+    vulnerability_name = _normalize_text(host.get("vulnerability_name"))
+    cve = _normalize_text(host.get("cve"))
+    risk = _normalize_text(host.get("risk"))
+    treatment_action = _normalize_text(host.get("treatment_action") or control.get("treatment_action"))
+    
+    desc_value = _normalize_text(payload.evidence.desc)
+    
+    if desc_value == "":
+        try:
+            desc_value = _generate_meaningful_evidence_desc_with_llama3(
+                year=year,
+                control_id=control_id,
+                control_name=control_name,
+                justification=justification,
+                hostname=hostname,
+                role=role,
+                vulnerability_name=vulnerability_name,
+                cve=cve,
+                risk=risk,
+                treatment_action=treatment_action,
+            )
+        except Exception:
+            desc_value = (
+                f"Evidence confirms the treatment action for host {hostname} "
+                f"under control {control_id} ({control_name}) was implemented."
+            )
+    
     new_evidence = {
         "responsible": _normalize_text(payload.evidence.responsible),
         "resources": _normalize_text(payload.evidence.resources),
         "date": _normalize_text(payload.evidence.date),
         "url": _normalize_text(payload.evidence.url),
-        "desc": _normalize_text(payload.evidence.desc),
+        "desc": desc_value,
     }
-
+    
     if not any(new_evidence.values()):
         return {
             "success": False,
@@ -1713,5 +1864,102 @@ def edit_evidence(payload: EditEvidenceRequest):
     return {
         "success": True,
         "message": f"Evidence updated for host '{payload.hostname}'.",
+        "inventory": doc,
+    }
+
+@router.post("/recommend-treatment-all")
+def recommend_treatment_action_all(payload: RecommendAllTreatmentRequest):
+    year = int(payload.year or 2026)
+    doc = _load_action_plan_doc_or_blank(year)
+
+    if _action_plan_section_is_read_only(year):
+        return {
+            "success": False,
+            "message": "Action Plan / Implementation is read-only.",
+            "inventory": doc,
+        }
+
+    controls = _all_controls(doc)
+    if not controls:
+        return {
+            "success": False,
+            "message": "No controls found in the Action Plan / Implementation table.",
+            "inventory": doc,
+        }
+
+    MAX_HOSTS_FOR_PROMPT = 5
+    MAX_JUSTIFICATION_CHARS = 500
+
+    for idx, control in enumerate(controls):
+        control_id = _normalize_text(control.get("control_id") or control.get("control"))
+        control_name = _normalize_text(control.get("control_name"))
+        justification = _normalize_text(control.get("justification"))
+        justification_for_prompt = (
+            (justification[:MAX_JUSTIFICATION_CHARS] + '...') 
+            if len(justification) > MAX_JUSTIFICATION_CHARS 
+            else justification
+        )
+
+        hosts = control.get("hosts", [])
+
+        # Build host lines including RiskID to make duplicates unique
+        host_lines = [
+            f"Host={_normalize_text(h.get('hostname'))} | Role={_normalize_text(h.get('role'))} | "
+            f"Vulnerability={_normalize_text(h.get('vulnerability_name'))} | CVE={_normalize_text(h.get('cve'))} | "
+            f"Risk={_normalize_text(h.get('risk'))} | RiskID={_normalize_text(h.get('riskid'))}"
+            for h in hosts if isinstance(h, dict)
+        ] or ["NA"]
+
+
+        # Limit host lines for LLM prompt
+        host_lines_for_prompt = host_lines[:MAX_HOSTS_FOR_PROMPT]
+        if len(host_lines) > MAX_HOSTS_FOR_PROMPT:
+            host_lines_for_prompt.append(f"...and {len(host_lines) - MAX_HOSTS_FOR_PROMPT} more hosts")
+
+        retrieved_controls = _retrieve_relevant_iso_controls(
+            year=year,
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification_for_prompt,
+            host_lines=host_lines_for_prompt,
+            top_k=5,
+        )
+
+
+        # LLM wrapped in try/except
+        try:
+            generated_treatment_action = _generate_treatment_action_with_llama3(
+                control_id=control_id,
+                control_name=control_name,
+                justification=justification_for_prompt,
+                host_lines=host_lines_for_prompt,
+                retrieved_controls=retrieved_controls,
+            )
+        except Exception as e:
+            print(f"[ERROR] LLM failed for control {control_id}: {e}")
+            generated_treatment_action = f"Recommended treatment actions:\n- Apply controls for {control_id} on all hosts."
+
+        # Fallback if empty
+        if not generated_treatment_action:
+            print(f"[WARN] Empty treatment returned for control {control_id}, applying fallback")
+            generated_treatment_action = f"Recommended treatment actions:\n- Apply controls for {control_id} on all hosts."
+
+        # Apply to control
+        control["treatment_action"] = generated_treatment_action
+
+        # Apply to all hosts individually
+        for host in hosts:
+            if isinstance(host, dict):
+                host["treatment_action"] = generated_treatment_action
+
+        controls[idx] = control
+
+    doc["controls"] = controls
+    _save_json(_action_plan_implementation_file(year), doc)
+    _sync_action_plan_status(year, doc)
+
+    return {
+        "success": True,
+        "message": "Treatment actions generated for all controls and hosts.",
         "inventory": doc,
     }

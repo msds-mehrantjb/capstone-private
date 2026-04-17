@@ -52,6 +52,18 @@ type RiskFinding = {
   exposureNormalized?: number | string;
   roleNormalized?: number | string;
   ciaNormalized?: number | string;
+
+  userBehavior?: {
+    failedLoginAttempts?: number;
+    accessFrequency?: number;
+    loginConsistency?: number;
+    passwordResets?: number;
+    sessionDuration?: number;
+    behaviorRiskScore?: number;
+    rule_score?: number;
+    ml_score?: number;
+    likelihood?: string;
+  };
 };
 
 type RiskHostRow = {
@@ -282,9 +294,14 @@ function flattenInventoryToRows(doc: any): RiskHostRow[] {
         : normalizeSeverity(h?.impact ?? h?.["CIA rating"]);
 
     row.likelihood =
-      row.likelihood !== "Unscanned" ? row.likelihood : normalizeSeverity(h?.likelihood);
+      row.likelihood !== "Unscanned"
+        ? row.likelihood
+        : normalizeSeverity(h?.likelihood);
 
-    row.risk = row.risk !== "Unscanned" ? row.risk : normalizeSeverity(h?.risk);
+    row.risk =
+      row.risk !== "Unscanned"
+        ? row.risk
+        : normalizeSeverity(h?.risk);
 
     if ((!row.ipAddress || row.ipAddress === "NA") && h?.ip_address) {
       row.ipAddress = toText(h?.ip_address, "");
@@ -392,6 +409,8 @@ function flattenInventoryToRows(doc: any): RiskHostRow[] {
         ),
         roleNormalized: firstDefined(h?.role_normalized, h?.Role_n, h?.role_n, "NA"),
         ciaNormalized: firstDefined(h?.cia_normalized, h?.CIA_n, h?.cia_n, "NA"),
+
+        userBehavior: h?.user_behavior ?? {},
       });
     }
   });
@@ -758,6 +777,15 @@ export default function RiskAnalysis() {
     [rows]
   );
 
+  const criticalRiskCount = useMemo(
+    () =>
+      rows.reduce((count, host) => {
+        const hostCriticalCount = host.findings?.filter((f) => f.risk === "Critical").length ?? 0;
+        return count + hostCriticalCount;
+      }, 0),
+    [rows]
+  );
+
   const highRiskCount = useMemo(
     () =>
       rows.reduce((count, host) => {
@@ -795,8 +823,8 @@ export default function RiskAnalysis() {
         accent: "emerald",
       },
       {
-        title: "High Risk",
-        value: String(highRiskCount),
+        title: "Critical / High Risk",
+        value: `${criticalRiskCount} / ${highRiskCount}`,
         icon: <Activity className="h-6 w-6" />,
         accent: "slate",
       },
@@ -856,6 +884,30 @@ export default function RiskAnalysis() {
     f: RiskFinding,
     index: number
   ) => {
+    const ub = f.userBehavior ?? {};
+
+    if (String(f.vulnerability).trim().toLowerCase() === "user activity behavior") {
+      return (
+        `Risk Details for:\n\n` +
+        `Host: ${row.hostname}\n` +
+        `Vulnerability: User Activity Behavior\n` +
+        `------------------------\n` +
+        `CIA Rating: ${formatValue(f.ciaRating)}\n` +
+        `Failed Login Attempts: ${formatValue(ub.failedLoginAttempts)}\n` +
+        `Access Frequency: ${formatValue(ub.accessFrequency)}\n` +
+        `Login Consistency: ${formatValue(ub.loginConsistency)}\n` +
+        `Password Resets: ${formatValue(ub.passwordResets)}\n` +
+        `Session Duration: ${formatValue(ub.sessionDuration)}\n` +
+        `Rule Score: ${formatValue(ub.rule_score)}\n` +
+        `ML Score: ${formatValue(ub.ml_score)}\n` +
+        `Behavior Risk Score: ${formatValue(ub.behaviorRiskScore)}\n` +
+        `------------------------\n` +
+        `Likelihood: ${formatValue(ub.likelihood ?? f.likelihood)}\n` +
+        `Risk Score: ${formatValue(f.riskScore)}\n` +
+        `Risk: ${formatValue(f.risk)}`
+      );
+    }
+
     return (
       `Risk Details for:\n\n` +
       `Host: ${row.hostname}\n` +
@@ -868,14 +920,13 @@ export default function RiskAnalysis() {
       `Patch Status: ${formatValue(f.patchStatus)}\n` +
       `Exposure: ${formatValue(f.exposure)}\n` +
       `Open Ports: ${formatList(row.openPorts)}\n` +
-      `suspicious activity: ${formatValue(f.mlProbability ?? row.mlProbability)}\n` +
       `------------------------\n` +
       `Likelihood: ${formatValue(f.likelihood)}\n` +
       `Risk Score: ${formatValue(f.riskScore)}\n` +
       `Risk: ${formatValue(f.risk)}`
     );
   };
-
+    
   const refreshInventoryRows = async () => {
     const doc = await apiGetRiskInventory(YEAR);
     const nextRows = flattenInventoryToRows(doc);

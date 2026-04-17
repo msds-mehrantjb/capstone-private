@@ -13,11 +13,10 @@
           "Role-Based Access Control (RBAC)"
         ],
         "Endpoint Security Controls": [
-          "Antivirus / Anti-malware",
-          "Secure Boot"
+          "Antivirus / Anti-malware"
         ],
         "Network Security Controls": [
-          "Windows Firewall (Host-based)"
+          "DNS Security (DNS filtering / logging)"
         ],
         "Logging, Monitoring & Detection": [
           "Windows Event Logging"
@@ -60,12 +59,14 @@
     },
     {
       "hostname": "WS-01",
-      "ip_address": "10.0.0.4",
+      "ip_address": "10.0.0.10",
       "role": "Standard Employee Workstation",
       "CIA rating": "Medium",
       "existing_controls": {
         "Identity & Access Management": [
-          "Password Policies (complexity, rotation)"
+          "Password Policies (complexity, rotation)",
+          "Group Policy Objects (GPO)",
+          "Role-Based Access Control (RBAC)"
         ],
         "Endpoint Security Controls": [
           "Antivirus / Anti-malware"
@@ -75,12 +76,15 @@
         ],
         "Logging, Monitoring & Detection": [
           "Windows Event Logging"
+        ],
+        "Vulnerability & Patch Management": [
+          "Patch Management (WSUS / SCCM)"
         ]
       }
     },
     {
       "hostname": "WS-02",
-      "ip_address": "10.0.0.5",
+      "ip_address": "10.0.0.11",
       "role": "Standard Employee Workstation",
       "CIA rating": "Medium",
       "existing_controls": {
@@ -100,7 +104,7 @@
     },
     {
       "hostname": "WS-03",
-      "ip_address": "10.0.0.6",
+      "ip_address": "10.0.0.12",
       "role": "Standard Employee Workstation",
       "CIA rating": "Medium",
       "existing_controls": {
@@ -174,7 +178,7 @@
     },
     {
       "hostname": "WS-04",
-      "ip_address": "10.0.0.20",
+      "ip_address": "10.0.0.26",
       "role": "Call Center Workstation",
       "CIA rating": "Medium",
       "existing_controls": {
@@ -194,7 +198,7 @@
     },
     {
       "hostname": "WS-05",
-      "ip_address": "10.0.0.21",
+      "ip_address": "10.0.0.27",
       "role": "Developer Workstation",
       "CIA rating": "Medium",
       "existing_controls": {
@@ -214,7 +218,7 @@
     },
     {
       "hostname": "WS-06",
-      "ip_address": "10.0.0.22",
+      "ip_address": "10.0.0.28",
       "role": "Data Scientist Workstation",
       "CIA rating": "Medium",
       "existing_controls": {

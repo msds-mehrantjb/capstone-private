@@ -1,345 +1,347 @@
 {
   "cves": [
     {
-      "CVE": "CVE-2020-1350",
-      "vulnerability": "Windows DNS Server Remote Code Execution",
+      "CVE": "CVE-2019-0708",
+      "vulnerability": "Remote Desktop Services Remote Code Execution",
       "implementation_status": "In Progress",
-      "justification": "Monitoring the Windows DNS Server Remote Code Execution vulnerability (CVE-2020-1350) enables swift detection and verification of patches, thereby containing the risk of exploitation. This proactive approach facilitates exposure tracking, allowing for prompt corrective action to be taken, thereby reducing the window of opportunity for attackers to exploit this critical vulnerability.",
-      "recommended_action": "Recommended monitoring actions:\n\n- Monitor DNS Server logs for suspicious queries and anomalies.\n- Implement Windows DNS Server query logging to track and analyze incoming requests.\n- Configure IDS/IPS rules to detect and alert on potential exploitation attempts.\n- Set up a SIEM system to collect, correlate, and analyze DNS Server logs and network traffic.\n- Perform regular security scanning of the DNS Server using vulnerability assessment tools.\n- Track patch implementation status for the affected host (SRV-02) and report any delays or issues.\n- Conduct regular security testing (e.g., penetration testing) to validate the effectiveness of patches and controls.",
+      "justification": "Monitoring the Remote Desktop Services Remote Code Execution vulnerability (CVE-2019-0708) enables swift detection of attempted attacks, verifying patch implementation, and tracking exposure across affected hosts. By monitoring network traffic and system logs, potential exploits can be quickly identified, containing the threat and allowing for prompt corrective action to prevent unauthorized access or data exfiltration. This proactive approach reduces the risk of a successful attack, thereby minimizing the impact on confidentiality, integrity, and availability (CIA) of sensitive information.",
+      "recommended_action": "Recommended monitoring actions:\n- Monitor network traffic for suspicious Remote Desktop Protocol (RDP) connections to affected hosts.\n- Review system logs for successful authentication and file transfer attempts.\n- Track exposure of affected hosts by monitoring system updates, patch levels, and configuration changes.\n- Implement Network-based Intrusion Detection System (NIDS) or Host-based Intrusion Detection System (HIDS) to detect and alert on potential exploitation attempts.\n- Validate patch implementation by monitoring system logs for successful patches and verifying patch versions.\n- Escalate potential exploits to incident response team for further investigation and containment.\n- Review system logs regularly to track exposure across affected hosts and identify potential vulnerabilities.",
       "hosts": [
         {
-          "hostname": "SRV-02",
-          "ip_address": "10.0.0.3",
-          "role": "DNS Server",
-          "CIA rating": "High",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "hostname": "WS-01",
+          "ip_address": "10.0.0.10",
+          "role": "Standard Employee Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
           "risk": "Medium",
           "riskid": "R-004",
           "evaluation": "Monitor",
           "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Security Operations Team",
-              "resources": "DNS server logs, Windows Event Viewer, patch verification report, SIEM alert dashboard",
-              "date": "2026-03-18",
-              "url": "/monitoring-evidence/SRV-02/dns/R-004_monitoring_review.png",
-              "desc": "Security monitoring evidence for SRV-02 (DNS Server) shows ongoing review of DNS service logs, alerting, and patch verification to detect exploitation attempts related to Windows DNS Server Remote Code Execution (CVE-2020-1350)."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "CVE": "CVE-2019-1040",
-      "vulnerability": "Windows NTLM Tampering Vulnerability",
-      "implementation_status": "In Progress",
-      "justification": "Monitoring the Windows NTLM Tampering Vulnerability (CVE-2019-1040) enables rapid detection and containment of potential attacks, allowing for swift corrective action to prevent exploitation. By continuously tracking system configurations, network traffic, and authentication processes, monitoring detects tampering attempts in real-time, enabling prompt patch verification and exposure tracking. This proactive approach minimizes the window of vulnerability, reducing the risk of successful attacks and minimizing the impact of a breach.",
-      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Windows NTLM authentication logs for suspicious activity, such as repeated failed login attempts or unusual authentication patterns.\n- Track network traffic and system configuration changes related to the vulnerability.\n- Implement real-time alerting for any potential tampering attempts detected by monitoring systems.\n- Review system logs regularly for signs of exploitation or attempted exploitation.\n- Validate patch levels and vulnerability remediation efforts on affected hosts.\n- Escalate incidents to incident response teams for further analysis and containment.\n- Track exposure and monitoring results to identify trends and areas for improvement.",
-      "hosts": [
+          "user_behavior": {},
+          "evidence": []
+        },
         {
-          "hostname": "SRV-02",
-          "ip_address": "10.0.0.3",
-          "role": "DNS Server",
-          "CIA rating": "High",
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
+          "hostname": "WS-02",
+          "ip_address": "10.0.0.11",
+          "role": "HR Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-005",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {},
+          "evidence": []
+        },
+        {
+          "hostname": "WS-03",
+          "ip_address": "10.0.0.12",
+          "role": "Standard Employee Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
           "risk": "Medium",
           "riskid": "R-006",
           "evaluation": "Monitor",
           "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Security Operations Team",
-              "resources": "DNS server logs, Windows Event Viewer, patch verification report, SIEM alert dashboard",
-              "date": "2026-03-18",
-              "url": "/monitoring-evidence/SRV-02/dns/R-006_monitoring_review.png",
-              "desc": "Security monitoring evidence for SRV-02 (DNS Server) shows ongoing review of DNS service logs, alerting, and patch verification to detect exploitation attempts related to Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
-            }
-          ]
+          "user_behavior": {},
+          "evidence": []
         },
         {
-          "hostname": "WS-02",
-          "ip_address": "10.0.0.11",
-          "role": "User Workstation",
+          "hostname": "WS-04",
+          "ip_address": "10.0.0.26",
+          "role": "Call Center Workstation",
           "CIA rating": "Medium",
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-          "risk": "Medium",
-          "riskid": "R-010",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-02/endpoint/R-010_endpoint_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-02 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
-            }
-          ]
-        },
-        {
-          "hostname": "SRV-03",
-          "ip_address": "10.0.0.18",
-          "role": "File Server",
-          "CIA rating": "High",
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-          "risk": "Medium",
-          "riskid": "R-015",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Server Operations Team",
-              "resources": "Authentication logs, file server audit logs, SIEM correlation rules, remediation ticket",
-              "date": "2026-03-19",
-              "url": "/monitoring-evidence/SRV-03/fileserver/R-015_security_monitoring.pdf",
-              "desc": "Monitoring evidence for SRV-03 (File Server) confirms regular review of authentication and server audit logs to detect abuse patterns and track remediation status for Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
-            }
-          ]
-        },
-        {
-          "hostname": "SRV-04",
-          "ip_address": "10.0.0.19",
-          "role": "Web Server",
-          "CIA rating": "High",
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-          "risk": "Medium",
-          "riskid": "R-017",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Web Infrastructure Team",
-              "resources": "Web server logs, IIS/HTTP monitoring dashboard, vulnerability scan report, incident ticket",
-              "date": "2026-03-18",
-              "url": "/monitoring-evidence/SRV-04/web/R-017_service_monitoring.log",
-              "desc": "Monitoring evidence for SRV-04 (Web Server) documents review of web service logs, exposure tracking, and alert validation to identify suspicious activity associated with Windows NTLM Tampering Vulnerability (CVE-2019-1040)."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "CVE": "CVE-2022-30190",
-      "vulnerability": "Microsoft Support Diagnostic Tool Remote Code Execution",
-      "implementation_status": "In Progress",
-      "justification": "Monitoring the vulnerability risk associated with CVE-2022-30190 enables proactive detection of potential exploitation attempts, facilitating timely patch verification and exposure tracking across affected hosts (WS-01 to WS-05). This monitoring also supports containment efforts by rapidly identifying compromised systems, allowing for swift corrective action and minimizing the attack window. By leveraging monitoring capabilities, organizations can effectively reduce the risk of successful exploitation, preventing unauthorized code execution and potential data breaches.",
-      "recommended_action": "Recommended monitoring actions:\n- Monitor Windows system logs for anomalous authentication attempts and login failures.\n- Implement network intrusion detection systems to detect suspicious traffic related to CVE-2022-30190 exploitation attempts.\n- Configure log collection tools to gather security event logs from affected hosts (WS-01 to WS-05) for centralized review.\n- Establish a vulnerability scanning schedule to regularly check for the presence of the Microsoft Support Diagnostic Tool and identify potential exploitation attempts.\n- Enable Windows Defender Advanced Threat Protection (ATP) or equivalent endpoint detection technology to detect and alert on potentially malicious code.\n- Conduct regular network segment isolation monitoring to quickly identify and contain compromised systems.\n- Set up an incident response plan with defined roles, procedures, and communication protocols for swift response to potential exploitation incidents.\n- Configure email alerts to notify security teams of suspicious login attempts or potential exploits detected by log collection tools or endpoint detection technologies.\n- Schedule weekly vulnerability exposure tracking reports to monitor the status of affected hosts (WS-01 to WS-05) and identify any newly discovered instances.\n- Perform regular validation checks on system configurations, patch levels, and software versions to ensure compliance with organizational security policies.",
-      "hosts": [
-        {
-          "hostname": "WS-01",
-          "ip_address": "10.0.0.10",
-          "role": "User Workstation",
-          "CIA rating": "Medium",
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "risk": "Medium",
-          "riskid": "R-007",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-01/endpoint/R-007_endpoint_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-01 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
-            }
-          ]
-        },
-        {
-          "hostname": "WS-02",
-          "ip_address": "10.0.0.11",
-          "role": "User Workstation",
-          "CIA rating": "Medium",
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "risk": "Medium",
-          "riskid": "R-009",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-02/endpoint/R-009_endpoint_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-02 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
-            }
-          ]
-        },
-        {
-          "hostname": "WS-03",
-          "ip_address": "10.0.0.12",
-          "role": "User Workstation",
-          "CIA rating": "Medium",
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "risk": "Medium",
-          "riskid": "R-013",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-03/endpoint/R-013_endpoint_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-03 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
-            }
-          ]
-        },
-        {
-          "hostname": "WS-05",
-          "ip_address": "10.0.0.27",
-          "role": "User Workstation",
-          "CIA rating": "Medium",
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "risk": "Medium",
-          "riskid": "R-021",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-05/endpoint/R-021_endpoint_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-05 (User Workstation) shows review of endpoint alerts, patch compliance, and suspicious execution telemetry to detect and contain activity related to Microsoft Support Diagnostic Tool Remote Code Execution (CVE-2022-30190)."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "CVE": "CVE-2024-21413",
-      "vulnerability": "Microsoft Outlook Remote Code Execution Vulnerability",
-      "implementation_status": "In Progress",
-      "justification": "Monitoring the Microsoft Outlook Remote Code Execution Vulnerability (CVE-2024-21413) enables proactive detection and containment of potential attacks. By continuously monitoring for suspicious activity, our organization can quickly identify compromised hosts WS-01 and WS-03, isolate them to prevent lateral movement, and verify patch implementation on affected systems. This proactive approach reduces the risk of data exfiltration, reputational damage, and financial loss, ultimately minimizing the vulnerability's impact on our organization's security posture.",
-      "recommended_action": "Recommended monitoring actions:\n- Monitor Windows hosts WS-01 and WS-03 for suspicious network traffic, login attempts, and file access.\n- Implement file integrity monitoring on affected systems to detect potential modifications or deletions.\n- Conduct regular log reviews of Windows Event Log, DNS logs, and firewall logs for signs of malicious activity.\n- Use data leakage prevention mechanisms to monitor outgoing data transmissions from affected hosts.\n- Track exposure of vulnerable systems through regular vulnerability scans and software inventory updates.\n- Validate patch implementation on affected systems by monitoring system configurations and updating logs regularly.\n- Escalate detected incidents to the incident response team for prompt containment and remediation.\n- Follow up with regular security audits and compliance checks to ensure effective management direction and support for information security.",
-      "hosts": [
-        {
-          "hostname": "WS-01",
-          "ip_address": "10.0.0.10",
-          "role": "User Workstation",
-          "CIA rating": "Medium",
-          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
-          "risk": "Medium",
-          "riskid": "R-008",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-01/endpoint/R-008_outlook_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-01 (User Workstation) shows alert review, patch compliance validation, and email-related telemetry checks used to track exposure and suspicious behavior for Microsoft Outlook Remote Code Execution Vulnerability (CVE-2024-21413)."
-            }
-          ]
-        },
-        {
-          "hostname": "WS-03",
-          "ip_address": "10.0.0.12",
-          "role": "User Workstation",
-          "CIA rating": "Medium",
-          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
-          "risk": "Medium",
-          "riskid": "R-012",
-          "evaluation": "Monitor",
-          "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-03/endpoint/R-012_outlook_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-03 (User Workstation) shows alert review, patch compliance validation, and email-related telemetry checks used to track exposure and suspicious behavior for Microsoft Outlook Remote Code Execution Vulnerability (CVE-2024-21413)."
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "CVE": "CVE-2023-23397",
-      "vulnerability": "Microsoft Outlook Elevation of Privilege Vulnerability",
-      "implementation_status": "In Progress",
-      "justification": "Regular monitoring of Microsoft Outlook for the elevation of privilege vulnerability (CVE-2023-23397) enables timely detection and verification of patches, allowing for swift corrective action to prevent exploitation. This proactive approach reduces the window of opportunity for attackers to capitalize on the vulnerability, thereby containing and minimizing potential damage. By continuously monitoring affected hosts like WS-03 (10.0.0.12), we can ensure that any signs of malicious activity are quickly identified and addressed, ultimately reducing the risk of a successful attack and minimizing the impact of a potential breach.",
-      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Microsoft Outlook logs for suspicious activity and elevated privilege usage.\n- Implement real-time threat intelligence feeds to detect potential exploit attempts.\n- Configure alerting mechanisms for abnormal login patterns, unusual network traffic, and increased privileged access requests.\n- Perform regular log reviews to identify signs of malicious activity and verify patch installations.\n- Track exposure levels for affected hosts like WS-03 (10.0.0.12) and monitor for any changes in CIA (Confidentiality, Integrity, Availability).\n- Validate patch effectiveness by monitoring system performance and stability post-patch installation.\n- Escalate identified vulnerabilities to relevant teams for prompt remediation and corrective action.\n- Conduct regular security audits and compliance checks to ensure ongoing adherence to organizational security policies.",
-      "hosts": [
-        {
-          "hostname": "WS-03",
-          "ip_address": "10.0.0.12",
-          "role": "User Workstation",
-          "CIA rating": "Medium",
-          "vulnerability_name": "Microsoft Outlook Elevation of Privilege Vulnerability",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
           "risk": "Medium",
           "riskid": "R-011",
           "evaluation": "Monitor",
           "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-03/endpoint/R-011_outlook_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-03 (User Workstation) shows alert review, patch compliance validation, and email-related telemetry checks used to track exposure and suspicious behavior for Microsoft Outlook Elevation of Privilege Vulnerability (CVE-2023-23397)."
-            }
-          ]
+          "user_behavior": {},
+          "evidence": []
+        },
+        {
+          "hostname": "WS-05",
+          "ip_address": "10.0.0.27",
+          "role": "Developer Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-012",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {},
+          "evidence": []
+        },
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-014",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {},
+          "evidence": []
         }
       ]
     },
     {
-      "CVE": "CVE-2022-38730",
-      "vulnerability": "Docker Desktop for Windows File Overwrite Vulnerability",
+      "CVE": "CVE-2019-5736",
+      "vulnerability": "Docker Container Escape",
       "implementation_status": "In Progress",
-      "justification": "Monitoring this vulnerability will enable early detection and containment of potential attacks, thereby reducing the risk of data exposure and overwrite. By tracking exposure and patch verification, monitoring will facilitate swift corrective action, ensuring that affected hosts are promptly remediated or isolated to prevent further exploitation. This proactive approach minimizes the window of opportunity for attackers, ultimately controlling the vulnerability's impact and mitigating the risk of a medium-severity attack.",
-      "recommended_action": "Recommended monitoring actions:\n- Monitor WS-05 for suspicious file overwrite attempts using file system auditing.\n- Track exposure and patch verification of affected hosts to ensure timely remediation or isolation.\n- Implement real-time log analysis and alerting for unusual system calls related to the vulnerability (e.g., system calls involving \"C:\\\\Windows\\\\System32\").\n- Conduct regular review of system logs for evidence of potential exploitation attempts.\n- Establish validation protocols to verify effectiveness of implemented mitigations.\n- Escalate detected vulnerabilities or suspicious activity to incident response teams and relevant stakeholders.\n- Follow up on reported incidents with thorough investigations and corrective actions.",
+      "justification": "Monitoring the Docker Container Escape vulnerability (CVE-2019-5736) enables timely detection of potential attacks and rapid containment of compromised containers. By tracking exposure to this flaw, we can quickly identify affected systems and verify patch implementation, reducing the window of vulnerability and minimizing the risk of successful exploitation. This proactive approach ensures that our security posture remains robust, even in the face of evolving threats, and allows for swift corrective action to prevent unauthorized access or data exfiltration.",
+      "recommended_action": "Recommended monitoring actions:\n- Monitor system logs for suspicious container activity and alert on unusual behavior.\n- Implement Docker's built-in logging features to capture detailed information about container runtime and orchestration.\n- Track exposure of affected hosts (WS-05) to the CVE-2019-5736 vulnerability and verify patch implementation.\n- Configure intrusion detection systems (IDS) and security information and event management (SIEM) tools to detect and alert on potential attacks exploiting this vulnerability.\n- Review system logs regularly for signs of unauthorized access or data exfiltration.\n- Monitor physical security controls (Control Reference 2, Section: Physical Control: 7.1) to prevent unauthorized access.\n- Implement technical vulnerability scanning and management processes (Control Reference 4, Section: Technological Control: 8.8) to identify and prioritize remediation of the CVE-2019-5736 vulnerability.\n- Escalate alerts and incidents related to this vulnerability to designated information security roles and responsibilities (Control Reference 5, Section: Organizational Control: 5.2).",
       "hosts": [
         {
           "hostname": "WS-05",
           "ip_address": "10.0.0.27",
-          "role": "User Workstation",
+          "role": "Developer Workstation",
           "CIA rating": "Medium",
-          "vulnerability_name": "Docker Desktop for Windows File Overwrite Vulnerability",
+          "vulnerability_name": "Docker Container Escape",
           "risk": "Medium",
+          "riskid": "R-013",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {},
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2021-32797",
+      "vulnerability": "Jupyter Web Interface Exposure",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring for Jupyter Web Interface Exposure (CVE-2021-32797) enables timely detection of untrusted notebooks attempting to execute code on load, allowing swift remediation and containment. By tracking exposure instances, monitoring supports proactive patch verification and reduced vulnerability risk through targeted corrective action. This leads to faster containment and minimization of potential attack surfaces, ultimately reducing the likelihood of successful remote code execution attacks.",
+      "recommended_action": "Recommended monitoring actions:\n- Monitor for Jupyter Web Interface Exposure attempts on WS-06 and other affected hosts.\n- Track exposure instances to detect trends and patterns.\n- Validate patch verification status of affected systems.\n- Escalate potential vulnerability risk through targeted corrective action.\n- Review system logs for suspicious activity related to untrusted notebooks.\n- Alert Data Scientist Workstation administrators of potential code execution attempts.\n- Conduct regular data leakage prevention audits to ensure sensitive information is not exfiltrated.\n- Monitor for malware and other malicious activities on WS-06 and other affected hosts.",
+      "hosts": [
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Jupyter Web Interface Exposure",
+          "risk": "Medium",
+          "riskid": "R-015",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {},
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2020-15257",
+      "vulnerability": "TensorBoard Unauthorized Access",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring the TensorBoard Unauthorized Access vulnerability (CVE-2020-15257) enables detection of potential attacks and rapid containment, thereby reducing the risk of privilege escalation and data breaches. By tracking exposure and patch verification status, monitoring facilitates prompt corrective action, such as updating containerd versions to 1.3.9 or 1.4.3, or implementing AppArmor rules to deny access to abstract sockets. This proactive approach helps prevent malicious containers from running with elevated privileges, ultimately minimizing the attack surface and ensuring a more secure environment for data scientists working on sensitive projects like WS-06.",
+      "recommended_action": "Recommended monitoring actions:\n- Monitor TensorBoard logs for unauthorized access and unusual activity.\n- Set up alerts for changes to containerd versions and patch verification status.\n- Review logs regularly to detect and track exposure to CVE-2020-15257.\n- Validate AppArmor rules to ensure denial of access to abstract sockets.\n- Escalate potential attacks to incident response team for containment.\n- Follow-up on patch implementation and verification to prevent privilege escalation.\n- Monitor CIA level (Medium) for host WS-06 to detect unauthorized access attempts.\n- Integrate monitoring with Data leakage prevention (8.12), Privacy and PII protection (5.34), Physical security monitoring (7.4), Web filtering (8.23), and Technical vulnerability management (8.8) controls for comprehensive risk mitigation.",
+      "hosts": [
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "TensorBoard Unauthorized Access",
+          "risk": "Medium",
+          "riskid": "R-016",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {},
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "CVE": "UB-WS-01",
+      "vulnerability": "User Activity Behavior",
+      "implementation_status": "In Progress",
+      "justification": "For workstation WS-01, monitoring is justified based on user activity behavior features:\n\n- Failed Login Attempts is Low (1), indicating limited failed logon activity at this time\n- Access Frequency is Low (1), suggesting access volume remains within a lower-risk range\n- Login Consistency is Low (0.8013), suggesting the user's login pattern remains relatively stable\n- Password Resets is Low (0), showing limited password reset activity\n- Session Duration is Low (0.0012), suggesting session length remains in a lower-risk range\n\nThe strongest contributing feature is Failed Login Attempts assessed at Low (1).",
+      "recommended_action": "Recommended monitoring actions:\n\n- For Failed Login Attempts at Low (1), monitor failed login attempts with a threshold of 3 or more within a time frame of 10 minutes, and escalate to security team for review every hour.\n- - Monitor Access Frequency at Low (1) by tracking average number of logins per day, and alert the security team if there is a sudden increase in access frequency exceeding 50% above the baseline value.\n- - For Login Consistency at Low (0.8013), monitor login attempts against a baseline pattern, and alert the security team if there is a deviation from the established pattern by more than 20%.\n- - Monitor Password Resets at Low (0) by tracking password reset frequency and alert the security team if there is an unusual increase in password resets exceeding 2 per week.\n- - For Session Duration at Low (0.0012), monitor session duration against a baseline value, and alert the security team if there is a sudden increase in session duration exceeding 30 minutes above the baseline value.",
+      "hosts": [
+        {
+          "hostname": "WS-01",
+          "ip_address": "10.0.0.10",
+          "role": "Standard Employee Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Low",
+          "riskid": "R-017",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {
+            "failedLoginAttempts": 1,
+            "accessFrequency": 1.0,
+            "loginConsistency": 0.8013,
+            "passwordResets": 0,
+            "sessionDuration": 0.0012,
+            "rule_score": 0.1102,
+            "ml_score": 0.85,
+            "behaviorRiskScore": 0.4061,
+            "likelihood": "Low"
+          },
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "CVE": "UB-WS-02",
+      "vulnerability": "User Activity Behavior",
+      "implementation_status": "In Progress",
+      "justification": "For workstation WS-02, monitoring is justified based on user activity behavior features:\n\n- Failed Login Attempts is Low (1), indicating limited failed logon activity at this time\n- Access Frequency is Low (1), suggesting access volume remains within a lower-risk range\n- Login Consistency is Low (0.9269), suggesting the user's login pattern remains relatively stable\n- Password Resets is Low (0), showing limited password reset activity\n- Session Duration is Low (0.0015), suggesting session length remains in a lower-risk range\n\nThe strongest contributing feature is Failed Login Attempts assessed at Low (1).",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor failed login attempts for WS-02 with a logging threshold of 3 or more attempts within a 10-minute window, and alert IT administrators via email and pager notifications.\n- Review access frequency logs for WS-02 daily to ensure normal usage patterns, and escalate unusual activity to the HR department.\n- Set up an anomaly detection system to monitor login consistency on WS-02, triggering alerts when deviations from established patterns exceed 2.5 standard deviations.\n- Implement a password reset alert system for WS-02 that notifies IT administrators of any changes within a 24-hour window, and conduct weekly reviews of all password reset activities.\n- Establish a session duration threshold of 30 minutes or more on WS-02, triggering an automatic logoff and alert to the HR department in case of prolonged user sessions.",
+      "hosts": [
+        {
+          "hostname": "WS-02",
+          "ip_address": "10.0.0.11",
+          "role": "HR Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Low",
+          "riskid": "R-018",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {
+            "failedLoginAttempts": 1,
+            "accessFrequency": 1.0,
+            "loginConsistency": 0.9269,
+            "passwordResets": 0,
+            "sessionDuration": 0.0015,
+            "rule_score": 0.1227,
+            "ml_score": 0.85,
+            "behaviorRiskScore": 0.4136,
+            "likelihood": "Low"
+          },
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "CVE": "UB-WS-03",
+      "vulnerability": "User Activity Behavior",
+      "implementation_status": "In Progress",
+      "justification": "For workstation WS-03, monitoring is justified based on user activity behavior features:\n\n- Failed Login Attempts is Low (1), indicating limited failed logon activity at this time\n- Access Frequency is Low (1), suggesting access volume remains within a lower-risk range\n- Login Consistency is Low (0.7669), suggesting the user's login pattern remains relatively stable\n- Password Resets is Low (0), showing limited password reset activity\n- Session Duration is Low (0.0063), suggesting session length remains in a lower-risk range\n\nThe strongest contributing feature is Failed Login Attempts assessed at Low (1).",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Failed Login Attempts for WS-03 with a threshold of 3 attempts within a 1-minute window, triggering an alert to the SOC team for further review.\n- Set up access frequency monitoring for WS-03 to detect and alert on volumes exceeding 10 logins per hour; conduct a weekly review to identify trends and anomalies.\n- Implement login consistency monitoring for WS-03 to detect changes in user behavior, such as unusual login times or locations; set an anomaly detection threshold of 2 standard deviations from the mean.\n- Configure password reset monitoring for WS-03 to alert on multiple resets within a 24-hour period, triggering a review by the security team; establish a baseline for normal reset activity and detect anomalies accordingly.\n- Set up session duration monitoring for WS-03 to detect sessions exceeding 30 minutes without user interaction; trigger an alert to the SOC team and conduct a bi-weekly review to identify trends and potential misuse.\n\nNote: These actions are tailored to the specific feature levels and ISO references provided, focusing on logging, alerting, anomaly detection, review frequency, threshold checks, escalation, and follow-up.",
+      "hosts": [
+        {
+          "hostname": "WS-03",
+          "ip_address": "10.0.0.12",
+          "role": "Standard Employee Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Low",
           "riskid": "R-019",
           "evaluation": "Monitor",
           "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-05/endpoint/R-019_docker_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-05 (User Workstation) shows review of Docker Desktop configuration, privilege-related alerts, and patch compliance status to reduce exposure to Docker Desktop for Windows File Overwrite Vulnerability (CVE-2022-38730)."
-            }
-          ]
+          "user_behavior": {
+            "failedLoginAttempts": 1,
+            "accessFrequency": 1.0,
+            "loginConsistency": 0.7669,
+            "passwordResets": 0,
+            "sessionDuration": 0.0063,
+            "rule_score": 0.1068,
+            "ml_score": 0.85,
+            "behaviorRiskScore": 0.4041,
+            "likelihood": "Low"
+          },
+          "evidence": []
         }
       ]
     },
     {
-      "CVE": "CVE-2023-0633",
-      "vulnerability": "Docker Desktop Installer Argument Injection",
+      "CVE": "UB-WS-04",
+      "vulnerability": "User Activity Behavior",
       "implementation_status": "In Progress",
-      "justification": "Effective monitoring of the Docker Desktop Installer Argument Injection vulnerability (CVE-2023-0633) enables timely detection and containment of attacks, preventing local privilege escalation (LPE). By continuously tracking exposure and verifying patch levels, monitoring ensures that affected hosts like WS-05 (10.0.0.27) are promptly updated to mitigate this HIGH-severity risk. This proactive approach reduces the attack surface, minimizes potential damage, and allows for swift corrective action, ultimately ensuring the confidentiality, integrity, and availability of sensitive data stored on these workstations.",
-      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Docker Desktop Installer logs for suspicious command-line arguments.\n- Set up alerting on unusual or unpatched hosts (e.g., WS-05).\n- Track exposure levels of affected hosts (e.g., WS-05) and verify patch levels.\n- Conduct regular log reviews to detect potential attacks and LPE attempts.\n- Implement escalation procedures for high-severity vulnerabilities like CVE-2023-0633.\n- Monitor supplier-provided services for vulnerabilities and ensure timely updates.\n- Perform physical security monitoring to detect unauthorized access to affected hosts.\n- Manage technical vulnerability exposure by tracking patch levels and implementing updates.\n- Review policies for information security (e.g., 5.1, 5.22, 5.34) and ensure effectiveness in preventing LPE attacks.",
+      "justification": "For workstation WS-04, monitoring is justified based on user activity behavior features:\n\n- Failed Login Attempts is Low (1), indicating limited failed logon activity at this time\n- Access Frequency is Low (1), suggesting access volume remains within a lower-risk range\n- Login Consistency is Low (0.7669), suggesting the user's login pattern remains relatively stable\n- Password Resets is Low (0), showing limited password reset activity\n- Session Duration is Low (0.0063), suggesting session length remains in a lower-risk range\n\nThe strongest contributing feature is Failed Login Attempts assessed at Low (1).",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor failed login attempts on workstation WS-04 and set threshold checks at 3 or less failed logon attempts within a 15-minute window to detect potential insider threats, aligning with ISO Reference 1 Control 7.4 Physical security monitoring.\n- Conduct regular review of access frequency on workstation WS-04 every 6 hours to ensure normal usage patterns, utilizing ISO Reference 2 Control 5.17 Organizational authentication information.\n- Implement login consistency monitoring on workstation WS-04 and set alert thresholds for any significant deviations from established login patterns (>15% variation) within a 24-hour period, adhering to ISO Reference 3 Control 8.16 Technological monitoring activities.\n- Perform quarterly password reset reviews on workstation WS-04 to identify potential misuse or unauthorized access, in accordance with ISO Reference 4 Control 5.22 Organizational supplier monitoring.\n- Establish session duration monitoring on workstation WS-04 and set alert thresholds for sessions lasting longer than 30 minutes (>99th percentile) to detect prolonged usage patterns, aligning with ISO Reference 5 Control 8.5 Technological secure authentication.",
+      "hosts": [
+        {
+          "hostname": "WS-04",
+          "ip_address": "10.0.0.26",
+          "role": "Call Center Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Low",
+          "riskid": "R-020",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {
+            "failedLoginAttempts": 1,
+            "accessFrequency": 1.0,
+            "loginConsistency": 0.7669,
+            "passwordResets": 0,
+            "sessionDuration": 0.0063,
+            "rule_score": 0.1068,
+            "ml_score": 0.85,
+            "behaviorRiskScore": 0.4041,
+            "likelihood": "Low"
+          },
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "CVE": "UB-WS-05",
+      "vulnerability": "User Activity Behavior",
+      "implementation_status": "In Progress",
+      "justification": "For workstation WS-05, monitoring is justified based on user activity behavior features:\n\n- Failed Login Attempts is Low (1), indicating limited failed logon activity at this time\n- Access Frequency is Low (1), suggesting access volume remains within a lower-risk range\n- Login Consistency is Low (0.7669), suggesting the user's login pattern remains relatively stable\n- Password Resets is Low (0), showing limited password reset activity\n- Session Duration is Low (0.0063), suggesting session length remains in a lower-risk range\n\nThe strongest contributing feature is Failed Login Attempts assessed at Low (1).",
+      "recommended_action": "Recommended monitoring actions:\n\n- For Failed Login Attempts (Low, 1), implement real-time logging and alerting for any failed login attempts exceeding a threshold of 3 within a 15-minute window.\n- Conduct daily reviews of logged failed login attempts to identify patterns or anomalies that may indicate potential security risks.\n- Set up regular threshold checks to re-evaluate the failed login attempt rate every quarter, adjusting the alerting threshold as needed to maintain a balanced risk level.\n- Escalate any unusual or suspicious failed login attempt patterns to the security team for further investigation and mitigation.\n\n- For Access Frequency (Low, 1), monitor workstation usage patterns using event logs and application-specific monitoring tools to detect any unexpected changes in access frequency.\n- Implement weekly reviews of logged access frequencies to identify potential security risks associated with increased or decreased access volume.\n- Conduct regular threshold checks to re-evaluate the access frequency every quarter, adjusting alerting thresholds as needed to maintain a balanced risk level.\n- Escalate any unusual or suspicious access patterns to the security team for further investigation and mitigation.\n\n- For Login Consistency (Low, 0.7669), monitor workstation login patterns using event logs and application-specific monitoring tools to detect any deviations from established consistency patterns.\n- Implement bi-weekly reviews of logged login consistency to identify potential security risks associated with changes in user behavior.\n- Conduct regular threshold checks to re-evaluate the login consistency every quarter, adjusting alerting thresholds as needed to maintain a balanced risk level.\n- Escalate any unusual or suspicious login patterns to the security team for further investigation and mitigation.\n\n- For Password Resets (Low, 0), monitor workstation password reset activity using event logs and application-specific monitoring tools to detect any unexpected changes in password reset frequency.\n- Implement weekly reviews of logged password resets to identify potential security risks associated with increased or decreased password reset activity.\n- Conduct regular threshold checks to re-evaluate the password reset frequency every quarter, adjusting alerting thresholds as needed to maintain a balanced risk level.\n- Escalate any unusual or suspicious password reset patterns to the security team for further investigation and mitigation.\n\n- For Session Duration (Low, 0.0063), monitor workstation session duration using event logs and application-specific monitoring tools to detect any deviations from established session length patterns.\n- Implement bi-weekly reviews of logged session durations to identify potential security risks associated with changes in user behavior.\n- Conduct regular threshold checks to re-evaluate the session duration every quarter, adjusting alerting thresholds as needed to maintain a balanced risk level.\n- Escalate any unusual or suspicious session duration patterns to the security team for further investigation and mitigation.",
       "hosts": [
         {
           "hostname": "WS-05",
           "ip_address": "10.0.0.27",
-          "role": "User Workstation",
+          "role": "Developer Workstation",
           "CIA rating": "Medium",
-          "vulnerability_name": "Docker Desktop Installer Argument Injection",
-          "risk": "Medium",
-          "riskid": "R-020",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Low",
+          "riskid": "R-021",
           "evaluation": "Monitor",
           "treatment": "-",
-          "evidence": [
-            {
-              "responsible": "Endpoint Security Team",
-              "resources": "Microsoft Defender alerts, endpoint telemetry, patch compliance report, email security logs",
-              "date": "2026-03-20",
-              "url": "/monitoring-evidence/WS-05/endpoint/R-020_docker_monitoring.png",
-              "desc": "Endpoint monitoring evidence for WS-05 (User Workstation) shows review of Docker Desktop configuration, privilege-related alerts, and patch compliance status to reduce exposure to Docker Desktop Installer Argument Injection (CVE-2023-0633)."
-            }
-          ]
+          "user_behavior": {
+            "failedLoginAttempts": 1,
+            "accessFrequency": 1.0,
+            "loginConsistency": 0.7669,
+            "passwordResets": 0,
+            "sessionDuration": 0.0063,
+            "rule_score": 0.1068,
+            "ml_score": 0.85,
+            "behaviorRiskScore": 0.4041,
+            "likelihood": "Low"
+          },
+          "evidence": []
+        }
+      ]
+    },
+    {
+      "CVE": "UB-WS-06",
+      "vulnerability": "User Activity Behavior",
+      "implementation_status": "In Progress",
+      "justification": "For workstation WS-06, monitoring is justified based on user activity behavior features:\n\n- Failed Login Attempts is Low (1), indicating limited failed logon activity at this time\n- Access Frequency is Low (1), suggesting access volume remains within a lower-risk range\n- Login Consistency is Low (0.7669), suggesting the user's login pattern remains relatively stable\n- Password Resets is Low (0), showing limited password reset activity\n- Session Duration is Low (0.0063), suggesting session length remains in a lower-risk range\n\nThe strongest contributing feature is Failed Login Attempts assessed at Low (1).",
+      "recommended_action": "Recommended monitoring actions:\n\n- Monitor Failed Login Attempts for any increase in failed logon activity, considering ISO 27001 reference 1 section Physical control 7.4 on physical security monitoring to detect unauthorized access.\n- Establish a threshold of 3-5 failed login attempts within a specified timeframe (e.g., 15 minutes) and trigger an alert to review and investigate the potential security threat.\n- Review login logs regularly (e.g., daily) to identify any unusual patterns or anomalies, considering ISO 27002 reference 2 section Organizational control 5.17 on authentication information.\n\n- Monitor Access Frequency for any significant changes in access volume, considering ISO 27001 reference 3 section Technological control 8.16 on monitoring activities to detect anomalies.\n- Establish a threshold of 20% increase in access frequency within a specified timeframe (e.g., 1 hour) and trigger an alert to review and investigate the potential security threat.\n\n- Monitor Login Consistency for any significant changes in user login pattern, considering ISO 27002 reference 2 section Organizational control 5.17 on authentication information.\n- Establish a threshold of 30% deviation from the average login consistency within a specified timeframe (e.g., 1 day) and trigger an alert to review and investigate the potential security threat.\n\n- Monitor Password Resets for any significant changes in password reset activity, considering ISO 27001 reference 4 section Organizational control 5.22 on supplier monitoring to ensure service delivery security.\n- Establish a threshold of 2-3 password resets within a specified timeframe (e.g., 1 hour) and trigger an alert to review and investigate the potential security threat.\n\n- Monitor Session Duration for any significant changes in session length, considering ISO 27001 reference 5 section Technological control 8.5 on secure authentication.\n- Establish a threshold of 2-minute increase in session duration within a specified timeframe (e.g., 1 hour) and trigger an alert to review and investigate the potential security threat.\n\nNote: The recommended monitoring actions are tailored to the level of each feature, focusing on logging, alerting, anomaly detection, review frequency, threshold checks, escalation, and follow-up.",
+      "hosts": [
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Low",
+          "riskid": "R-022",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "user_behavior": {
+            "failedLoginAttempts": 1,
+            "accessFrequency": 1.0,
+            "loginConsistency": 0.7669,
+            "passwordResets": 0,
+            "sessionDuration": 0.0063,
+            "rule_score": 0.1068,
+            "ml_score": 0.85,
+            "behaviorRiskScore": 0.4041,
+            "likelihood": "Low"
+          },
+          "evidence": []
         }
       ]
     }

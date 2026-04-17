@@ -1,7 +1,8 @@
 from pathlib import Path
 from typing import Any
-
 import json
+import subprocess
+import sys
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
@@ -12,13 +13,16 @@ router = APIRouter(
 
 VALID_STEP_STATUSES = {"Blocked", "Not Started", "In Progress", "Completed"}
 
-
 class CreateControlsPosturesRequest(BaseModel):
     year: int = 2026
     force_reset: bool = False
 
 
 class ResetControlsPosturesRequest(BaseModel):
+    year: int = 2026
+
+
+class AssessControlsPosturesRequest(BaseModel):
     year: int = 2026
 
 
@@ -45,8 +49,24 @@ def _asset_inventory_file(year: int) -> Path:
     return _work_dir(year) / "assetinventory.json"
 
 
+def _asset_details_file(year: int) -> Path:
+    return _work_dir(year) / "assetdetails.json"
+
+
 def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "systemstatus.json"
+
+
+def _targets_file() -> Path:
+    return BASE_DIR / "lab-scanner" / "config" / "targets.json"
+
+
+def _vm_controls_output_file(year: int) -> Path:
+    return BASE_DIR / "data" / "work" / str(year) / "VMControlsPostures.json"
+
+
+def _lab_scanner_script() -> Path:
+    return BASE_DIR / "lab-scanner" / "scripts" / "ControslPosturesScanner.py"
 
 
 def _read_json(path: Path, default: Any):
@@ -156,12 +176,10 @@ def _update_system_status(year: int, new_status: str):
     if not isinstance(sections, dict):
         raise ValueError(f"Missing 'sections' in: {path}")
 
-    if "controls_posture" not in sections or not isinstance(
-        sections["controls_posture"], dict
-    ):
-        sections["controls_posture"] = {}
+    if "existing_controls_postures" not in sections or not isinstance(sections["existing_controls_postures"], dict):
+        sections["existing_controls_postures"] = {}
 
-    sections["controls_posture"]["status"] = new_status
+    sections["existing_controls_postures"]["status"] = new_status
     _write_json(path, data)
 
 def _extract_assets_from_inventory(data: Any) -> list[dict]:
@@ -227,7 +245,7 @@ def _read_current_controls_status(year: int) -> str:
     if not isinstance(sections, dict):
         return "Not Started"
 
-    section = sections.get("controls_posture", {})
+    section = sections.get("existing_controls_postures", {})
     if not isinstance(section, dict):
         return "Not Started"
 
@@ -236,6 +254,134 @@ def _read_current_controls_status(year: int) -> str:
         return "Not Started"
 
     return status
+
+
+def _normalize_hostname(value: str) -> str:
+    return str(value or "").strip().lower()
+
+
+def _load_assetdetails_host_map(year: int) -> dict[str, dict]:
+    path = _asset_details_file(year)
+    data = _read_json(path, {})
+    result: dict[str, dict] = {}
+
+    if not isinstance(data, dict):
+        return result
+
+    networks = data.get("networks", [])
+    if not isinstance(networks, list):
+        return result
+
+    for network in networks:
+        if not isinstance(network, dict):
+            continue
+
+        subnets = network.get("subnets", [])
+        if not isinstance(subnets, list):
+            continue
+
+        for subnet in subnets:
+            if not isinstance(subnet, dict):
+                continue
+
+            hosts = subnet.get("hosts", [])
+            if not isinstance(hosts, list):
+                continue
+
+            for host in hosts:
+                if not isinstance(host, dict):
+                    continue
+
+                hostname = _normalize_hostname(host.get("hostname", ""))
+                if hostname:
+                    result[hostname] = host
+
+    return result
+
+
+def _extract_existing_control_from_assetdetails(asset_host: dict) -> dict[str, list[str]]:
+    if not isinstance(asset_host, dict):
+        return {}
+
+    detail = asset_host.get("detail", {})
+    if not isinstance(detail, dict):
+        return {}
+
+    existing_control = detail.get("existing_control", {})
+    if not isinstance(existing_control, dict):
+        return {}
+
+    cleaned: dict[str, list[str]] = {}
+
+    for category, values in existing_control.items():
+        category_name = str(category).strip()
+        if not category_name:
+            continue
+
+        if isinstance(values, list):
+            cleaned_values = [str(v).strip() for v in values if str(v).strip()]
+        else:
+            cleaned_values = []
+
+        cleaned[category_name] = cleaned_values
+
+    return cleaned
+
+
+def _load_vm_targets_map() -> dict[str, dict]:
+    path = _targets_file()
+    data = _read_json(path, {})
+    result: dict[str, dict] = {}
+
+    if not isinstance(data, dict):
+        return result
+
+    hosts = data.get("hosts", [])
+    if not isinstance(hosts, list):
+        return result
+
+    for host in hosts:
+        if not isinstance(host, dict):
+            continue
+
+        hostname = _normalize_hostname(host.get("hostname", ""))
+        if hostname:
+            result[hostname] = host
+
+    return result
+
+
+def _run_vm_controls_scanner(year: int) -> dict[str, dict]:
+    script_path = _lab_scanner_script()
+    output_path = _vm_controls_output_file(year)
+
+    if not script_path.exists():
+        raise FileNotFoundError(f"Scanner script not found: {script_path}")
+
+    result = subprocess.run(
+        [sys.executable, str(script_path)],
+        cwd=str(BASE_DIR),
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        raise RuntimeError(
+            "VM controls scanner failed.\n"
+            f"STDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}"
+        )
+
+    output_data = _read_json(output_path, {})
+    hosts = _normalize_hosts(output_data)
+
+    vm_map: dict[str, dict] = {}
+    for host in hosts:
+        hostname = _normalize_hostname(host.get("hostname", ""))
+        if hostname:
+            vm_map[hostname] = host
+
+    return vm_map
+
 
 @router.post("/new")
 def create_new_controls_postures(req: CreateControlsPosturesRequest):
@@ -269,6 +415,106 @@ def create_new_controls_postures(req: CreateControlsPosturesRequest):
         "created_file": str(controls_path),
         "status": "In Progress",
         "message": "New existing controls and postures assessment Started",
+    }
+
+
+@router.post("/assess")
+def assess_controls_postures(req: AssessControlsPosturesRequest):
+
+    fallback_vm_hosts: list[str] = []
+
+    controls_path = _controls_file(req.year)
+
+    if not controls_path.exists():
+        raise HTTPException(status_code=404, detail=f"Controls/Postures file not found: {controls_path}")
+
+    raw = _read_json(controls_path, None)
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=500, detail=f"Invalid JSON structure in: {controls_path}")
+
+    hosts = raw.get("hosts")
+    if not isinstance(hosts, list):
+        raise HTTPException(status_code=500, detail=f"Missing or invalid 'hosts' list in: {controls_path}")
+
+    targets_map = _load_vm_targets_map()
+    assetdetails_map = _load_assetdetails_host_map(req.year)
+
+    vm_results_map: dict[str, dict] = {}
+    if targets_map:
+        try:
+            vm_results_map = _run_vm_controls_scanner(req.year)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"VM scanning failed: {e}") from e
+
+    active_vm_hosts: list[str] = []
+    other_hosts: list[str] = []
+
+    for host in hosts:
+        if not isinstance(host, dict):
+            continue
+
+        hostname = str(host.get("hostname", "")).strip()
+        normalized_hostname = _normalize_hostname(hostname)
+
+        if normalized_hostname in targets_map:
+            vm_host = vm_results_map.get(normalized_hostname, {})
+            vm_controls = _safe_existing_controls(vm_host)
+        
+            if vm_controls:
+                host["existing_controls"] = vm_controls
+                active_vm_hosts.append(hostname)
+            else:
+                asset_host = assetdetails_map.get(normalized_hostname, {})
+                fallback_controls = _extract_existing_control_from_assetdetails(asset_host)
+                host["existing_controls"] = fallback_controls
+        
+                if fallback_controls:
+                    fallback_vm_hosts.append(hostname)
+        else:
+            asset_host = assetdetails_map.get(normalized_hostname, {})
+            host["existing_controls"] = _extract_existing_control_from_assetdetails(asset_host)
+            other_hosts.append(hostname)
+
+    raw["hosts"] = hosts
+    _write_json(controls_path, raw)
+
+    try:
+        _update_system_status(req.year, "In Progress")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Assessment completed, but failed to update systemstatus.json: {e}",
+        ) from e
+
+    lines = [
+        "Existing Controls & Postures assessment completed succesfully.",
+        "Active VM machines:",
+    ]
+    
+    if active_vm_hosts:
+        lines.extend([f"- {name}" for name in active_vm_hosts])
+    else:
+        lines.append("- None")
+    
+    lines.append("VM hosts populated using synthetic data:")
+    if fallback_vm_hosts:
+        lines.extend([f"- {name}" for name in fallback_vm_hosts])
+    else:
+        lines.append("- None")
+    
+    lines.append("Other hosts:")
+    if other_hosts:
+        lines.extend([f"- {name}" for name in other_hosts])
+    else:
+        lines.append("- None")
+
+    return {
+        "success": True,
+        "year": req.year,
+        "status": "In Progress",
+        "active_vm_hosts": active_vm_hosts,
+        "other_hosts": other_hosts,
+        "message": "\n".join(lines),
     }
 
 

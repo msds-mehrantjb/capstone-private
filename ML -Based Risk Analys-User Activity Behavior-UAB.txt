@@ -6,13 +6,6 @@ This design defines how to use NIST SP 800-30 style risk analysis to introduce a
 
 The goal is to make user behavior a measurable risk factor that can be used in likelihood analysis, impact analysis, and final risk scoring.
 
-This approach fits well with your existing architecture because you already have:
-- asset discovery
-- asset role identification
-- CIA impact assignment
-- machine learning support
-- JSON-based risk processing
-
 ---
 
 ## 2. NIST SP 800-30 Alignment
@@ -85,7 +78,7 @@ Instead, it has:
 
 ---
 
-## 5. Suggested Behavioral Indicators
+## 5. Behavioral Indicators
 
 I identified a strong starting set of indicators:
 
@@ -128,7 +121,7 @@ Sessions much longer or shorter than baseline may indicate:
 
 ---
 
-## 7. Implementation Recommendation
+## 7. Implementation 
 
 You should implement this in five stages:
 
@@ -164,15 +157,17 @@ A Windows agent on WS-01 gathers data from:
 
 ### Daily output
 The agent summarizes activity into a JSON file stored locally by date.
+I will use one JSON  file - "UserBehaviorActivity.json"  to store all records, one record per day with following structure:
+
 
 ### Backend processing
-Your backend reads the daily JSON files and:
+Your backend reads the user activity JSON file and:
 - updates behavior features
 - computes behavior score
 - updates likelihood
 - maps threats
 - computes risk
-- stores results in your central JSON-based workflow
+- stores results in your central JSON-based workflow  -> RiskAnalysis.json
 
 ### Integration point
 The output should feed into your existing:
@@ -181,53 +176,70 @@ The output should feed into your existing:
 
 ---
 
-## 9. Suggested JSON Structure
+## 9. JSON Structure -> RiskAnalysis.json
 
-Use a structure like this inside your asset or risk object.
-
+I will consider User Activity Behavior only for workstations:
 {
-  "hostname": "WS-01",
-  "assetType": "Workstation",
-  "owner": "Assigned User",
-  "cia": {
-    "confidentiality": "Medium",
-    "integrity": "Medium",
-    "availability": "Low"
-  },
-  "userActivityBehavior": {
-    "observationDate": "2026-04-11",
-    "features": {
-      "failedLoginAttempts": 8,
-      "accessFrequency": 0.74,
-      "loginConsistency": 0.42,
-      "passwordResets": 2,
-      "sessionDuration": 0.81,
-     },
-    "normalizedScores": {
-      "failedLoginScore": 0.80,
-      "accessAnomalyScore": 0.60,
-      "loginVarianceScore": 0.58,
-      "passwordResetScore": 0.40,
-      "sessionAnomalyScore": 0.70,
-    },
-    "behaviorRiskScore": 0.63,
-    "likelihood": "High",
-    "mappedThreats": [
-      "Credential Abuse",
-      "Insider Misuse",
-      "Unauthorized Access",
-      "Lateral Movement"
-    ],
-    "recommendedControls": [
-      "MFA Enforcement",
-      "Account Lockout Policy",
-      "User Behavior Monitoring",
-      "Privileged Access Review",
-      "Off-hours Alerting"
-    ]
-  }
-}
+      "hostname": "WS-06",
+      "ip_address": "10.0.0.28",
+      "role": "Data Scientist Workstation",
+      "CIA rating": "Medium",
+      "vulnerability_name": "TensorBoard Unauthorized Access",
+      "severity": "Medium",
+      "cvss_score": 6.0,
+      "exploit_available": false,
+      "patch_status": 1,
+      "cve": "CVE-2020-15257",
+      "open_ports": [
+        3389,
+        6006,
+        8888
+      ],
+      "override": 0,
+      "likelihood": "Medium",
+      "risk": "Low",
+      "likelihood_score": 0.611,
+      "risk_score": 4.7658,
+      "exposure": "Critical",
+      "user_behavior": {
+        "failedLoginAttempts": 0,
+        "accessFrequency": 0.0,
+        "loginConsistency": 0.0,
+        "passwordResets": 0,
+        "sessionDuration": 0.0,
+        "behaviorRiskScore": 0.0,
+        "likelihood": ""
+      }
+    }
 
+For servers: 
+{
+      "hostname": "SRV-01",
+      "ip_address": "10.0.0.2",
+      "role": "Domain Controller (Active Directory)",
+      "CIA rating": "Critical",
+      "vulnerability_name": "Netlogon Elevation of Privilege",
+      "severity": "Critical",
+      "cvss_score": 10.0,
+      "exploit_available": true,
+      "patch_status": 1,
+      "cve": "CVE-2020-1472",
+      "open_ports": [
+        88,
+        135,
+        389,
+        445,
+        464,
+        636
+      ],
+      "override": 0,
+      "likelihood": "Critical",
+      "risk": "High",
+      "likelihood_score": 1.0,
+      "risk_score": 11.7,
+      "exposure": "Critical",
+      "user_behavior": {}
+    }
 ---
 
 ## 10. How to Compute the Behavior Risk Score
@@ -237,11 +249,11 @@ A weighted scoring method is the best first implementation because it is simple,
 ### Suggested formula
 
 BehaviorRiskScore =
-(0.20 × failedLoginScore) +
-(0.15 × accessAnomalyScore) +
+(0.15 × failedLoginScore) +
+(0.30 × accessAnomalyScore) +
 (0.10 × loginVarianceScore) +
-(0.10 × passwordResetScore) +
-(0.15 × sessionAnomalyScore) 
+(0.20 × passwordResetScore) +
+(0.25 × sessionAnomalyScore) 
 
 ### Why weighted scoring is good
 - easy to explain in your report
@@ -255,9 +267,9 @@ Then add an ML anomaly score as a second parallel signal.
 
 ---
 
-## 11. Alternative ML-Based Scoring
+## 11. ML-Based Scoring
 
-Ue ML to generate the behavior score.
+Use ML to generate the behavior score.
 
 ### Good model choices
 - Isolation Forest
@@ -266,7 +278,7 @@ Ue ML to generate the behavior score.
 - Autoencoder
 - LSTM for sequence patterns
 
-### Best practical implementation
+### Practical implementation
 Use this two-layer model:
 
 #### Layer 1
@@ -373,11 +385,9 @@ RiskScore = 4 × 2 = 8
 
 Then map final risk:
 - 1 to 3 = Low
-- 4 to 6 = Moderate
+- 4 to 6 = Medium
 - 8 to 12 = High
 - 15 to 20 = Very High
-
-You can adjust the bands to fit your risk matrix.
 
 ---
 
@@ -464,8 +474,6 @@ For each detected behavior issue, define recommended controls.
 - service desk workflow controls
 - reset abuse alerts
 
-These can later feed directly into your RiskEvaluationTreatment section.
-
 ---
 
 ## 17. Recommended Classification Logic
@@ -491,30 +499,6 @@ That is useful because:
 - vulnerability severity and risk are not always the same
 - high behavior concern on low-impact asset may still be moderate overall risk
 - moderate behavior concern on very high-value server may still be high overall risk
-
----
-
-## 18. Best Implementation Strategy for my Capstone
-
-### Recommended first implementation
-Implement User Activity Behavior in this order:
-
-1. Define the JSON schema
-2. Collect Windows security events from WS-01
-3. Extract daily summarized features
-4. Normalize those features
-5. Compute weighted behavior score
-6. Map to likelihood
-7. Combine with CIA impact
-8. Store in RiskAnalysis.JSON file
-9. Generate treatment recommendations
-10. Add trend history later
-
-### Why this order is best
-It gives you:
-- a working system quickly
-- something easy to explain in documentation
-- a clear path to later ML enhancement
 
 ---
 
@@ -551,7 +535,7 @@ For a real Windows workstation, collect from:
 The endpoint agent should not store raw logs only.
 It should store a summarized daily profile.
 
-### Recommended daily JSON concept
+### Daily JSON -> 
 - machine identity
 - user identity
 - date
@@ -560,7 +544,7 @@ It should store a summarized daily profile.
 - behavior score
 - notable observations
 
-### Example structure
+### Example structure -> UserBehaviorActivity.json 
 {
   "hostname": "WS-01",
   "date": "2026-04-11",
@@ -589,7 +573,7 @@ This daily file can then be consumed by the backend risk engine.
 
 ## 21. How This Should Influence the Risk Register
 
-When the behavior score crosses a threshold, create or update a vulnerability/risk entry.
+In /analysis command in Risk Analysis page, create or update a vulnerability/risk entry.
 
 ### Example risk statement
 Abnormal user activity on WS-01 may indicate credential misuse, insider abuse, or unauthorized access, increasing the likelihood of compromise of workstation resources and connected enterprise systems.
@@ -597,13 +581,11 @@ Abnormal user activity on WS-01 may indicate credential misuse, insider abuse, o
 ### Example risk entry fields
 - asset: WS-01
 - vulnerability: User Activity Behavior
-- threat: Credential Abuse / Insider Threat / Unauthorized Access
 - likelihood: High
-- impact: Medium
+- CIA rating(impact): Medium
 - risk: High
-- treatment: Monitor, enforce MFA, review account activity, restrict privilege usage
 
-This makes the new vulnerability fully compatible with your existing risk workflow.
+This makes the new vulnerability fully compatible with existing risk workflow.
 
 ---
 
@@ -662,7 +644,7 @@ User Activity Behavior
 ### Risk role
 A dynamic, measurable vulnerability and predisposing condition that affects likelihood based on abnormal or risky user behavior observed on enterprise assets.
 
-### Best implementation method
+### Implementation method
 Use:
 - Windows event collection on WS-01
 - daily feature extraction
@@ -671,18 +653,3 @@ Use:
 - CIA-based impact integration
 - NIST-style likelihood and risk mapping
 
-### Best integration point in your system
-Add it as a formal vulnerability object under each asset or risk record, not as a simple log field.
-
-That will make it usable for:
-- risk analysis
-- treatment planning
-- control justification
-- ML enhancement
-- audit documentation
-
----
-
-## 25. Short Suggested Design Statement for Your Report
-
-The system introduces a new vulnerability class called User Activity Behavior to represent abnormal or risky user actions that increase the likelihood of threat realization. Behavioral indicators such as failed logons, irregular access frequency, inconsistent login patterns, password resets, session anomalies, and unusual privilege use are collected from monitored endpoints and transformed into a behavior risk score. This score is mapped to NIST-style likelihood levels and combined with CIA-based asset impact ratings to compute final risk. The resulting risk records support treatment planning, monitoring, and continuous assessment within the organization’s ISO 27001 and NIST-aligned risk management process.

@@ -121,9 +121,16 @@ type AssetInventoryWorkDTO = {
   }>;
 };
 
+type DiscoveredHost = {
+  service?: string;
+  ip_address?: string;
+};
+
 type DiscoveredSubnet = {
   id: string;
   label: string;
+  gateway?: string;
+  hosts?: DiscoveredHost[];
   host_count?: number;
 };
 
@@ -133,6 +140,11 @@ type ExploreResponse = {
   subnets?: Array<{
     id?: string;
     label?: string;
+    gateway?: string;
+    hosts?: Array<{
+      service?: string;
+      ip_address?: string;
+    }>;
     host_count?: number;
   }>;
 };
@@ -424,6 +436,8 @@ export default function AssetInventoryCIA() {
     | "details-host"
   >(null);
 
+  const [selectedDetailRow, setSelectedDetailRow] = useState<AssetRow | null>(null);
+
   const [serverRoles, setServerRoles] = useState<string[]>([]);
   const [workstationRoles, setWorkstationRoles] = useState<string[]>([]);
   const [roleCatalogError, setRoleCatalogError] = useState<string | null>(null);
@@ -458,7 +472,7 @@ export default function AssetInventoryCIA() {
         "/assess      → Scan a subnet and discover hosts\n" +
         "/setstatus   → Set host status (Active / Not Active / Unknown)\n" +
         "/assignroles → Detect server roles and assign CIA\n" +
-        "/detail      → Show detailed host information\n" +
+        "/details      → Show detailed host information\n" +
         "/train       → Train the ML role prediction model\n" +
         "/delete      → Remove a host from the table\n" +
         "/submit      → Submit Asset Inventory & CIA results\n" +
@@ -509,14 +523,9 @@ export default function AssetInventoryCIA() {
 
   const backendAssetsCiaStatus = systemStatus?.sections?.assets_cia?.status;
 
-  const assetsCiaStatus: StepStatus = useMemo(() => {
-    if (backendAssetsCiaStatus === "Completed") return "Completed";
-    if (backendAssetsCiaStatus === "Blocked") return "Blocked";
-    if (backendAssetsCiaStatus === "In Progress") return "In Progress";
-    if (rows.length > 0) return "In Progress";
-    return "Not Started";
-  }, [backendAssetsCiaStatus, rows.length]);
-
+  const assetsCiaStatus: StepStatus =
+    backendAssetsCiaStatus ?? "Not Started";
+    
   const scopeFileName = systemStatus?.sections?.scope_context?.scope_file_name;
   const displayScopeName = dashboardRaw?.scope?.name ?? "NA";
   const assetCount = rows.length;
@@ -619,20 +628,28 @@ export default function AssetInventoryCIA() {
 
   const formatList = (items?: Array<string | number>) => {
     if (!items || items.length === 0) return "NA";
-    return items.map((x) => String(x)).join(", ");
+
+    return items
+      .map((x) => `- ${String(x)}`)
+      .join("\n");
   };
 
+  const formatPorts = (items?: Array<string | number>) => {
+    if (!items || items.length === 0) return "NA";
+    return items.map((x) => String(x)).join(", ");
+  };
+    
   const formatHostDetails = (row: AssetRow) => {
     return (
       `Host Details — ${row.hostname}\n\n` +
       `IP address: ${row.ipAddress?.trim() ? row.ipAddress : "NA"}\n` +
-      `Open Ports: ${formatList(row.openPorts)}\n` +
-      `Running Service(s): ${formatList(row.runningServices)}\n` +
-      `Installed Software(s): ${formatList(row.installedSoftware)}\n` +
+      `Open Ports: ${formatPorts(row.openPorts)}\n` +
+      `Running Service(s):\n${formatList(row.runningServices)}\n` +
+      `Installed Software(s):\n${formatList(row.installedSoftware)}\n` +
       `Department: ${row.department?.trim() ? row.department : "NA"}`
     );
   };
-
+    
   const refreshInventoryRows = async () => {
     const doc = await apiGetAssetInventory(YEAR);
     setRows(flattenInventoryToRows(doc));
@@ -833,24 +850,6 @@ export default function AssetInventoryCIA() {
   }, []);
 
   useEffect(() => {
-    if (rows.length === 0) return;
-
-    setSystemStatus((prev) => {
-      if (!prev?.sections?.assets_cia) return prev;
-      return {
-        ...prev,
-        sections: {
-          ...prev.sections,
-          assets_cia: {
-            ...prev.sections.assets_cia,
-            status: "In Progress",
-          },
-        },
-      };
-    });
-  }, [rows.length]);
-
-  useEffect(() => {
     scrollChatToBottom("smooth");
   }, [messages, sending, pendingCommand, discoveredSubnets, confirmSubnetId, pendingHostname]);
 
@@ -858,10 +857,19 @@ export default function AssetInventoryCIA() {
     setSending(true);
 
     try {
+      const selectedSubnet =
+        discoveredSubnets.find((subnet) => subnet.id === subnetId) ?? null;
+
+      const subnetLabel = selectedSubnet?.label || subnetId;
+  
       const res = await fetch(`${API_BASE}/api/assets/assess`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ year: YEAR, subnet_id: subnetId }),
+        body: JSON.stringify({
+          year: YEAR,
+          subnet_id: subnetId,
+          selected_subnet: selectedSubnet,
+        }),
       });
 
       const data = (await res.json()) as AssessResponse;
@@ -874,41 +882,47 @@ export default function AssetInventoryCIA() {
       }
 
       const sys = await apiGetSystemStatus();
-      setSystemStatus({
-        ...sys,
-        sections: {
-          ...sys.sections,
-          assets_cia: {
-            ...sys.sections.assets_cia,
-            status: "In Progress",
-          },
-        },
-      });
+      setSystemStatus(sys);
 
       setAssessedSubnets((prev) => ({
         ...prev,
         [subnetId]: true,
       }));
 
+
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.message || `Subnet ${subnetId} assessed successfully.`,
+          content:
+            `Subnet ${subnetLabel} assessed successfully.`,
         },
       ]);
+
+      setPendingCommand("assess");
+      setConfirmSubnetId(null);
+
     } catch {
+      setPendingCommand("assess"); // also restore on error
+      setConfirmSubnetId(null);
+
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Backend error while assessing the subnet." },
+        {
+          role: "assistant",
+          content: "Backend error while assessing the subnet.",
+        },
       ]);
     } finally {
       setSending(false);
       scrollChatToBottom();
     }
   };
-
+    
   const handleAssessSubnetClick = async (subnetId: string) => {
+    const selectedSubnet = discoveredSubnets.find((s) => s.id === subnetId);
+    const subnetLabel = selectedSubnet?.label || subnetId;
+
     if (assessedSubnets[subnetId]) {
       setConfirmSubnetId(subnetId);
       setPendingCommand("confirm-reassess");
@@ -923,6 +937,17 @@ export default function AssetInventoryCIA() {
       ]);
       return;
     }
+ 
+    setPendingCommand(null);
+    setConfirmSubnetId(null);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content: `Please wait, while assessing the subnet ${subnetLabel} ...`,
+      },
+    ]);
 
     await runAssessSubnet(subnetId);
   };
@@ -1033,16 +1058,7 @@ export default function AssetInventoryCIA() {
       }
 
       const sys = await apiGetSystemStatus();
-      setSystemStatus({
-        ...sys,
-        sections: {
-          ...sys.sections,
-          assets_cia: {
-            ...sys.sections.assets_cia,
-            status: nextRows.length === 0 ? "Not Started" : "In Progress",
-          },
-        },
-      });
+      setSystemStatus(sys);
 
       const deletedHost = pendingHostname;
       setPendingHostname(null);
@@ -1122,39 +1138,58 @@ export default function AssetInventoryCIA() {
         setPendingCommand(null);
         setConfirmSubnetId(null);
         setPendingHostname(null);
-
+        setSelectedDetailRow(null);
+    
         setMessages((prev) => [...prev, { role: "assistant", content: "Exited command mode." }]);
         return;
       }
 
       if (pendingCommand === "explore") {
         setPendingCommand(null);
-
+    
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content:
+              "Please wait, system will explore docker lab to find the network architecture.",
+          },
+        ]);
+    
         const res = await fetch(`${API_BASE}/api/assets/explore`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ year: YEAR, network_mask: text }),
         });
-
+    
         const data = (await res.json()) as ExploreResponse;
-
+    
         setDiscoveredSubnets(
           Array.isArray(data.subnets)
             ? data.subnets.map((s) => ({
                 id: String(s.id ?? ""),
                 label: String(s.label ?? s.id ?? ""),
+                hosts: Array.isArray(s.hosts)
+                  ? s.hosts.map((host) => ({
+                      service: String(host?.service ?? ""),
+                      ip_address: String(host?.ip_address ?? ""),
+                    }))
+                  : [],
                 host_count: typeof s.host_count === "number" ? s.host_count : undefined,
               }))
             : []
         );
-
+    
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: data.message || "Explore completed." },
+          {
+            role: "assistant",
+            content: data.message || "Explore completed.",
+          },
         ]);
         return;
       }
-
+        
       if (pendingCommand === "setstatus-host") {
         const found = findRowByHostname(text);
 
@@ -1229,26 +1264,6 @@ export default function AssetInventoryCIA() {
           ...prev,
           { role: "assistant", content: `Are you sure you want to delete ${found.hostname}?` },
         ]);
-        return;
-      }
-
-      if (pendingCommand === "details-host") {
-        const found = findRowByHostname(text);
-
-        if (!found) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content:
-                "Hostname not found. Please enter a valid hostname from the table, or type /exit.",
-            },
-          ]);
-          return;
-        }
-
-        setPendingCommand(null);
-        setMessages((prev) => [...prev, { role: "assistant", content: formatHostDetails(found) }]);
         return;
       }
 
@@ -1340,7 +1355,7 @@ export default function AssetInventoryCIA() {
               "/assess      → Scan a subnet and discover hosts\n" +
               "/setstatus   → Set host status (Active / Not Active / Unknown)\n" +
               "/assignroles → Detect server roles and assign CIA\n" +
-              "/detail      → Show detailed host information\n" +
+              "/details      → Show detailed host information\n" +
               "/train       → Train the ML role prediction model\n" +
               "/delete      → Remove a host from the table\n" +
               "/submit      → Submit Asset Inventory & CIA results\n" +
@@ -1357,7 +1372,12 @@ export default function AssetInventoryCIA() {
         setPendingCommand("explore");
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: "Please enter the network address (IPv4)." },
+          {
+            role: "assistant",
+            content:
+              "Please enter the network address (IPv4).\n\n" +
+              "After you submit it, please wait, system will explore docker lab to find the network architecture.",
+          },
         ]);
         return;
       }
@@ -1397,7 +1417,7 @@ export default function AssetInventoryCIA() {
         return;
       }
 
-      if (text.toLowerCase() === "/detail") {
+      if (text.toLowerCase() === "/details") {
         if (rows.length === 0) {
           setMessages((prev) => [
             ...prev,
@@ -1405,12 +1425,19 @@ export default function AssetInventoryCIA() {
           ]);
           return;
         }
-
+    
         setPendingCommand("details-host");
-        setMessages((prev) => [...prev, { role: "assistant", content: "Please enter the hostname." }]);
+        setSelectedDetailRow(null);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Select a row from the table to view host details.",
+          },
+        ]);
         return;
       }
-
+        
       if (text.toLowerCase() === "/delete") {
         if (rows.length === 0) {
           setMessages((prev) => [
@@ -1459,16 +1486,7 @@ export default function AssetInventoryCIA() {
           }
 
           const sys = await apiGetSystemStatus();
-          setSystemStatus({
-            ...sys,
-            sections: {
-              ...sys.sections,
-              assets_cia: {
-                ...sys.sections.assets_cia,
-                status: "In Progress",
-              },
-            },
-          });
+          setSystemStatus(sys);
 
           let kbMessage = "";
 
@@ -1742,12 +1760,29 @@ export default function AssetInventoryCIA() {
                       const roleOptions = getRoleOptionsForRow(r);
 
                       return (
-                        <tr key={`${r.hostname || "row"}-${idx}`} className="hover:bg-white/5">
+                            <tr
+                              key={`${r.hostname || "row"}-${idx}`}
+                              className={`hover:bg-white/5 ${
+                                pendingCommand === "details-host" ? "cursor-pointer" : ""
+                              } ${
+                                selectedDetailRow?.hostname === r.hostname ? "bg-sky-500/10 ring-1 ring-sky-500/20" : ""
+                              }`}
+                              onClick={() => {
+                                if (pendingCommand !== "details-host") return;
+                            
+                                setSelectedDetailRow(r);
+                                setMessages((prev) => [
+                                  ...prev,
+                                  { role: "assistant", content: formatHostDetails(r) },
+                                ]);
+                              }}
+                            >
                           <td className="break-words px-3 py-2 text-slate-100">{r.hostname || "-"}</td>
 
                           <td className="px-3 py-2 align-top">
                             <select
                               value={r.role}
+                              onClick={(e) => e.stopPropagation()}
                               onChange={(e) => handleRoleChange(r.hostname, e.target.value)}
                               className={[
                                 "block w-full min-w-0",
@@ -1840,7 +1875,7 @@ export default function AssetInventoryCIA() {
                       );
                     })}
 
-                    {pendingCommand === "assess" && discoveredSubnets.length > 0 ? (
+                    {pendingCommand === "assess" && !sending && discoveredSubnets.length > 0 ? (
                       <div className="flex flex-wrap gap-2 pt-1">
                         {discoveredSubnets.map((s) => (
                           <button
@@ -1872,12 +1907,24 @@ export default function AssetInventoryCIA() {
                     {pendingCommand === "confirm-reassess" && confirmSubnetId ? (
                       <div className="flex flex-wrap gap-2 pt-1">
                         <button
-                          onClick={async () => {
-                            const subnetId = confirmSubnetId;
-                            setConfirmSubnetId(null);
-                            setPendingCommand("assess");
-                            await runAssessSubnet(subnetId);
-                          }}
+                            onClick={async () => {
+                              const subnetId = confirmSubnetId;
+                              const selectedSubnet = discoveredSubnets.find((s) => s.id === subnetId);
+                              const subnetLabel = selectedSubnet?.label || subnetId;
+                            
+                              setConfirmSubnetId(null);
+                              setPendingCommand(null);
+                            
+                              setMessages((prev) => [
+                                ...prev,
+                                {
+                                  role: "assistant",
+                                  content: `Please wait, while assessing the subnet ${subnetLabel} ...`,
+                                },
+                              ]);
+                            
+                              await runAssessSubnet(subnetId);
+                            }}
                           className="rounded-xl bg-indigo-600/20 px-3 py-2 text-sm text-indigo-100 ring-1 ring-indigo-500/30 hover:bg-indigo-600/30"
                         >
                           Yes
@@ -2030,7 +2077,7 @@ export default function AssetInventoryCIA() {
                 </div>
 
                 <div className="mt-3 shrink-0 text-xs text-slate-500">
-                  Command mode: /explore /assess /setstatus /assignroles /detail /train /delete
+                  Command mode: /explore /assess /setstatus /assignroles /details /train /delete
                   /submit /reset /help /commands /exit
                 </div>
               </div>
@@ -2251,12 +2298,29 @@ export default function AssetInventoryCIA() {
                     const roleOptions = getRoleOptionsForRow(r);
 
                     return (
-                      <tr key={`${r.hostname || "row"}-${idx}`} className="hover:bg-white/5">
+                        <tr
+                          key={`${r.hostname || "row"}-${idx}`}
+                          className={`hover:bg-white/5 ${
+                            pendingCommand === "details-host" ? "cursor-pointer" : ""
+                          } ${
+                            selectedDetailRow?.hostname === r.hostname ? "bg-sky-500/10 ring-1 ring-sky-500/20" : ""
+                          }`}
+                          onClick={() => {
+                            if (pendingCommand !== "details-host") return;
+                        
+                            setSelectedDetailRow(r);
+                            setMessages((prev) => [
+                              ...prev,
+                              { role: "assistant", content: formatHostDetails(r) },
+                            ]);
+                          }}
+                        >
                         <td className="break-words px-3 py-2 text-slate-100">{r.hostname || "-"}</td>
 
                         <td className="px-3 py-2 align-top">
                           <select
                             value={r.role}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={(e) => handleRoleChange(r.hostname, e.target.value)}
                             className={[
                               "block w-full min-w-0",
@@ -2351,7 +2415,7 @@ export default function AssetInventoryCIA() {
                     );
                   })}
 
-                  {pendingCommand === "assess" && discoveredSubnets.length > 0 ? (
+                  {pendingCommand === "assess" && !sending && discoveredSubnets.length > 0 ? (
                     <div className="flex flex-wrap gap-2 pt-1">
                       {discoveredSubnets.map((s) => (
                         <button
@@ -2385,8 +2449,20 @@ export default function AssetInventoryCIA() {
                       <button
                         onClick={async () => {
                           const subnetId = confirmSubnetId;
+                          const selectedSubnet = discoveredSubnets.find((s) => s.id === subnetId);
+                          const subnetLabel = selectedSubnet?.label || subnetId;
+                        
                           setConfirmSubnetId(null);
-                          setPendingCommand("assess");
+                          setPendingCommand(null);
+                        
+                          setMessages((prev) => [
+                            ...prev,
+                            {
+                              role: "assistant",
+                              content: `Please wait, while assessing the subnet ${subnetLabel} ...`,
+                            },
+                          ]);
+                        
                           await runAssessSubnet(subnetId);
                         }}
                         className="rounded-xl bg-indigo-600/20 px-3 py-2 text-sm text-indigo-100 ring-1 ring-indigo-500/30 hover:bg-indigo-600/30"
@@ -2581,7 +2657,7 @@ export default function AssetInventoryCIA() {
               </div>
 
               <div className="mt-3 shrink-0 text-xs text-slate-500">
-                Command mode: /explore /assess /setstatus /assignroles /detail /train /delete
+                Command mode: /explore /assess /setstatus /assignroles /details /train /delete
                 /submit /reset /help /commands /exit
               </div>
             </div>

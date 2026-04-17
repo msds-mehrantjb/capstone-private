@@ -1,0 +1,29 @@
+KPIs
+Core ML
+Role Prediction Accuracy (%)
+CIA Prediction Accuracy (%)
+F1 Score (Role Model)
+Behavior Model Accuracy (%)
+
+Trust & Reliability
+Override Rate (%)
+Low Confidence Predictions (%)
+
+ML-based UABV
+Average Behavior Risk Score
+High-Risk User Percentage (%)
+Score Difference (ML vs Rule)
+Top Contributing Feature Distribution (%)
+
+RAG Performance
+RAG Query Count
+Retrieval Success Rate (%)
+
+LLM Performance
+Reasoning Calls
+Total Tokens
+
+
+Human-in-the-Loop Metrics
+Manual Role Corrections
+Manual Risk Corrections

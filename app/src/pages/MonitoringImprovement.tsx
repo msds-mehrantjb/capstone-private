@@ -80,11 +80,11 @@ type MonitoringImprovementRecommendResponse = {
   inventory?: MonitoringInventoryResponse;
 };
 
-// 9) FIX host type so table data matches backend
 type MonitoringImprovementHost = {
   hostname?: string;
   ip_address?: string;
   role?: string;
+  vulnerability_name?: string;
   ["CIA rating"]?: string;
   evidence?: MonitoringImprovementEvidence[];
 };
@@ -163,6 +163,36 @@ type AddEvidenceResponse = {
     desc: string;
   };
 
+
+type EvidenceDefaultsResponse = {
+  success?: boolean;
+  message?: string;
+  evidence?: {
+    responsible?: string;
+    resources?: string;
+    date?: string;
+    url?: string;
+    desc?: string;
+  };
+  inventory?: MonitoringInventoryResponse;
+};
+
+async function apiGetEvidenceDefaults(
+  year: number,
+  control_id: string,
+  hostname: string,
+  vulnerability_name: string
+): Promise<EvidenceDefaultsResponse> {
+  return apiPostJSONBody<EvidenceDefaultsResponse>(
+    "/api/monitoring-improvement/evidence-defaults",
+    {
+      year,
+      control_id,
+      hostname,
+      vulnerability_name,
+    }
+  );
+}
 
 async function apiAddEvidence(
   year: number,
@@ -760,9 +790,10 @@ export default function MonitoringImprovement() {
         "Monitoring and Improvement — Command Mode\n\n" +
         "Available commands:\n" +
         "/create     → Create new Monitoring / Improvement table\n" +
-        "/recommend  → Recommend the monitoring action for the selected vulnerability\n" +
+        "/recommend  → Recommend the monitoring action for all vulnerabilities\n" +
         "/delete     → Delete the selected evidence\n" +
         "/add        → Add an evidence for selected host\n" +
+        "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" + 
         "/edit       → Edit evidence for selected host\n" +
         "/submit     → Submit the table\n" +
         "/help       → Explain this section\n" +
@@ -901,12 +932,12 @@ export default function MonitoringImprovement() {
     
   const selectedHostLabel = selectedHost?.hostname?.trim() || "selected host";
  
-  const handleOpenAddEvidence = () => {
+  const handleOpenAddEvidence = async (autoFill = false) => {
     if (!selectedMonitoringImprovementControl) {
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: "Please select a CVE row first." },
-      ]);
+     ]);
       scrollChatToBottom();
       return;
     }
@@ -920,24 +951,82 @@ export default function MonitoringImprovement() {
       return;
     }
 
+    if (!autoFill) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            `Add evidence for host - ${selectedHostLabel}\n` +
+            `- Responsible: Who is responsible for this action\n` +
+            `- Resources: Which resources used for this action\n` +
+            `- Date: When this action happened\n` +
+            `- URL/PATH: URL/Path for screenshot, log, file, ...`,
+        },
+      ]);
+
+      resetEvidenceForm();
+      setAddEvidenceModalOpen(true);
+      scrollChatToBottom();
+      return;
+    }
+
     setMessages((prev) => [
       ...prev,
       {
         role: "assistant",
         content:
-          `Add evidence for host - ${selectedHostLabel}\n` +
-          `- Responsible: Who is responsible for this action\n` +
-          `- Resources: Which resources used for this action\n` +
-          `- Date: When this action happened\n` +
-          `- URL/PATH: URL/Path for screenshot, log, file, ...`,
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to prepare evidence fields for the selected host.",
       },
     ]);
-
-    resetEvidenceForm();
-    setAddEvidenceModalOpen(true);
     scrollChatToBottom();
-  };
 
+    try {
+      setSending(true);
+
+      const data = await apiGetEvidenceDefaults(
+        YEAR,
+        selectedMonitoringImprovementControl.CVE,
+        selectedHost.hostname || "",
+        selectedHost.vulnerability_name || ""
+      );
+
+      setEvidenceForm({
+        responsible: data?.evidence?.responsible || "",
+        date: "",
+        resources: data?.evidence?.resources || "",
+        url: data?.evidence?.url || "",
+        desc: data?.evidence?.desc || "",
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            data.message ||
+            `Evidence fields prepared for host ${selectedHostLabel}.`,
+        },
+      ]);
+
+      setAddEvidenceModalOpen(true);
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            e instanceof Error
+              ? e.message
+              : "Failed to prepare evidence fields.",
+        },
+      ]);
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
+    }
+  };
+    
   const handleEvidenceFormChange = (
     field: keyof MonitoringImprovementEvidenceForm,
     value: string
@@ -1009,20 +1098,15 @@ export default function MonitoringImprovement() {
   };
 
 
-  const handleRecommendForSelectedControl = async () => {
-    if (selectedControlIndex === null || !monitoringImprovementControls[selectedControlIndex]) {
+  const handleRecommendForAllControls = async () => {
+    if (!monitoringImprovementControls.length) {
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content: "Please select a CVE row first.",
-        },
+        { role: "assistant", content: "No controls found in the table." },
       ]);
-      scrollChatToBottom();
       return;
     }
 
-    const selectedControl = monitoringImprovementControls[selectedControlIndex];
     setSending(true);
 
     setMessages((prev) => [
@@ -1030,44 +1114,45 @@ export default function MonitoringImprovement() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to generate recommended monitoring actions for the selected vulnerability.",
+          "Please wait, generating recommended monitoring actions for ALL controls using ISO 27001:2022 and LLM reasoning...",
       },
     ]);
 
     try {
-      const data = await apiRecommendAction(YEAR, selectedControl.CVE);
+      for (const control of monitoringImprovementControls) {
+        await apiRecommendAction(YEAR, control.CVE);
+      }
 
-      setMonitoringImprovementControls(
-        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
+      // reload updated inventory
+      const updated = await apiGetMonitoringImprovementInventory(YEAR);
+
+      setMonitoringImprovementControls( 
+        Array.isArray(updated?.cves) ? updated.cves : []
       );
 
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
+      setMessages((prev) => [
+        ...prev,
+        {
           role: "assistant",
           content:
-            data.message ||
-            `Recommended monitoring action was generated and saved for CVE ${selectedControl.CVE}.`,
-        };
-        return updated;
-      });
+            "Recommended monitoring actions generated for ALL vulnerabilities.",
+        },
+      ]);
     } catch (e) {
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
+      setMessages((prev) => [
+        ...prev,
+        {
           role: "assistant",
           content:
             e instanceof Error
               ? e.message
-              : "Backend error while generating recommended monitoring action.",
-        };
-        return updated;
-      });
+              : "Error generating monitoring actions.",
+        },
+      ]);
     } finally {
       setSending(false);
-      scrollChatToBottom();
     }
-  };    
+  };
     
   const handleConfirmRecreateYes = async () => {
     setConfirmRecreateOpen(false);
@@ -1610,9 +1695,10 @@ export default function MonitoringImprovement() {
           content:
             "Available commands:\n" +
             "/create     → Create new Monitoring / Improvement table\n" +
-            "/recommend  → Recommend the monitoring action for the selected vulnerability \n" +
+            "/recommend  → Recommend the monitoring action for all vulnerabilities \n" +
             "/delete     → Delete the selected evidence\n" +
             "/add        → Add an evidence for selected host\n" +
+            "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" + 
             "/edit       → Edit evidence for selected host\n" +
             "/submit     → Submit the table\n" +
             "/help       → Explain this section\n" +
@@ -1639,10 +1725,14 @@ export default function MonitoringImprovement() {
     }
       
     if (trimmed === "/add") {
-      handleOpenAddEvidence();
+      await handleOpenAddEvidence(false);
       return;
     }
-      
+    
+    if (trimmed === "/evidence") {
+      await handleOpenAddEvidence(true);
+      return;
+    }
  
     if (trimmed === "/edit") {
       handleOpenEditEvidence();
@@ -1672,7 +1762,7 @@ export default function MonitoringImprovement() {
     }
    
     if (trimmed === "/recommend") {
-      await handleRecommendForSelectedControl();
+      await handleRecommendForAllControls();
       return;
     }
 
@@ -1829,10 +1919,10 @@ export default function MonitoringImprovement() {
                         </div>
                 
                       <div className="grid grid-cols-[1.2fr_2fr] border-t border-white/10 text-sm text-slate-200">
-                        <div className="px-3 py-3">
+                        <div className="px-3 py-3 whitespace-pre-line">
                           {c.justification?.trim() ? c.justification : "-"}
                         </div>
-                        <div className="px-3 py-3">
+                        <div className="px-3 py-3 whitespace-pre-line">
                           {c.recommended_action?.trim() ? c.recommended_action : "-"}
                         </div>
                       </div>
@@ -2010,7 +2100,7 @@ export default function MonitoringImprovement() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /create /recommend /delete /add /edit /submit /help /commands
+          Command mode: /create /recommend /delete /add /evidence /edit /submit /help /commands
         </div>
       </div>
     </ShellCard>

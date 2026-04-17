@@ -36,12 +36,25 @@ def run_nmap_port_scan(ip: str) -> str:
 
 def parse_discovered_hosts(nmap_output: str) -> List[str]:
     hosts = []
-    for line in nmap_output.splitlines():
-        if "Nmap scan report for" in line:
-            ip = line.split()[-1].strip()
-            hosts.append(ip)
-    return hosts
 
+    for line in nmap_output.splitlines():
+        line = line.strip()
+
+        if "Nmap scan report for" not in line:
+            continue
+
+        # Case 1: hostname + IP
+        m = re.search(r"\((\d{1,3}(?:\.\d{1,3}){3})\)", line)
+        if m:
+            hosts.append(m.group(1))
+            continue
+
+        # Case 2: IP only
+        m = re.search(r"for (\d{1,3}(?:\.\d{1,3}){3})$", line)
+        if m:
+            hosts.append(m.group(1))
+
+    return hosts
 
 def parse_open_ports(nmap_output: str) -> List[int]:
     open_ports: List[int] = []
@@ -64,7 +77,9 @@ def create_session(ip: str, username: str, password: str) -> winrm.Session:
 def run_ps(session: winrm.Session, script: str) -> str:
     result = session.run_ps(script)
     if result.status_code != 0:
+        print(f"[WINRM ERROR] {result.std_err.decode(errors='ignore')}")
         return ""
+    
     return result.std_out.decode(errors="ignore").strip()
 
 
@@ -156,7 +171,12 @@ def get_windows_data(ip: str, username: str, password: str) -> Dict[str, Any]:
         session,
         "(Get-CimInstance Win32_OperatingSystem).Caption"
     )
-
+    
+    if not os_caption:
+        os_caption = run_ps(
+            session,
+            "(Get-WmiObject Win32_OperatingSystem).Caption"
+        )
     domain_name = run_ps(
         session,
         "(Get-CimInstance Win32_ComputerSystem).Domain"
@@ -339,7 +359,6 @@ def parse_software_lines(output: str) -> List[Dict[str, str]]:
 
     return software
 
-
 def parse_version_key(version: str) -> tuple:
     if not version:
         return tuple()
@@ -479,7 +498,7 @@ def build_host_record(
     open_ports: Optional[List[int]] = None,
     fallback_hostname: str = "",
 ) -> Dict[str, Any]:
-    if status != "Active" or not windows_data:
+    if not windows_data:
         return {
             "hostname": fallback_hostname,
             "ip_address": ip,
@@ -492,25 +511,30 @@ def build_host_record(
                 "availability": "",
             },
             "detail": {
+                **build_placeholder_detail_section(),
                 "device_profile": {
                     "os_type": "",
                     "os_version": "",
                     "is_domain_joined": False,
                 },
                 "technical_indicators": {
-                    "open_ports": [],
+                    "open_ports": open_ports or [],
                     "running_services": [],
                     "installed_roles": [],
                     "installed_software": [],
                 },
-                **build_placeholder_detail_section(),
             },
         }
-
     hostname = windows_data["hostname"] or fallback_hostname
     os_caption = windows_data["os_caption"] or ""
     ports = open_ports or []
 
+    # 🔥 DEBUG PRINTS
+    print(f"[SCAN] {hostname} ({ip})")
+    print(f"[SCAN] OS TYPE: {infer_os_type(os_caption)}")
+    print(f"[SCAN] OS VERSION: {os_caption}")
+    print("--------------------------------------------------")
+    
     device_type = infer_device_type(hostname, os_caption, ports)
     normalized_roles = normalize_installed_roles(windows_data["installed_roles_raw"], "")
     role = infer_role(device_type, ports, normalized_roles)
@@ -531,6 +555,7 @@ def build_host_record(
         "role": role,
         "cia_impact": cia_impact,
         "detail": {
+            **build_placeholder_detail_section(),
             "device_profile": {
                 "os_type": infer_os_type(os_caption),
                 "os_version": os_caption,
@@ -542,7 +567,6 @@ def build_host_record(
                 "installed_roles": normalized_roles,
                 "installed_software": limit_software_list(windows_data["installed_software_raw"]),
             },
-            **build_placeholder_detail_section(),
         },
     }
 
@@ -559,6 +583,7 @@ def main() -> None:
     print("[+] Discovering live hosts...")
     discovery_output = run_nmap_host_discovery(subnet)
     active_hosts = set(parse_discovered_hosts(discovery_output))
+    print("[DEBUG] Active hosts parsed:", active_hosts)
 
     hosts_output: List[Dict[str, Any]] = []
 
@@ -567,6 +592,8 @@ def main() -> None:
         hostname = host["hostname"]
         username = host["username"]
         password = host["password"]
+
+        print(f"[DEBUG] Checking {ip} in active_hosts")
 
         if ip in active_hosts:
             print(f"[+] Active host found: {ip}")
@@ -589,7 +616,7 @@ def main() -> None:
                     ip=ip,
                     status="Active",
                     windows_data=None,
-                    open_ports=[],
+                    open_ports=open_ports,
                     fallback_hostname=hostname,
                 )
         else:
@@ -624,7 +651,6 @@ def main() -> None:
         json.dump(final_json, f, indent=2)
 
     print(f"[+] Asset inventory written to: {OUTPUT}")
-
 
 if __name__ == "__main__":
     main()

@@ -154,6 +154,28 @@ async function apiCreateControlPostureAssessment(
   return data as CreateControlPostureAssessmentResponse;
 }
 
+async function apiAssessControlPostures(
+  year: number
+): Promise<{ success: boolean; message?: string; status?: string }> {
+  const res = await fetch(`${API_BASE}/api/controls-postures/assess`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+    body: JSON.stringify({ year }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || `HTTP ${res.status}`);
+  }
+
+  return data;
+}
+
 async function apiResetControlPostures(
   year: number
 ): Promise<ResetControlPostureAssessmentResponse> {
@@ -370,7 +392,7 @@ export default function ControlsPostures() {
         "Available commands:\n" +
         "/help        → Explain this section\n" +
         "/commands    → Show available commands\n" +
-        "/assess      → New existing controls and postures assessment\n" +
+        "/assess      → Existing controls and postures assessment\n" +
         "/submit      → Submit this section\n" +
         "/reset       → Clear controls and postures section\n" +
         "/exit        → Exit current mode",
@@ -423,22 +445,8 @@ export default function ControlsPostures() {
 
   const displayScopeName = dashboard?.scope?.name?.trim() || "NA";
 
-  const postureStatus: StepStatus = useMemo(() => {
-    if (systemStatus?.sections?.controls_posture?.status) {
-      return systemStatus.sections.controls_posture.status;
-    }
-
-    if (systemStatus?.sections?.existing_controls_postures?.status) {
-      return systemStatus.sections.existing_controls_postures.status;
-    }
-
-    if (cpData?.status) return cpData.status;
-
-    const hasAny = hosts.some(
-      (h) => h.existing_controls && Object.keys(h.existing_controls).length > 0
-    );
-    return hasAny ? "In Progress" : "Not Started";
-  }, [systemStatus, cpData?.status, hosts]);
+  const postureStatus: StepStatus =
+    systemStatus?.sections?.existing_controls_postures?.status ?? "Not Started";
 
   const totalHosts = cpData?.kpis?.hosts ?? hosts.length ?? 0;
 
@@ -799,7 +807,7 @@ export default function ControlsPostures() {
               "Available commands:\n" +
               "/help        → Explain this section\n" +
               "/commands    → Show available commands\n" +
-              "/assess      → New existing controls and postures assessment\n" +
+              "/assess      → Existing controls and postures assessment\n" +
               "/submit      → Submit this section\n" +
               "/reset       → Clear controls and postures section\n" +
               "/exit        → Exit current mode",
@@ -809,20 +817,34 @@ export default function ControlsPostures() {
       }
 
       if (text === "/assess") {
-        removePendingResetConfirmation();
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            type: "reset-confirmation",
-            content:
-              "An Existing Controls and Postures Assessment already exists.\n\nDo you want to start a new assessment?",
-          },
-        ]);
+        try {
+          const result = await apiAssessControlPostures(YEAR);
+          setExpandedHostname(null);
+          await refreshControlPostureSection();
+    
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content:
+                result.message ||
+                "Existing Controls & Postures assessment completed succesfully.",
+            },
+          ]);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+    
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: `Assessment failed: ${msg}`,
+            },
+          ]);
+        }
         return;
       }
-
+        
       if (text === "/reset") {
         removePendingResetConfirmation();
 

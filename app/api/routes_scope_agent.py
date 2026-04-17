@@ -285,7 +285,7 @@ def _update_system_status_after_submit(year: int) -> None:
     obj["sections"].setdefault("scope_context", {})
     obj["sections"].setdefault("assets_cia", {})
 
-    obj["sections"]["scope_context"]["status"] = "In Progress"
+    obj["sections"]["scope_context"]["status"] = "Completed"
     obj["sections"]["assets_cia"]["status"] = "Not Started"
 
     write_system_status(year, obj)

@@ -171,13 +171,18 @@ async function apiSetEvaluation(body: {
   );
 }
 
+
 async function persistDefaultEvaluationsOnLoad(doc: any, year: number) {
   const hosts = Array.isArray(doc?.hosts) ? doc.hosts : [];
 
   for (const h of hosts) {
     const currentEvaluation = String(h?.evaluation ?? "").trim();
     const risk = normalizeSeverity(h?.risk ?? h?.risk_rating);
-    const defaultEvaluation = getDefaultEvaluationFromRisk(risk);
+    const defaultEvaluation = getDefaultEvaluation({
+      cve: String(h?.cve ?? ""),
+      vulnerability: String(h?.vulnerability_name ?? ""),
+      risk: normalizeSeverity(h?.risk ?? h?.risk_rating),
+    });    
 
     if (!currentEvaluation && defaultEvaluation && h?.hostname && h?.cve) {
       const result = await apiSetEvaluation({
@@ -352,7 +357,7 @@ function buildInitialFindingEdits(rows: RiskHostRow[]): FindingEditMap {
     row.findings.forEach((f, index) => {
       const key = getFindingKey(row.hostname, f, index);
       const evaluation =
-        f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluationFromRisk(f.risk);
+        f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluation(f);
 
       const savedTreatment = getDisplayTreatmentValue(f.treatment);
 
@@ -377,7 +382,7 @@ function buildSubmitPayload(rows: RiskHostRow[], findingEdits: FindingEditMap) {
 
       const evaluation =
         findingEdits[key]?.evaluation ??
-        (f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluationFromRisk(f.risk));
+        (f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluation(f));
 
       const treatment =
         evaluation === "Treat"
@@ -523,7 +528,11 @@ function SimpleSelect({
   );
 }
 
-function getDefaultEvaluationFromRisk(risk: SeverityValue): EvaluationValue {
+function getDefaultEvaluation(finding: RiskFinding): EvaluationValue {
+  const cve = String(finding.cve ?? "").trim();
+  const risk = finding.risk;
+
+  if (cve.startsWith("UB-WS-") && risk === "Low") return "Monitor";
   if (risk === "Low") return "Accept";
   if (risk === "Medium") return "Monitor";
   if (risk === "High" || risk === "Critical") return "Treat";
@@ -570,7 +579,7 @@ function RiskFindingsCard({
     const key = getFindingKey(row.hostname, f, index);
     return (
       findingEdits[key]?.evaluation ??
-      (f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluationFromRisk(f.risk))
+      (f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluation(f))
     );
   };
 
@@ -986,7 +995,7 @@ export default function RiskEvaluationTreatment() {
       (findingEdits[key]?.evaluation ??
         (finding.evaluation && finding.evaluation !== ""
           ? finding.evaluation
-          : getDefaultEvaluationFromRisk(finding.risk))) as EvaluationValue;
+          : getDefaultEvaluation(finding))) as EvaluationValue;
 
     const previousTreatment =
       (findingEdits[key]?.treatment ?? getDisplayTreatmentValue(finding.treatment)) as TreatmentValue;
@@ -1054,7 +1063,7 @@ export default function RiskEvaluationTreatment() {
       (findingEdits[key]?.evaluation ??
         (finding.evaluation && finding.evaluation !== ""
           ? finding.evaluation
-          : getDefaultEvaluationFromRisk(finding.risk))) as EvaluationValue;
+          : getDefaultEvaluation(finding))) as EvaluationValue;
 
     const previousTreatment =
       (findingEdits[key]?.treatment ?? getDisplayTreatmentValue(finding.treatment)) as TreatmentValue;
@@ -1137,7 +1146,7 @@ export default function RiskEvaluationTreatment() {
           findingEdits[key]?.evaluation ??
           (finding.evaluation && finding.evaluation !== ""
             ? finding.evaluation
-            : getDefaultEvaluationFromRisk(finding.risk));
+            : getDefaultEvaluation(finding));
 
         const treatment =
           evaluation === "Treat"
@@ -1366,7 +1375,7 @@ export default function RiskEvaluationTreatment() {
       try {
         const rawDoc = await loadTreatmentDataSafe(YEAR);
 
-        await persistDefaultEvaluationsOnLoad(rawDoc, YEAR);
+        //  await persistDefaultEvaluationsOnLoad(rawDoc, YEAR);
 
         const refreshedDoc = await loadTreatmentDataSafe(YEAR);
         const nextRows = flattenInventoryToRows(refreshedDoc);

@@ -1,0 +1,171 @@
+AI/ML Dashboard jsdon
+
+{
+  "meta": {
+    "name": "AI_ML_KPI_History",
+    "description": "Historical KPI snapshots for AI/ML dashboard across all system sections including dataset provenance"
+  },
+  "latest_snapshot_id": "kpi_2026-04-16_10-30-00",
+  "snapshots": [
+    {
+      "snapshot_id": "kpi_2026-04-16_10-30-00",
+      "generated_at": "2026-04-16T10:30:00-07:00",
+      "year": 2026,
+      "scope": {
+        "name": "Example Audit Scope",
+        "asset_count": 24
+      },
+      "status": {
+        "asset_inventory_cia": "Completed",
+        "threats_vulnerabilities": "Completed",
+        "risk_analysis": "Completed",
+        "annex_a_soa": "Completed",
+        "action_plan_implementation": "In Progress",
+        "monitoring_improvement": "In Progress"
+      },
+      "kpis": {
+        "core_ml": {
+          "role_prediction_accuracy_pct": {
+            "value": 91.4,
+            "computed": false,
+            "source": "saved_evaluation"
+          },
+          "cia_prediction_accuracy_pct": {
+            "value": 88.2,
+            "computed": false,
+            "source": "saved_evaluation"
+          },
+          "f1_score_role_model": {
+            "value": 0.89,
+            "computed": false,
+            "source": "saved_evaluation"
+          },
+          "behavior_model_accuracy_pct": {
+            "value": 93.1,
+            "computed": false,
+            "source": "training_result"
+          }
+        },
+        "trust_reliability": {
+          "override_rate_pct": {
+            "value": 12.5,
+            "computed": true,
+            "source": "current_state_plus_logs"
+          },
+          "low_confidence_predictions_pct": {
+            "value": 16.7,
+            "computed": true,
+            "source": "asset_ml_confidence"
+          }
+        },
+        "ml_based_uabv": {
+          "average_behavior_risk_score": {
+            "value": 0.67,
+            "computed": true,
+            "source": "risk_analysis_user_behavior"
+          },
+          "high_risk_user_percentage_pct": {
+            "value": 22.2,
+            "computed": true,
+            "source": "risk_analysis_user_behavior"
+          },
+          "score_difference_ml_vs_rule": {
+            "value": 0.14,
+            "computed": true,
+            "source": "risk_analysis_user_behavior"
+          },
+          "top_contributing_feature_distribution_pct": {
+            "value": {
+              "failedLoginAttempts": 33.3,
+              "accessFrequency": 22.2,
+              "loginConsistency": 11.1,
+              "passwordResets": 11.1,
+              "sessionDuration": 22.2
+            },
+            "computed": true,
+            "source": "risk_analysis_user_behavior"
+          }
+        },
+        "rag_performance": {
+          "rag_query_count": {
+            "value": 37,
+            "computed": false,
+            "source": "saved_telemetry"
+          },
+          "retrieval_success_rate_pct": {
+            "value": 86.5,
+            "computed": false,
+            "source": "saved_telemetry"
+          }
+        },
+        "llm_performance": {
+          "reasoning_calls": {
+            "value": 42,
+            "computed": false,
+            "source": "saved_telemetry"
+          },
+          "total_tokens": {
+            "value": 18540,
+            "computed": false,
+            "source": "saved_telemetry"
+          }
+        },
+        "human_in_the_loop": {
+          "manual_role_corrections": {
+            "value": 3,
+            "computed": true,
+            "source": "asset_inventory_roles"
+          },
+          "manual_risk_corrections": {
+            "value": 5,
+            "computed": true,
+            "source": "risk_analysis_findings"
+          }
+        },
+        "dataset_provenance": {
+          "total_synthetic_records": {
+            "value": 1800,
+            "computed": true,
+            "source": "ml_datasets"
+          },
+          "total_real_records": {
+            "value": 260,
+            "computed": true,
+            "source": "ml_datasets"
+          }         }
+      },
+      "dataset_provenance": {
+        "summary": {
+          "total_records_all_datasets": 2060,
+          "synthetic_records_all_datasets": 1800,
+          "real_records_all_datasets": 260,
+        },
+        "datasets": {
+          "server_role_training_dataset": {
+            "dataset_path": "data/ml/server_role_training_dataset.parquet",
+            "target_name": "role",
+            "total_records": 940,
+            "synthetic_records": 800,
+            "real_records": 140,
+            }
+          },
+          "workstation_role_training_dataset": {
+            "dataset_path": "data/ml/workstation_role_training_dataset.parquet",
+            "target_name": "role",
+            "total_records": 820,
+            "synthetic_records": 700,
+            "real_records": 120,
+           }
+          },
+          "user_behavior_training_dataset": {
+            "dataset_path": "data/ml/user_behavior_training_dataset.parquet",
+            "target_name": "behavior_risk_label",
+            "total_records": 300,
+            "synthetic_records": 300,
+            "real_records": 0,
+          }
+        ]
+      }
+    }
+  ]
+}

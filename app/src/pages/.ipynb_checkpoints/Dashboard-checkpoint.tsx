@@ -81,7 +81,7 @@ const STEP_TO_SECTION_KEY: Record<number, string> = {
   1: "scope_context",
   2: "assets_cia",
   3: "threats_vulns",
-  4: "controls_posture",
+  4: "existing_controls_postures",
   5: "risk_analysis",
   6: "risk_evaluation_treatment",
   7: "annex_a_soa",

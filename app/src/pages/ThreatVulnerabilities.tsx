@@ -493,7 +493,7 @@ export default function ThreatVulnerabilities() {
         "Available commands:\n" +
         "/help        → Explain this section\n" +
         "/commands    → Show available commands\n" +
-        "/detail      → Show host threat/vulnerability details\n" +
+        "/details      → Show host threat/vulnerability details\n" +
         "/assess      → New vulnerability and threat assessment\n" +
         "/submit      → Submit this section\n" +
         "/reset       → Clear vulnerabilities section\n" +
@@ -540,47 +540,11 @@ export default function ThreatVulnerabilities() {
     []
   );
 
-  const setThreatStatusInProgress = () => {
-    setSystemStatus((prev) => {
-      if (!prev) return prev;
+  const threatStatus: StepStatus =
+    systemStatus?.sections?.threats_vulns?.status ?? "Not Started";
 
-      return {
-        ...prev,
-        sections: {
-          ...prev.sections,
-          threats_vulns: {
-            ...(prev.sections?.threats_vulns || {}),
-            status: "In Progress",
-          },
-        },
-      };
-    });
-
-    setTvData((prev) => {
-      if (!prev) return { status: "In Progress" };
-      return {
-        ...prev,
-        status: "In Progress",
-      };
-    });
-  };
     
   const displayScopeName = dashboard?.scope?.name?.trim() || "NA";
-
-  const threatStatus: StepStatus = useMemo(() => {
-    if (systemStatus?.sections?.threats_vulns?.status) {
-      return systemStatus.sections.threats_vulns.status;
-    }
-
-    if (systemStatus?.sections?.["Threats & Vulnerabilities"]?.status) {
-      return systemStatus.sections["Threats & Vulnerabilities"].status;
-    }
-
-    if (tvData?.status) return tvData.status;
-
-    const hasAny = hosts.some((h) => (h.rows ?? []).length > 0);
-    return hasAny ? "In Progress" : "Not Started";
-  }, [systemStatus, tvData?.status, hosts]);
 
   const assetCount = tvData?.kpis?.hosts ?? hosts.length ?? 0;
 
@@ -787,18 +751,21 @@ export default function ThreatVulnerabilities() {
     try {
       const result = await apiCreateThreatAssessment(YEAR, true);
 
-      setThreatStatusInProgress();
-        
       setExpandedHostname(null);
       await refreshThreatSection();
+
+      const progressText =
+        Array.isArray((result as any).progress_messages) &&
+        (result as any).progress_messages.length > 0
+          ? (result as any).progress_messages.join("\n")
+          : result.message ||
+            "Threat and Vulnerability Assessment restarted. vulnerabilities_threats was cleared.";
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            result.message ||
-            "Threat and Vulnerability Assessment restarted. vulnerabilities_threats was cleared.",
+          content: progressText,
         },
       ]);
     } catch (e) {
@@ -830,18 +797,23 @@ export default function ThreatVulnerabilities() {
 
     try {
       const result = await apiCreateThreatAssessment(YEAR, true);
-        
+
       setExpandedHostname(null);
       setShowResetPopup(false);
       await refreshThreatSection();
 
+      const progressText =
+        Array.isArray((result as any).progress_messages) &&
+        (result as any).progress_messages.length > 0
+          ? (result as any).progress_messages.join("\n")
+          : result.message ||
+            "Threat and Vulnerability Assessment restarted. vulnerabilities_threats was cleared.";
+  
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content:
-            result.message ||
-            "Threat and Vulnerability Assessment restarted. vulnerabilities_threats was cleared.",
+          content: progressText,
         },
       ]);
     } catch (e) {
@@ -887,7 +859,7 @@ export default function ThreatVulnerabilities() {
         return;
       }
 
-      if (text === "/detail") {
+      if (text === "/details") {
         setAwaitingCveDetail(true);
         setMessages((prev) => [
           ...prev,
@@ -1337,7 +1309,7 @@ export default function ThreatVulnerabilities() {
                 </div>
 
                 <div className="mt-3 shrink-0 text-xs text-slate-500">
-                  Command mode: /help /commands /detail /assess /submit /reset /exit
+                  Command mode: /help /commands /details /assess /submit /reset /exit
                 </div>
               </div>
             </ShellCard>
@@ -1684,7 +1656,7 @@ export default function ThreatVulnerabilities() {
               </div>
 
               <div className="mt-3 shrink-0 text-xs text-slate-500">
-                Command mode: /help /commands /detail /submit /reset /exit
+                Command mode: /help /commands /details /submit /reset /exit
               </div>
             </div>
           </ShellCard>

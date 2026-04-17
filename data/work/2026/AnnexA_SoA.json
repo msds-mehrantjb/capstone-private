@@ -1,294 +1,27 @@
 {
   "controls": [
     {
-      "control_id": "5.21",
-      "control_name": "ICT supply chain",
-      "domain": "Organizational Controls",
-      "applicable": true,
-      "implementation_status": "Implemented",
-      "justification": "To ensure the secure supply of software and hardware components",
-      "related_risks": [
-        "CVE-2021-36942"
-      ],
-      "risk_ids": [
-        "R-005"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-02",
-          "role": "DNS Server",
-          "riskid": "R-005",
-          "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "reason": "To ensure the secure supply of software and hardware components"
-        }
-      ]
-    },
-    {
-      "control_id": "5.34",
-      "control_name": "Privacy and PII protection",
-      "domain": "Organizational Controls",
-      "applicable": true,
-      "implementation_status": "Implemented",
-      "justification": "As a high-level vulnerability, it is essential to ensure the confidentiality of sensitive data stored on File Server SRV-03.",
-      "related_risks": [
-        "CVE-2021-36942"
-      ],
-      "risk_ids": [
-        "R-014"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-03",
-          "role": "File Server",
-          "riskid": "R-014",
-          "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "reason": "As a high-level vulnerability, it is essential to ensure the confidentiality of sensitive data stored on File Server SRV-03."
-        }
-      ]
-    },
-    {
-      "control_id": "6.7",
-      "control_name": "Remote working",
-      "domain": "People Controls",
-      "applicable": true,
-      "implementation_status": "Implemented",
-      "justification": "This control is necessary due to the risks of unsecured remote connections, weak authentication mechanisms, and exposed services. The identified vulnerabilities highlight the need for stringent controls to prevent unauthorized access, data breaches, and potential attacks on the organization's infrastructure.",
-      "related_risks": [
-        "CVE-2021-36942",
-        "CVE-2020-1472",
-        "CVE-2022-26923",
-        "CVE-2021-31166",
-        "CVE-2020-1350"
-      ],
-      "risk_ids": [
-        "R-005",
-        "R-014",
-        "R-001",
-        "R-003",
-        "R-016",
-        "R-002"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-02",
-          "ip_address": "",
-          "role": "DNS Server",
-          "CIA rating": "",
-          "riskid": "R-005",
-          "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
-        },
-        {
-          "hostname": "SRV-03",
-          "ip_address": "",
-          "role": "File Server",
-          "CIA rating": "",
-          "riskid": "R-014",
-          "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller",
-          "CIA rating": "",
-          "riskid": "R-001",
-          "risk": "High",
-          "vulnerability_name": "Netlogon Elevation of Privilege",
-          "cve": "CVE-2020-1472",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller",
-          "CIA rating": "",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
-          "cve": "CVE-2022-26923",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
-        },
-        {
-          "hostname": "SRV-04",
-          "ip_address": "",
-          "role": "Web Server",
-          "CIA rating": "",
-          "riskid": "R-016",
-          "risk": "High",
-          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
-          "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller",
-          "CIA rating": "",
-          "riskid": "R-002",
-          "risk": "High",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 6.7."
-        }
-      ]
-    },
-    {
-      "control_id": "7.4",
-      "control_name": "Physical security monitoring",
-      "domain": "Physical Controls",
-      "applicable": true,
-      "implementation_status": "Implemented",
-      "justification": "This control is needed due to identified weaknesses in the organization's physical security posture. The potential for unauthorized access to sensitive areas, equipment, and data storage locations poses a significant risk to the confidentiality, integrity, and availability of organizational assets. Unpatched systems, weak authentication controls, and exposed services have been identified as contributing factors to this vulnerability. Implementing physical security monitoring will help detect and deter such incidents, ensuring the overall security posture is strengthened.",
-      "related_risks": [
-        "CVE-2021-36942",
-        "CVE-2020-1472",
-        "CVE-2022-26923",
-        "CVE-2021-31166",
-        "CVE-2020-1350"
-      ],
-      "risk_ids": [
-        "R-005",
-        "R-014",
-        "R-001",
-        "R-003",
-        "R-016",
-        "R-002"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-02",
-          "ip_address": "",
-          "role": "DNS Server",
-          "CIA rating": "",
-          "riskid": "R-005",
-          "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 7.4."
-        },
-        {
-          "hostname": "SRV-03",
-          "ip_address": "",
-          "role": "File Server",
-          "CIA rating": "",
-          "riskid": "R-014",
-          "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 7.4."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller",
-          "CIA rating": "",
-          "riskid": "R-001",
-          "risk": "High",
-          "vulnerability_name": "Netlogon Elevation of Privilege",
-          "cve": "CVE-2020-1472",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 7.4."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller",
-          "CIA rating": "",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
-          "cve": "CVE-2022-26923",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 7.4."
-        },
-        {
-          "hostname": "SRV-04",
-          "ip_address": "",
-          "role": "Web Server",
-          "CIA rating": "",
-          "riskid": "R-016",
-          "risk": "High",
-          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
-          "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 7.4."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller",
-          "CIA rating": "",
-          "riskid": "R-002",
-          "risk": "High",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 7.4."
-        }
-      ]
-    },
-    {
       "control_id": "8.2",
       "control_name": "Network security",
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To protect networks from an attacker establishing a vulnerable Netlogon secure channel connection to a domain controller and obtain domain administrator access.",
+      "justification": "To protect networks from exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472",
       "related_risks": [
-        "CVE-2020-1472",
-        "CVE-2022-26923"
+        "CVE-2020-1472"
       ],
       "risk_ids": [
-        "R-001",
-        "R-003"
+        "R-001"
       ],
       "source_records": [
         {
           "hostname": "SRV-01",
-          "role": "Domain Controller",
+          "role": "Domain Controller (Active Directory)",
           "riskid": "R-001",
-          "risk": "High",
+          "risk": "Critical",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "reason": "To protect networks from an attacker establishing a vulnerable Netlogon secure channel connection to a domain controller and obtain domain administrator access."
-        },
-        {
-          "hostname": "SRV-01",
-          "role": "Domain Controller",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
-          "cve": "CVE-2022-26923",
-          "reason": "To control privileged access and prevent escalation of privileges"
+          "reason": "To protect networks from exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472"
         }
       ]
     },
@@ -298,22 +31,75 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To secure network-based exploitation of the High HTTP Protocol Stack Remote Code Execution vulnerability (CVE-2021-31166) and prevent unauthorized access.",
+      "justification": "To secure Windows Domain Name System servers and prevent remote code execution vulnerability exploitation.",
       "related_risks": [
-        "CVE-2021-31166"
+        "CVE-2020-1350",
+        "CVE-2017-0144",
+        "CVE-2021-31166",
+        "CVE-2021-44228"
       ],
       "risk_ids": [
-        "R-016"
+        "R-002",
+        "R-003",
+        "R-007",
+        "R-008",
+        "R-009",
+        "R-010"
       ],
       "source_records": [
         {
-          "hostname": "SRV-04",
-          "role": "Web Server",
-          "riskid": "R-016",
+          "hostname": "SRV-01",
+          "role": "Domain Controller (Active Directory)",
+          "riskid": "R-002",
+          "risk": "Critical",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "To secure Windows Domain Name System servers and prevent remote code execution vulnerability exploitation."
+        },
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-003",
           "risk": "High",
-          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "The vulnerability exists in Windows Domain Name System servers, making 'Network Services Security' control relevant for securing these services and reducing the attack surface."
+        },
+        {
+          "hostname": "SRV-03",
+          "role": "File Server",
+          "riskid": "R-007",
+          "risk": "High",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "reason": "The vulnerability is network-based, making it necessary to secure the network services."
+        },
+        {
+          "hostname": "SRV-03",
+          "role": "File Server",
+          "riskid": "R-008",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "To secure network-based exploitation of the High HTTP Protocol Stack Remote Code Execution vulnerability (CVE-2021-31166) and prevent unauthorized access."
+          "reason": "The high WinRM Remote Command Execution Exposure CVE-2021-31166 vulnerability is a network-based exploitation, and securing the network service will help mitigate this risk."
+        },
+        {
+          "hostname": "SRV-04",
+          "role": "Application Server",
+          "riskid": "R-009",
+          "risk": "High",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "reason": "This control ensures that network services are configured securely to prevent remote code execution attacks like this vulnerability."
+        },
+        {
+          "hostname": "SRV-04",
+          "role": "Application Server",
+          "riskid": "R-010",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "reason": "The vulnerability is high-risk and network-based, making it necessary to secure services."
         }
       ]
     },
@@ -323,33 +109,22 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To protect against high Windows LSA spoofing vulnerability (CVE-2021-36942)",
+      "justification": "Protecting data from potential exploitation is crucial due to the high exposure of this vulnerability.",
       "related_risks": [
-        "CVE-2021-36942",
         "CVE-2021-31166"
       ],
       "risk_ids": [
-        "R-005",
-        "R-016"
+        "R-010"
       ],
       "source_records": [
         {
-          "hostname": "SRV-02",
-          "role": "DNS Server",
-          "riskid": "R-005",
-          "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "reason": "To protect against high Windows LSA spoofing vulnerability (CVE-2021-36942)"
-        },
-        {
           "hostname": "SRV-04",
-          "role": "Web Server",
-          "riskid": "R-016",
+          "role": "Application Server",
+          "riskid": "R-010",
           "risk": "High",
-          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "To ensure confidentiality and integrity of data transmitted over the network, including protection against remote code execution attacks."
+          "reason": "Protecting data from potential exploitation is crucial due to the high exposure of this vulnerability."
         }
       ]
     },
@@ -359,33 +134,65 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To reduce vulnerabilities in the Netlogon Remote Protocol (MS-NRPC) and prevent an attacker from running a specially crafted application on a device on the network.",
+      "justification": "To reduce vulnerabilities and prevent exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472",
       "related_risks": [
         "CVE-2020-1472",
-        "CVE-2020-1350"
+        "CVE-2020-1350",
+        "CVE-2017-0144",
+        "CVE-2021-44228"
       ],
       "risk_ids": [
         "R-001",
-        "R-002"
+        "R-002",
+        "R-003",
+        "R-007",
+        "R-009"
       ],
       "source_records": [
         {
           "hostname": "SRV-01",
-          "role": "Domain Controller",
+          "role": "Domain Controller (Active Directory)",
           "riskid": "R-001",
-          "risk": "High",
+          "risk": "Critical",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "reason": "To reduce vulnerabilities in the Netlogon Remote Protocol (MS-NRPC) and prevent an attacker from running a specially crafted application on a device on the network."
+          "reason": "To reduce vulnerabilities and prevent exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472"
         },
         {
           "hostname": "SRV-01",
-          "role": "Domain Controller",
+          "role": "Domain Controller (Active Directory)",
           "riskid": "R-002",
+          "risk": "Critical",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "To ensure that vulnerabilities are reduced by implementing secure coding practices."
+        },
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-003",
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "To reduce the vulnerability and prevent remote code execution, secure coding practices should be followed to ensure that Windows Domain Name System servers are properly designed, implemented, and maintained."
+          "reason": "The 'Windows DNS Server Remote Code Execution Vulnerability' (CVE-2020-1350) is a technical vulnerability that requires secure coding practices to reduce the risk of exploitation."
+        },
+        {
+          "hostname": "SRV-03",
+          "role": "File Server",
+          "riskid": "R-007",
+          "risk": "High",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "reason": "The vulnerability is a technical vulnerability that can be mitigated by ensuring secure coding practices."
+        },
+        {
+          "hostname": "SRV-04",
+          "role": "Application Server",
+          "riskid": "R-009",
+          "risk": "High",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "reason": "This control promotes secure coding practices, which can help reduce the likelihood of similar vulnerabilities in the future."
         }
       ]
     },
@@ -395,22 +202,139 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To validate security, security testing should be performed to identify and mitigate the vulnerability and prevent remote code execution on Windows Domain Name System servers.",
+      "justification": "Regular security testing is necessary to identify and validate the effectiveness of controls against this vulnerability.",
       "related_risks": [
-        "CVE-2020-1350"
+        "CVE-2017-0144"
       ],
       "risk_ids": [
-        "R-002"
+        "R-007"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-03",
+          "role": "File Server",
+          "riskid": "R-007",
+          "risk": "High",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "reason": "Regular security testing is necessary to identify and validate the effectiveness of controls against this vulnerability."
+        }
+      ]
+    },
+    {
+      "control_id": "8.5",
+      "control_name": "Secure authentication",
+      "domain": "Technological Controls",
+      "applicable": true,
+      "implementation_status": "In Progress",
+      "justification": "This control is needed because it addresses the security concern of unsecured authentication, which can lead to exploitation by attackers. The identified vulnerabilities in existing systems and services indicate that weaknesses in authentication mechanisms are present, making it essential to implement controls to ensure strong authentication practices.",
+      "related_risks": [
+        "CVE-2020-1472",
+        "CVE-2020-1350",
+        "CVE-2017-0144",
+        "CVE-2021-31166",
+        "CVE-2021-44228"
+      ],
+      "risk_ids": [
+        "R-001",
+        "R-002",
+        "R-003",
+        "R-007",
+        "R-008",
+        "R-009",
+        "R-010"
       ],
       "source_records": [
         {
           "hostname": "SRV-01",
-          "role": "Domain Controller",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "riskid": "R-001",
+          "risk": "Critical",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
           "riskid": "R-002",
+          "risk": "Critical",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+        },
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "riskid": "R-003",
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "To validate security, security testing should be performed to identify and mitigate the vulnerability and prevent remote code execution on Windows Domain Name System servers."
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "riskid": "R-007",
+          "risk": "High",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "riskid": "R-008",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "riskid": "R-009",
+          "risk": "High",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "riskid": "R-010",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
         }
       ]
     },
@@ -420,33 +344,47 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To manage the identified technical vulnerability and reduce the risk of exploitation",
+      "justification": "This control ensures that the organization has processes in place to manage vulnerabilities, including this high-severity remote code execution vulnerability.",
       "related_risks": [
-        "CVE-2022-26923",
-        "CVE-2021-36942"
+        "CVE-2021-31166"
       ],
       "risk_ids": [
-        "R-003",
-        "R-014"
+        "R-008"
       ],
       "source_records": [
         {
-          "hostname": "SRV-01",
-          "role": "Domain Controller",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
-          "cve": "CVE-2022-26923",
-          "reason": "To manage the identified technical vulnerability and reduce the risk of exploitation"
-        },
-        {
           "hostname": "SRV-03",
           "role": "File Server",
-          "riskid": "R-014",
+          "riskid": "R-008",
           "risk": "High",
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "cve": "CVE-2021-36942",
-          "reason": "The High Windows LSA Spoofing Vulnerability CVE-2021-36942 requires timely detection and remediation to prevent exploitation."
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "reason": "This control ensures that the organization has processes in place to manage vulnerabilities, including this high-severity remote code execution vulnerability."
+        }
+      ]
+    },
+    {
+      "control_id": "8.9",
+      "control_name": "Configuration management",
+      "domain": "Technological Controls",
+      "applicable": true,
+      "implementation_status": "In Progress",
+      "justification": "The vulnerability is specific to log4j-core configuration, and this control ensures that configurations are reviewed and updated regularly.",
+      "related_risks": [
+        "CVE-2021-44228"
+      ],
+      "risk_ids": [
+        "R-009"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-04",
+          "role": "Application Server",
+          "riskid": "R-009",
+          "risk": "High",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "reason": "The vulnerability is specific to log4j-core configuration, and this control ensures that configurations are reviewed and updated regularly."
         }
       ]
     }

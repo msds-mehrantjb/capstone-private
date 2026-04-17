@@ -3,7 +3,7 @@
     {
       "hostname": "SRV-01",
       "ip_address": "10.0.0.2",
-      "role": "Domain Controller",
+      "role": "Domain Controller (Active Directory)",
       "CIA rating": "Critical",
       "vulnerabilities_threats": [
         {
@@ -18,9 +18,10 @@
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft updates addressing CVE-2020-1472",
+            "Apply Microsoft's security updates for CVE-2020-1472 on all domain controllers",
             "Enforce secure Netlogon channel protections",
-            "Audit domain controllers for insecure machine-account activity"
+            "Restrict administrative access to domain controllers using segmentation and firewall rules",
+            "Monitor domain controllers for anomalous machine-account and Netlogon activity"
           ],
           "cve": "CVE-2020-1472",
           "evidence": {
@@ -33,6 +34,8 @@
               636
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Active Directory Domain Services",
               "Kerberos Key Distribution Center",
               "LDAP",
@@ -56,65 +59,35 @@
           "public_exploit_name": "SIGRed",
           "category": "Remote Code Execution",
           "affected_product": "Microsoft Windows DNS Server",
-          "attack_surface": "Remote",
-          "required_service": "DNS Server enabled",
+          "attack_surface": "Remote over network",
+          "required_service": "DNS service exposed",
           "severity": "Critical",
           "cvss_score": 10.0,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft security update for CVE-2020-1350",
-            "Restrict external exposure of DNS where possible",
-            "Monitor anomalous DNS requests and large response patterns"
+            "Apply Microsoft's security updates for CVE-2020-1350",
+            "Restrict access to DNS services to trusted networks and systems only",
+            "Enable DNS logging and monitor for abnormal query patterns",
+            "Use network segmentation and firewall rules to reduce DNS exposure"
           ],
           "cve": "CVE-2020-1350",
           "evidence": {
             "open_ports": [
-              53
-            ],
-            "running_services": [
-              "DNS Server"
-            ],
-            "installed_roles": [
-              "AD DS",
-              "DNS Server",
-              "Active Directory Certificate Services"
-            ],
-            "installed_software": [
-              "Group Policy Management",
-              "RSAT",
-              "AD CS Management Tools"
-            ],
-            "os_version": "Windows Server 2019"
-          }
-        },
-        {
-          "vulnerability_name": "Active Directory Domain Services Privilege Escalation",
-          "public_exploit_name": "Certifried",
-          "category": "Privilege Escalation",
-          "affected_product": "Microsoft Active Directory Domain Services / Active Directory Certificate Services",
-          "attack_surface": "Remote within domain / certificate abuse",
-          "required_service": "AD DS and certificate-based auth exposure",
-          "severity": "Critical",
-          "cvss_score": 8.1,
-          "known_exploited": true,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply Microsoft security updates for CVE-2022-26923",
-            "Review and harden certificate template permissions",
-            "Restrict machine-account creation and monitor certificate issuance abuse"
-          ],
-          "cve": "CVE-2022-26923",
-          "evidence": {
-            "open_ports": [
               88,
+              135,
               389,
               445,
+              464,
               636
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Active Directory Domain Services",
-              "LDAP"
+              "Kerberos Key Distribution Center",
+              "LDAP",
+              "SMB"
             ],
             "installed_roles": [
               "AD DS",
@@ -142,98 +115,29 @@
           "public_exploit_name": "SIGRed",
           "category": "Remote Code Execution",
           "affected_product": "Microsoft Windows DNS Server",
-          "attack_surface": "Remote",
-          "required_service": "DNS Server enabled",
+          "attack_surface": "Remote over network",
+          "required_service": "DNS service exposed",
           "severity": "Critical",
           "cvss_score": 10.0,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft security update for CVE-2020-1350",
-            "Restrict external exposure of DNS where possible",
-            "Monitor anomalous DNS requests and large response patterns"
+            "Apply Microsoft's security updates for CVE-2020-1350",
+            "Restrict access to DNS services to trusted networks and systems only",
+            "Enable DNS logging and monitor for abnormal query patterns",
+            "Use network segmentation and firewall rules to reduce DNS exposure"
           ],
           "cve": "CVE-2020-1350",
           "evidence": {
             "open_ports": [
-              53
-            ],
-            "running_services": [
-              "DNS Server"
-            ],
-            "installed_roles": [
-              "DNS Server",
-              "DHCP Server"
-            ],
-            "installed_software": [
-              "Windows DNS",
-              "DHCP Management Console",
-              "IP Address Management"
-            ],
-            "os_version": "Windows Server 2019"
-          }
-        },
-        {
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "public_exploit_name": "PetitPotam-associated NTLM relay exposure",
-          "category": "Spoofing / NTLM Relay",
-          "affected_product": "Microsoft Windows LSARPC / NTLM authentication flows",
-          "attack_surface": "Remote on internal network",
-          "required_service": "Windows authentication services reachable",
-          "severity": "High",
-          "cvss_score": 8.8,
-          "known_exploited": true,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply Microsoft updates for CVE-2021-36942",
-            "Disable NTLM where feasible and enforce SMB signing / EPA",
-            "Restrict outbound NTLM and harden AD CS relay paths"
-          ],
-          "cve": "CVE-2021-36942",
-          "evidence": {
-            "open_ports": [
+              53,
               135,
               445
             ],
             "running_services": [
-              "RPC Endpoint Mapper",
-              "SMB"
-            ],
-            "installed_roles": [
-              "DNS Server",
-              "DHCP Server"
-            ],
-            "installed_software": [
-              "Windows DNS",
-              "DHCP Management Console",
-              "IP Address Management"
-            ],
-            "os_version": "Windows Server 2019"
-          }
-        },
-        {
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-          "public_exploit_name": "MIC Drop",
-          "category": "Tampering / Relay",
-          "affected_product": "Microsoft Windows NTLM",
-          "attack_surface": "Network / man-in-the-middle",
-          "required_service": "NTLM-based authentication over SMB/RPC/HTTP",
-          "severity": "High",
-          "cvss_score": 6.5,
-          "known_exploited": false,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply Microsoft patches for CVE-2019-1040",
-            "Reduce NTLM usage and prefer Kerberos",
-            "Enable SMB signing and EPA/channel binding where supported"
-          ],
-          "cve": "CVE-2019-1040",
-          "evidence": {
-            "open_ports": [
-              135,
-              445
-            ],
-            "running_services": [
+              "HTTP",
+              "HTTPS",
+              "DNS",
               "RPC Endpoint Mapper",
               "SMB"
             ],
@@ -254,79 +158,43 @@
     {
       "hostname": "WS-01",
       "ip_address": "10.0.0.10",
-      "role": "User Workstation",
+      "role": "Standard Employee Workstation",
       "CIA rating": "Medium",
       "vulnerabilities_threats": [
         {
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "public_exploit_name": "Follina",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "public_exploit_name": "BlueKeep",
           "category": "Remote Code Execution",
-          "affected_product": "Microsoft Windows / Microsoft Office via MSDT URL protocol",
-          "attack_surface": "Email / document-based",
-          "required_service": "Office document handling on Windows",
-          "severity": "Critical",
-          "cvss_score": 7.8,
-          "known_exploited": true,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply Microsoft updates for CVE-2022-30190",
-            "Block untrusted Office documents and macros",
-            "Disable MSDT URL protocol where compensating controls are needed"
-          ],
-          "cve": "CVE-2022-30190",
-          "evidence": {
-            "open_ports": [
-              3389,
-              445
-            ],
-            "running_services": [
-              "Remote Desktop Services",
-              "SMB"
-            ],
-            "installed_roles": [],
-            "installed_software": [
-              "Microsoft Office",
-              "QuickBooks Desktop",
-              "Adobe Acrobat Reader",
-              "Browser"
-            ],
-            "os_version": "Windows 11"
-          }
-        },
-        {
-          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
-          "public_exploit_name": "MonikerLink",
-          "category": "Remote Code Execution",
-          "affected_product": "Microsoft Outlook",
-          "attack_surface": "Email / preview pane",
-          "required_service": "Outlook installed",
+          "affected_product": "Microsoft RDP",
+          "attack_surface": "Remote",
+          "required_service": "RDP exposed on TCP 3389",
           "severity": "Critical",
           "cvss_score": 9.8,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft patches for CVE-2024-21413",
-            "Block or rewrite risky external link handling in mail gateways",
-            "Use Protected View and attachment/link filtering"
+            "Apply Microsoft's security updates for CVE-2019-0708",
+            "Enable Network Level Authentication for Remote Desktop Services",
+            "Restrict RDP access to trusted hosts or VPN paths only",
+            "Block or tightly limit inbound access to TCP 3389 at the firewall"
           ],
-          "cve": "CVE-2024-21413",
+          "cve": "CVE-2019-0708",
           "evidence": {
             "open_ports": [
-              3389,
-              445
+              3389
             ],
             "running_services": [
-              "Remote Desktop Services",
-              "SMB"
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services"
             ],
             "installed_roles": [],
             "installed_software": [
               "Microsoft Office",
-              "QuickBooks Desktop",
-              "Adobe Acrobat Reader",
+              "Outlook",
               "Browser"
             ],
-            "os_version": "Windows 11"
+            "os_version": "Windows 10"
           }
         }
       ]
@@ -334,77 +202,42 @@
     {
       "hostname": "WS-02",
       "ip_address": "10.0.0.11",
-      "role": "User Workstation",
+      "role": "HR Workstation",
       "CIA rating": "Medium",
       "vulnerabilities_threats": [
         {
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "public_exploit_name": "Follina",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "public_exploit_name": "BlueKeep",
           "category": "Remote Code Execution",
-          "affected_product": "Microsoft Windows / Microsoft Office via MSDT URL protocol",
-          "attack_surface": "Email / document-based",
-          "required_service": "Office document handling on Windows",
+          "affected_product": "Microsoft RDP",
+          "attack_surface": "Remote",
+          "required_service": "RDP exposed on TCP 3389",
           "severity": "Critical",
-          "cvss_score": 7.8,
+          "cvss_score": 9.8,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft updates for CVE-2022-30190",
-            "Block untrusted Office documents and macros",
-            "Disable MSDT URL protocol where compensating controls are needed"
+            "Apply Microsoft's security updates for CVE-2019-0708",
+            "Enable Network Level Authentication for Remote Desktop Services",
+            "Restrict RDP access to trusted hosts or VPN paths only",
+            "Block or tightly limit inbound access to TCP 3389 at the firewall"
           ],
-          "cve": "CVE-2022-30190",
+          "cve": "CVE-2019-0708",
           "evidence": {
             "open_ports": [
               3389
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services"
             ],
             "installed_roles": [],
             "installed_software": [
-              "Workday",
               "Microsoft Office",
-              "Java Runtime Environment",
               "Browser"
             ],
-            "os_version": "Windows 10"
-          }
-        },
-        {
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-          "public_exploit_name": "MIC Drop",
-          "category": "Tampering / Relay",
-          "affected_product": "Microsoft Windows NTLM",
-          "attack_surface": "Network / man-in-the-middle",
-          "required_service": "NTLM-based authentication over SMB/RPC/HTTP",
-          "severity": "High",
-          "cvss_score": 6.5,
-          "known_exploited": false,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply Microsoft patches for CVE-2019-1040",
-            "Reduce NTLM usage and prefer Kerberos",
-            "Enable SMB signing and EPA/channel binding where supported"
-          ],
-          "cve": "CVE-2019-1040",
-          "evidence": {
-            "open_ports": [
-              3389,
-              135
-            ],
-            "running_services": [
-              "Remote Desktop Services",
-              "RPC Endpoint Mapper"
-            ],
-            "installed_roles": [],
-            "installed_software": [
-              "Workday",
-              "Microsoft Office",
-              "Java Runtime Environment",
-              "Browser"
-            ],
-            "os_version": "Windows 10"
+            "os_version": "Windows"
           }
         }
       ]
@@ -412,116 +245,41 @@
     {
       "hostname": "WS-03",
       "ip_address": "10.0.0.12",
-      "role": "User Workstation",
+      "role": "Standard Employee Workstation",
       "CIA rating": "Medium",
       "vulnerabilities_threats": [
         {
-          "vulnerability_name": "Microsoft Outlook Elevation of Privilege Vulnerability",
-          "public_exploit_name": "Outlook NTLM Leak / Privilege Abuse",
-          "category": "Elevation of Privilege",
-          "affected_product": "Microsoft Outlook",
-          "attack_surface": "Email",
-          "required_service": "Outlook installed and processing attacker-controlled calendar/email content",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "public_exploit_name": "BlueKeep",
+          "category": "Remote Code Execution",
+          "affected_product": "Microsoft RDP",
+          "attack_surface": "Remote",
+          "required_service": "RDP exposed on TCP 3389",
           "severity": "Critical",
           "cvss_score": 9.8,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft Outlook security updates",
-            "Scan mailboxes for malicious reminder/message artifacts",
-            "Restrict outbound NTLM where feasible"
+            "Apply Microsoft's security updates for CVE-2019-0708",
+            "Enable Network Level Authentication for Remote Desktop Services",
+            "Restrict RDP access to trusted hosts or VPN paths only",
+            "Block or tightly limit inbound access to TCP 3389 at the firewall"
           ],
-          "cve": "CVE-2023-23397",
+          "cve": "CVE-2019-0708",
           "evidence": {
             "open_ports": [
-              3389,
-              443
+              3389
             ],
             "running_services": [
-              "Remote Desktop Services",
-              "Microsoft Teams",
-              "Outlook"
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services"
             ],
             "installed_roles": [],
             "installed_software": [
               "Microsoft Office",
-              "Teams",
               "Outlook",
-              "OneDrive Sync Client"
-            ],
-            "os_version": "Windows 10"
-          }
-        },
-        {
-          "vulnerability_name": "Microsoft Outlook Remote Code Execution Vulnerability",
-          "public_exploit_name": "MonikerLink",
-          "category": "Remote Code Execution",
-          "affected_product": "Microsoft Outlook",
-          "attack_surface": "Email / preview pane",
-          "required_service": "Outlook installed",
-          "severity": "Critical",
-          "cvss_score": 9.8,
-          "known_exploited": true,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply Microsoft patches for CVE-2024-21413",
-            "Block or rewrite risky external link handling in mail gateways",
-            "Use Protected View and attachment/link filtering"
-          ],
-          "cve": "CVE-2024-21413",
-          "evidence": {
-            "open_ports": [
-              3389,
-              443
-            ],
-            "running_services": [
-              "Remote Desktop Services",
-              "Microsoft Teams",
-              "Outlook"
-            ],
-            "installed_roles": [],
-            "installed_software": [
-              "Microsoft Office",
-              "Teams",
-              "Outlook",
-              "OneDrive Sync Client"
-            ],
-            "os_version": "Windows 10"
-          }
-        },
-        {
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "public_exploit_name": "Follina",
-          "category": "Remote Code Execution",
-          "affected_product": "Microsoft Windows / Microsoft Office via MSDT URL protocol",
-          "attack_surface": "Email / document-based",
-          "required_service": "Office document handling on Windows",
-          "severity": "Critical",
-          "cvss_score": 7.8,
-          "known_exploited": true,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply Microsoft updates for CVE-2022-30190",
-            "Block untrusted Office documents and macros",
-            "Disable MSDT URL protocol where compensating controls are needed"
-          ],
-          "cve": "CVE-2022-30190",
-          "evidence": {
-            "open_ports": [
-              3389,
-              443
-            ],
-            "running_services": [
-              "Remote Desktop Services",
-              "Microsoft Teams",
-              "Outlook"
-            ],
-            "installed_roles": [],
-            "installed_software": [
-              "Microsoft Office",
-              "Teams",
-              "Outlook",
-              "OneDrive Sync Client"
+              "Browser"
             ],
             "os_version": "Windows 10"
           }
@@ -535,30 +293,33 @@
       "CIA rating": "High",
       "vulnerabilities_threats": [
         {
-          "vulnerability_name": "Windows LSA Spoofing Vulnerability",
-          "public_exploit_name": "PetitPotam-associated NTLM relay exposure",
-          "category": "Spoofing / NTLM Relay",
-          "affected_product": "Microsoft Windows LSARPC / NTLM authentication flows",
-          "attack_surface": "Remote on internal network",
-          "required_service": "Windows authentication services reachable",
-          "severity": "High",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "public_exploit_name": "EternalBlue",
+          "category": "Remote Code Execution",
+          "affected_product": "Microsoft SMBv1",
+          "attack_surface": "Remote over network",
+          "required_service": "SMB exposed on TCP 445",
+          "severity": "Critical",
           "cvss_score": 8.8,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft updates for CVE-2021-36942",
-            "Disable NTLM where feasible and enforce SMB signing / EPA",
-            "Restrict outbound NTLM and harden AD CS relay paths"
+            "Disable SMBv1 on affected systems",
+            "Apply Microsoft's security updates for SMB remote code execution vulnerabilities",
+            "Restrict SMB access with firewall rules and network segmentation",
+            "Enable SMB signing where operationally appropriate"
           ],
-          "cve": "CVE-2021-36942",
+          "cve": "CVE-2017-0144",
           "evidence": {
             "open_ports": [
-              445,
               135,
               139,
+              445,
               5985
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "SMB",
               "WinRM"
             ],
@@ -576,30 +337,33 @@
           }
         },
         {
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-          "public_exploit_name": "MIC Drop",
-          "category": "Tampering / Relay",
-          "affected_product": "Microsoft Windows NTLM",
-          "attack_surface": "Network / man-in-the-middle",
-          "required_service": "NTLM-based authentication over SMB/RPC/HTTP",
-          "severity": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "public_exploit_name": "",
+          "category": "Lateral Movement",
+          "affected_product": "Windows Remote Management",
+          "attack_surface": "Internal network",
+          "required_service": "WinRM exposed",
+          "severity": "Medium",
           "cvss_score": 6.5,
-          "known_exploited": false,
+          "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft patches for CVE-2019-1040",
-            "Reduce NTLM usage and prefer Kerberos",
-            "Enable SMB signing and EPA/channel binding where supported"
+            "Apply the relevant Microsoft security updates",
+            "Restrict remote management exposure to trusted administrative networks only",
+            "Use firewall rules to limit access to WinRM listeners",
+            "Monitor remote management logs for suspicious activity"
           ],
-          "cve": "CVE-2019-1040",
+          "cve": "CVE-2021-31166",
           "evidence": {
             "open_ports": [
-              445,
               135,
               139,
+              445,
               5985
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "SMB",
               "WinRM"
             ],
@@ -621,83 +385,83 @@
     {
       "hostname": "SRV-04",
       "ip_address": "10.0.0.19",
-      "role": "Web Server",
+      "role": "Application Server",
       "CIA rating": "High",
       "vulnerabilities_threats": [
         {
-          "vulnerability_name": "HTTP Protocol Stack Remote Code Execution",
-          "public_exploit_name": "HTTP.sys RCE",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "public_exploit_name": "Log4Shell",
           "category": "Remote Code Execution",
-          "affected_product": "Microsoft Windows HTTP Protocol Stack (HTTP.sys)",
-          "attack_surface": "Remote",
-          "required_service": "HTTP/HTTPS listener enabled",
+          "affected_product": "Web Application Stack",
+          "attack_surface": "Web interface",
+          "required_service": "HTTP/HTTPS exposed",
           "severity": "Critical",
-          "cvss_score": 9.8,
+          "cvss_score": 10.0,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft patches for CVE-2021-31166",
-            "Reduce unnecessary internet exposure on HTTP/HTTPS services",
-            "Use WAF and reverse proxy protections where applicable"
+            "Update affected logging and application components to a patched version",
+            "Remove or disable vulnerable Log4j functionality where applicable",
+            "Restrict outbound network access from affected application servers where feasible",
+            "Monitor application logs and WAF telemetry for exploitation attempts"
           ],
-          "cve": "CVE-2021-31166",
+          "cve": "CVE-2021-44228",
           "evidence": {
             "open_ports": [
               80,
-              443
+              443,
+              5985
             ],
             "running_services": [
-              "IIS",
               "HTTP",
-              "HTTPS"
+              "HTTPS",
+              "WinRM"
             ],
             "installed_roles": [
-              "Web Server (IIS)",
-              "Application Development",
-              "Management Tools"
+              "Application Server"
             ],
             "installed_software": [
-              "Microsoft IIS 10.0",
-              "ASP.NET Core Hosting Bundle",
-              "URL Rewrite Module"
+              "Application Runtime",
+              "Web Management Console"
             ],
             "os_version": "Windows Server 2016"
           }
         },
         {
-          "vulnerability_name": "Windows NTLM Tampering Vulnerability",
-          "public_exploit_name": "MIC Drop",
-          "category": "Tampering / Relay",
-          "affected_product": "Microsoft Windows NTLM",
-          "attack_surface": "Network / man-in-the-middle",
-          "required_service": "NTLM-based authentication over SMB/RPC/HTTP",
-          "severity": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "public_exploit_name": "",
+          "category": "Lateral Movement",
+          "affected_product": "Windows Remote Management",
+          "attack_surface": "Internal network",
+          "required_service": "WinRM exposed",
+          "severity": "Medium",
           "cvss_score": 6.5,
-          "known_exploited": false,
+          "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft patches for CVE-2019-1040",
-            "Reduce NTLM usage and prefer Kerberos",
-            "Enable SMB signing and EPA/channel binding where supported"
+            "Apply the relevant Microsoft security updates",
+            "Restrict remote management exposure to trusted administrative networks only",
+            "Use firewall rules to limit access to WinRM listeners",
+            "Monitor remote management logs for suspicious activity"
           ],
-          "cve": "CVE-2019-1040",
+          "cve": "CVE-2021-31166",
           "evidence": {
             "open_ports": [
-              135,
+              80,
+              443,
               5985
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "WinRM"
             ],
             "installed_roles": [
-              "Web Server (IIS)",
-              "Application Development",
-              "Management Tools"
+              "Application Server"
             ],
             "installed_software": [
-              "Microsoft IIS 10.0",
-              "ASP.NET Core Hosting Bundle",
-              "URL Rewrite Module"
+              "Application Runtime",
+              "Web Management Console"
             ],
             "os_version": "Windows Server 2016"
           }
@@ -707,24 +471,37 @@
     {
       "hostname": "WS-04",
       "ip_address": "10.0.0.26",
-      "role": "User Workstation",
+      "role": "Call Center Workstation",
       "CIA rating": "Medium",
       "vulnerabilities_threats": [
         {
-          "cve": "CVE-2021-34484",
-          "vulnerability_name": "Windows User Profile Service Privilege Escalation",
-          "public_exploit_name": null,
-          "category": "Privilege Escalation",
-          "affected_product": "Microsoft Windows User Profile Service",
-          "attack_surface": "Local",
-          "required_service": "User Profile Service running",
-          "severity": "Medium",
-          "cvss_score": 5.5,
-          "known_exploited": false,
-          "exploit_available": false,
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "public_exploit_name": "BlueKeep",
+          "category": "Remote Code Execution",
+          "affected_product": "Microsoft RDP",
+          "attack_surface": "Remote",
+          "required_service": "RDP exposed on TCP 3389",
+          "severity": "Critical",
+          "cvss_score": 9.8,
+          "known_exploited": true,
+          "exploit_available": true,
+          "recommended_mitigation": [
+            "Apply Microsoft's security updates for CVE-2019-0708",
+            "Enable Network Level Authentication for Remote Desktop Services",
+            "Restrict RDP access to trusted hosts or VPN paths only",
+            "Block or tightly limit inbound access to TCP 3389 at the firewall"
+          ],
+          "cve": "CVE-2019-0708",
           "evidence": {
-            "open_ports": [3389],
-            "running_services": ["Remote Desktop Services"],
+            "open_ports": [
+              3389
+            ],
+            "running_services": [
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services"
+            ],
+            "installed_roles": [],
             "installed_software": [
               "CRM Desktop Client",
               "Softphone",
@@ -732,122 +509,88 @@
               "Browser"
             ],
             "os_version": "Windows 11"
-          },
-          "recommended_mitigation": [
-            "Apply latest Windows cumulative updates",
-            "Restrict local privilege escalation paths",
-            "Enable endpoint protection monitoring"
-          ]
+          }
         }
       ]
     },
     {
       "hostname": "WS-05",
       "ip_address": "10.0.0.27",
-      "role": "User Workstation",
+      "role": "Developer Workstation",
       "CIA rating": "Medium",
       "vulnerabilities_threats": [
         {
-          "vulnerability_name": "Docker Desktop for Windows File Overwrite Vulnerability",
-          "public_exploit_name": "Docker Desktop Backend API File Overwrite",
-          "category": "Privilege Escalation",
-          "affected_product": "Docker Desktop for Windows",
-          "attack_surface": "Local",
-          "required_service": "Docker Desktop / Docker Engine on Windows",
-          "severity": "High",
-          "cvss_score": 8.8,
-          "known_exploited": false,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Upgrade Docker Desktop beyond affected versions",
-            "Restrict local admin/developer workstation privileges",
-            "Harden Docker Desktop backend access and audit local group membership"
-          ],
-          "cve": "CVE-2022-38730",
-          "evidence": {
-            "open_ports": [
-              3389,
-              2375,
-              3000
-            ],
-            "running_services": [
-              "Remote Desktop Services",
-              "Docker Engine",
-              "Node.js Runtime"
-            ],
-            "installed_roles": [],
-            "installed_software": [
-              "VS Code",
-              "IntelliJ IDEA",
-              "Git",
-              "Docker Desktop",
-              "Node.js"
-            ],
-            "os_version": "Windows 10"
-          }
-        },
-        {
-          "vulnerability_name": "Docker Desktop Installer Argument Injection",
-          "public_exploit_name": "Docker Desktop LPE",
-          "category": "Privilege Escalation",
-          "affected_product": "Docker Desktop on Windows",
-          "attack_surface": "Local",
-          "required_service": "Docker Desktop installer or update workflow",
-          "severity": "High",
-          "cvss_score": 8.4,
-          "known_exploited": false,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Upgrade Docker Desktop to a fixed version",
-            "Restrict software installation and update rights",
-            "Monitor for unexpected Docker Desktop installer execution"
-          ],
-          "cve": "CVE-2023-0633",
-          "evidence": {
-            "open_ports": [
-              3389,
-              2375,
-              3000
-            ],
-            "running_services": [
-              "Remote Desktop Services",
-              "Docker Engine",
-              "Node.js Runtime"
-            ],
-            "installed_roles": [],
-            "installed_software": [
-              "VS Code",
-              "IntelliJ IDEA",
-              "Git",
-              "Docker Desktop",
-              "Node.js"
-            ],
-            "os_version": "Windows 10"
-          }
-        },
-        {
-          "vulnerability_name": "Microsoft Support Diagnostic Tool Remote Code Execution",
-          "public_exploit_name": "Follina",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "public_exploit_name": "BlueKeep",
           "category": "Remote Code Execution",
-          "affected_product": "Microsoft Windows / Microsoft Office via MSDT URL protocol",
-          "attack_surface": "Email / document-based",
-          "required_service": "Office document handling on Windows",
+          "affected_product": "Microsoft RDP",
+          "attack_surface": "Remote",
+          "required_service": "RDP exposed on TCP 3389",
           "severity": "Critical",
-          "cvss_score": 7.8,
+          "cvss_score": 9.8,
           "known_exploited": true,
           "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Microsoft updates for CVE-2022-30190",
-            "Block untrusted Office documents and macros",
-            "Disable MSDT URL protocol where compensating controls are needed"
+            "Apply Microsoft's security updates for CVE-2019-0708",
+            "Enable Network Level Authentication for Remote Desktop Services",
+            "Restrict RDP access to trusted hosts or VPN paths only",
+            "Block or tightly limit inbound access to TCP 3389 at the firewall"
           ],
-          "cve": "CVE-2022-30190",
+          "cve": "CVE-2019-0708",
           "evidence": {
             "open_ports": [
+              2375,
+              3000,
               3389
             ],
             "running_services": [
-              "Remote Desktop Services"
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services",
+              "Docker Engine",
+              "Node.js Runtime"
+            ],
+            "installed_roles": [],
+            "installed_software": [
+              "VS Code",
+              "IntelliJ IDEA",
+              "Git",
+              "Docker Desktop",
+              "Node.js"
+            ],
+            "os_version": "Windows 10"
+          }
+        },
+        {
+          "vulnerability_name": "Docker Container Escape",
+          "public_exploit_name": "",
+          "category": "Privilege Escalation",
+          "affected_product": "Docker Engine",
+          "attack_surface": "Local",
+          "required_service": "Docker daemon",
+          "severity": "High",
+          "cvss_score": 7.5,
+          "known_exploited": false,
+          "exploit_available": true,
+          "recommended_mitigation": [
+            "Update Docker Engine and related container runtime components",
+            "Restrict access to the Docker daemon to authorized administrators only",
+            "Avoid running containers with excessive privileges",
+            "Monitor container and host activity for anomalous process execution"
+          ],
+          "cve": "CVE-2019-5736",
+          "evidence": {
+            "open_ports": [
+              2375,
+              3000,
+              3389
+            ],
+            "running_services": [
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services",
+              "Docker Engine",
+              "Node.js Runtime"
             ],
             "installed_roles": [],
             "installed_software": [
@@ -865,27 +608,41 @@
     {
       "hostname": "WS-06",
       "ip_address": "10.0.0.28",
-      "role": "User Workstation",
+      "role": "Data Scientist Workstation",
       "CIA rating": "Medium",
       "vulnerabilities_threats": [
         {
-          "cve": "CVE-2023-38146",
-          "vulnerability_name": "Windows Installer Information Disclosure",
-          "public_exploit_name": null,
-          "category": "Information Disclosure",
-          "affected_product": "Microsoft Windows Installer",
-          "attack_surface": "Local",
-          "required_service": "Windows Installer",
-          "severity": "Medium",
-          "cvss_score": 5.3,
-          "known_exploited": false,
-          "exploit_available": false,
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "public_exploit_name": "BlueKeep",
+          "category": "Remote Code Execution",
+          "affected_product": "Microsoft RDP",
+          "attack_surface": "Remote",
+          "required_service": "RDP exposed on TCP 3389",
+          "severity": "Critical",
+          "cvss_score": 9.8,
+          "known_exploited": true,
+          "exploit_available": true,
+          "recommended_mitigation": [
+            "Apply Microsoft's security updates for CVE-2019-0708",
+            "Enable Network Level Authentication for Remote Desktop Services",
+            "Restrict RDP access to trusted hosts or VPN paths only",
+            "Block or tightly limit inbound access to TCP 3389 at the firewall"
+          ],
+          "cve": "CVE-2019-0708",
           "evidence": {
-            "open_ports": [8888, 6006],
+            "open_ports": [
+              3389,
+              6006,
+              8888
+            ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services",
               "Jupyter Server",
               "TensorBoard"
             ],
+            "installed_roles": [],
             "installed_software": [
               "Python",
               "R",
@@ -894,12 +651,91 @@
               "Anaconda"
             ],
             "os_version": "Windows 11"
-          },
+          }
+        },
+        {
+          "vulnerability_name": "Jupyter Web Interface Exposure",
+          "public_exploit_name": "",
+          "category": "Remote Access",
+          "affected_product": "Jupyter Notebook",
+          "attack_surface": "Web interface",
+          "required_service": "Port 8888 exposed",
+          "severity": "Medium",
+          "cvss_score": 6.5,
+          "known_exploited": false,
+          "exploit_available": true,
           "recommended_mitigation": [
-            "Apply Windows security updates",
-            "Restrict local package installation permissions",
-            "Monitor local privilege escalation attempts"
-          ]
+            "Update Jupyter Notebook/JupyterLab to a patched version",
+            "Restrict access to Jupyter services to trusted users and networks only",
+            "Require strong authentication for Jupyter access",
+            "Avoid exposing Jupyter services directly to untrusted networks"
+          ],
+          "cve": "CVE-2021-32797",
+          "evidence": {
+            "open_ports": [
+              3389,
+              6006,
+              8888
+            ],
+            "running_services": [
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services",
+              "Jupyter Server",
+              "TensorBoard"
+            ],
+            "installed_roles": [],
+            "installed_software": [
+              "Python",
+              "R",
+              "JupyterLab",
+              "TensorFlow",
+              "Anaconda"
+            ],
+            "os_version": "Windows 11"
+          }
+        },
+        {
+          "vulnerability_name": "TensorBoard Unauthorized Access",
+          "public_exploit_name": "",
+          "category": "Information Disclosure",
+          "affected_product": "TensorBoard",
+          "attack_surface": "Web interface",
+          "required_service": "TensorBoard exposed",
+          "severity": "Medium",
+          "cvss_score": 6.0,
+          "known_exploited": false,
+          "exploit_available": false,
+          "recommended_mitigation": [
+            "Apply the vendor security update for the affected product",
+            "Restrict access to the exposed service using firewall rules or segmentation",
+            "Limit administrative access using least privilege principles",
+            "Enable logging and monitor for suspicious activity related to the affected service"
+          ],
+          "cve": "CVE-2020-15257",
+          "evidence": {
+            "open_ports": [
+              3389,
+              6006,
+              8888
+            ],
+            "running_services": [
+              "HTTP",
+              "HTTPS",
+              "Remote Desktop Services",
+              "Jupyter Server",
+              "TensorBoard"
+            ],
+            "installed_roles": [],
+            "installed_software": [
+              "Python",
+              "R",
+              "JupyterLab",
+              "TensorFlow",
+              "Anaconda"
+            ],
+            "os_version": "Windows 11"
+          }
         }
       ]
     }

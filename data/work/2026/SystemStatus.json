@@ -5,19 +5,19 @@
   },
   "sections": {
     "scope_context": {
+      "status": "Completed"
+    },
+    "assets_cia": {
       "status": "In Progress"
     },
     "threats_vulns": {
       "status": "In Progress"
     },
-    "controls_posture": {
-      "status": "In Progress"
-    },
-    "assets_cia": {
+    "existing_controls_postures": {
       "status": "In Progress"
     },
     "risk_analysis": {
-      "status": "In Progress"
+      "status": "Completed"
     },
     "risk_evaluation_treatment": {
       "status": "In Progress"
@@ -29,6 +29,9 @@
       "status": "In Progress"
     },
     "monitoring_improvement": {
+      "status": "In Progress"
+    },
+    "controls_posture": {
       "status": "In Progress"
     }
   }

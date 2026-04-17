@@ -4,10 +4,13 @@ import json
 import ipaddress
 import re
 import traceback
+import importlib.util
 from pathlib import Path
 from typing import Any, Tuple
 import joblib
 import pandas as pd
+import subprocess
+import yaml
 from pydantic import BaseModel
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
@@ -23,6 +26,7 @@ from datetime import datetime
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
 
+DISCOVERED_SUBNETS_SESSION: dict[int, list[dict]] = {}
 
 VALID_STEP_STATUSES = {"Blocked", "Not Started", "In Progress", "Completed"}
 VALID_HOST_STATUSES = {"Active", "Not Active", "Unknown"}
@@ -183,6 +187,594 @@ def _blank_detail() -> dict:
             "method": ""
         }
     }
+
+def _docker_lab_dir() -> Path:
+    return BASE_DIR / "data" / "docker_lab"
+
+
+def _docker_compose_file() -> Path:
+    return _docker_lab_dir() / "docker-compose.yml"
+
+
+def _load_docker_compose_yaml() -> dict:
+    compose_file = _docker_compose_file()
+
+    if not compose_file.exists():
+        raise FileNotFoundError(f"Docker compose file not found: {compose_file}")
+
+    try:
+        with open(compose_file, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        if not isinstance(data, dict):
+            raise ValueError("docker-compose.yml is not a valid YAML dictionary")
+
+        return data
+
+    except Exception as e:
+        raise RuntimeError(f"Failed to read docker-compose.yml: {e}")
+
+def _normalize_os_name(os_caption: str) -> str:
+    text = os_caption.lower()
+
+    if "windows server 2022" in text:
+        return "Windows Server 2022"
+    if "windows server 2019" in text:
+        return "Windows Server 2019"
+    if "windows server 2016" in text:
+        return "Windows Server 2016"
+    if "windows 11" in text:
+        return "Windows 11"
+    if "windows 10" in text:
+        return "Windows 10"
+
+    return os_caption.strip()
+
+def _docker_available() -> tuple[bool, str]:
+    try:
+        result = subprocess.run(
+            ["docker", "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=20,
+        )
+        if result.returncode != 0:
+            return False, (result.stderr or result.stdout or "docker command failed").strip()
+        return True, (result.stdout or "docker available").strip()
+    except Exception as e:
+        return False, str(e)
+
+
+def _docker_compose_available() -> tuple[bool, str]:
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "version"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=20,
+        )
+        if result.returncode != 0:
+            return False, (result.stderr or result.stdout or "docker compose command failed").strip()
+        return True, (result.stdout or "docker compose available").strip()
+    except Exception as e:
+        return False, str(e)
+
+
+def _docker_lab_ps_q() -> list[str]:
+    compose_file = _docker_compose_file()
+
+    if not compose_file.exists():
+        return []
+
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "-f", str(compose_file), "ps", "-q"],
+            cwd=str(_docker_lab_dir()),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            return []
+        return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception:
+        return []
+
+
+def _docker_lab_is_running() -> bool:
+    return len(_docker_lab_ps_q()) > 0
+
+
+def _ensure_docker_lab_running() -> tuple[bool, str]:
+    docker_ok, docker_msg = _docker_available()
+    if not docker_ok:
+        return False, f"Docker is not available: {docker_msg}"
+
+    compose_ok, compose_msg = _docker_compose_available()
+    if not compose_ok:
+        return False, f"Docker Compose is not available: {compose_msg}"
+
+    lab_dir = _docker_lab_dir()
+    compose_file = _docker_compose_file()
+
+    if not lab_dir.exists():
+        return False, f"Docker lab folder not found: {lab_dir}"
+
+    if not compose_file.exists():
+        return False, f"Docker compose file not found: {compose_file}"
+
+    if _docker_lab_is_running():
+        return True, "Docker lab is already running."
+
+    try:
+        result = subprocess.run(
+            ["docker", "compose", "up", "-d", "--build"],
+            cwd=str(lab_dir),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=300,
+        )
+
+        if result.returncode != 0:
+            return False, (
+                "Failed to create and start docker lab.\n"
+                f"STDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}"
+            )
+
+        return True, "Docker lab created and started successfully."
+    except Exception as e:
+        return False, f"Failed to create and start docker lab: {e}"
+
+
+def _compose_network_name_to_subnet_id(network_name: str, fallback_idx: int) -> str:
+    normalized = str(network_name or "").strip().lower()
+
+    if normalized.startswith("subnet_a"):
+        return "Subnet_A"
+    if normalized.startswith("subnet_b"):
+        return "Subnet_B"
+
+    return f"Subnet_{fallback_idx}"
+
+
+def _extract_lab_subnets_from_docker_compose() -> list[dict]:
+    compose_data = _load_docker_compose_yaml()
+    compose_networks = compose_data.get("networks", {}) or {}
+    compose_services = compose_data.get("services", {}) or {}
+
+    discovered: list[dict] = []
+    network_map: dict[str, dict] = {}
+
+    for idx, (network_name, network_cfg) in enumerate(compose_networks.items(), start=1):
+        network_cfg = network_cfg or {}
+        ipam = network_cfg.get("ipam", {}) or {}
+        ipam_config = ipam.get("config", []) or []
+
+        subnet_cidr = ""
+        gateway_ip = ""
+
+        if ipam_config and isinstance(ipam_config[0], dict):
+            subnet_cidr = str(ipam_config[0].get("subnet", "") or "").strip()
+            gateway_ip = str(ipam_config[0].get("gateway", "") or "").strip()
+
+        if not subnet_cidr:
+            continue
+
+        subnet_entry = {
+            "id": _compose_network_name_to_subnet_id(network_name, idx),
+            "label": subnet_cidr,
+            "gateway": gateway_ip,
+            "hosts": [],
+        }
+
+        network_map[network_name] = subnet_entry
+
+    for service_name, service_cfg in compose_services.items():
+        if str(service_name).strip().lower() == "gateway":
+            continue
+        service_cfg = service_cfg or {}
+        attached_networks = service_cfg.get("networks", {}) or {}
+
+        for network_name, attachment in attached_networks.items():
+            subnet_entry = network_map.get(network_name)
+            if not subnet_entry:
+                continue
+
+            ip_addr = ""
+            if isinstance(attachment, dict):
+                ip_addr = str(attachment.get("ipv4_address", "") or "").strip()
+
+            if not ip_addr:
+                continue
+
+            subnet_entry["hosts"].append({
+                "service": str(service_name).strip(),
+                "ip_address": ip_addr,
+            })
+
+    for subnet in network_map.values():
+        subnet["hosts"] = sorted(
+            subnet["hosts"],
+            key=lambda h: ipaddress.ip_address(h["ip_address"])
+        )
+        subnet["host_count"] = len(subnet["hosts"])
+        discovered.append(subnet)
+
+    discovered = sorted(
+        discovered,
+        key=lambda s: ipaddress.ip_network(s["label"], strict=False).network_address
+    )
+
+    return discovered
+
+
+def _network_matches_lab(network_input: str, discovered_subnets: list[dict]) -> bool:
+    try:
+        if "/" in network_input:
+            user_value = ipaddress.ip_network(network_input, strict=False)
+        else:
+            user_value = ipaddress.ip_address(network_input)
+    except Exception:
+        raise ValueError("Invalid network address format.")
+
+    for subnet in discovered_subnets:
+        subnet_cidr = str(subnet.get("label", "") or "").strip()
+        if not subnet_cidr:
+            continue
+
+        subnet_net = ipaddress.ip_network(subnet_cidr, strict=False)
+
+        if isinstance(user_value, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
+            if user_value in subnet_net:
+                return True
+        else:
+            if (
+                user_value == subnet_net
+                or user_value.subnet_of(subnet_net)
+                or subnet_net.subnet_of(user_value)
+            ):
+                return True
+
+    return False
+
+
+def _build_docker_explore_message(discovered_subnets: list[dict]) -> str:
+    subnet_lines: list[str] = []
+    server_lines: list[str] = []
+    workstation_lines: list[str] = []
+    vm_names = _active_vm_hostnames(discovered_subnets)
+
+    for subnet in discovered_subnets:
+        label = str(subnet.get("label", "")).strip()
+        if label:
+            subnet_lines.append(label)
+
+        for host in subnet.get("hosts", []) or []:
+            service_name = str(host.get("service", "")).strip()
+            hostname = _service_name_to_hostname(service_name)
+            ip_addr = str(host.get("ip_address", "")).strip()
+        
+            if not hostname or not ip_addr:
+                continue
+        
+            if hostname in vm_names:
+                line = f"{hostname} , {ip_addr}  - VM/Active"
+            else:
+                line = f"{hostname} , {ip_addr}"
+        
+            if _is_server_hostname(hostname):
+                server_lines.append(line)
+            elif _is_workstation_hostname(hostname):
+                workstation_lines.append(line)
+        
+    subnet_lines = sorted(set(subnet_lines), key=lambda x: ipaddress.ip_network(x, strict=False).network_address)
+    server_lines = sorted(set(server_lines), key=lambda x: x)
+    workstation_lines = sorted(set(workstation_lines), key=lambda x: x)
+
+    msg = "System finds:\n\n"
+
+    msg += f"{len(subnet_lines)} subnets:\n"
+    for subnet in subnet_lines:
+        msg += f"   {subnet}\n"
+
+    msg += f"\n{len(server_lines)} Servers:\n"
+    for line in server_lines:
+        msg += f"   {line}\n"
+
+    msg += f"\n{len(workstation_lines)} Workstations:\n"
+    for line in workstation_lines:
+        msg += f"   {line}\n"
+
+    msg += "\nUse /assess command to retrieve hosts profiles"
+
+    return msg.strip()
+
+def _service_name_to_hostname(service_name: str) -> str:
+    raw = str(service_name or "").strip().lower()
+
+    if raw.startswith("srv_"):
+        suffix = raw.split("_", 1)[1]
+        try:
+            return f"SRV-{int(suffix):02d}"
+        except Exception:
+            return raw.replace("_", "-").upper()
+
+    if raw.startswith("ws_"):
+        suffix = raw.split("_", 1)[1]
+        try:
+            return f"WS-{int(suffix):02d}"
+        except Exception:
+            return raw.replace("_", "-").upper()
+
+    return raw.replace("_", "-").upper()
+
+def _run_nmap_host_discovery(subnet: str) -> str:
+    nmap_exe = r"C:\Program Files (x86)\Nmap\nmap.exe"
+    result = subprocess.run(
+        [nmap_exe, "-sn", subnet],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result.stdout
+
+
+def _parse_discovered_hosts(nmap_output: str) -> list[str]:
+    hosts: list[str] = []
+
+    for line in nmap_output.splitlines():
+        line = line.strip()
+
+        if "Nmap scan report for" not in line:
+            continue
+
+        m = re.search(r"\((\d{1,3}(?:\.\d{1,3}){3})\)", line)
+        if m:
+            hosts.append(m.group(1))
+            continue
+
+        m = re.search(r"for (\d{1,3}(?:\.\d{1,3}){3})$", line)
+        if m:
+            hosts.append(m.group(1))
+
+    return hosts
+
+
+def _active_vm_hostnames(discovered_subnets: list[dict]) -> set[str]:
+    """
+    Find active VM machines using the same Nmap host discovery logic
+    used in scanner.py.
+    """
+    active_vm_names: set[str] = set()
+
+    try:
+        for subnet in discovered_subnets:
+            subnet_cidr = str(subnet.get("label", "")).strip()
+            if not subnet_cidr:
+                continue
+
+            discovery_output = _run_nmap_host_discovery(subnet_cidr)
+            active_ips = set(_parse_discovered_hosts(discovery_output))
+
+            for host in subnet.get("hosts", []) or []:
+                service_name = str(host.get("service", "")).strip()
+                hostname = _service_name_to_hostname(service_name)
+                ip_addr = str(host.get("ip_address", "")).strip()
+
+                if hostname and ip_addr and ip_addr in active_ips:
+                    active_vm_names.add(hostname)
+
+    except Exception:
+        return set()
+
+    return active_vm_names
+    
+
+def _targets_file_path() -> Path:
+    return BASE_DIR / "lab-scanner" / "config" / "targets.json"
+
+
+def _write_targets_json_for_vm_hosts(
+    *,
+    year: int,
+    discovered_subnets: list[dict],
+    username: str = r"CORP\Administrator",
+    password: str = "!MT123456",
+) -> Path:
+    vm_names = _active_vm_hostnames(discovered_subnets)
+
+    subnet_value = ""
+    network_address = ""
+    vm_hosts: list[dict] = []
+
+    for subnet in discovered_subnets:
+        subnet_label = str(subnet.get("label", "")).strip()
+        if not subnet_label:
+            continue
+
+        for host in subnet.get("hosts", []) or []:
+            service_name = str(host.get("service", "")).strip()
+            hostname = _service_name_to_hostname(service_name)
+            ip_addr = str(host.get("ip_address", "")).strip()
+
+            if hostname in vm_names and ip_addr:
+                if not subnet_value:
+                    subnet_value = subnet_label
+                    try:
+                        network_address = str(ipaddress.ip_network(subnet_label, strict=False).network_address)
+                    except Exception:
+                        network_address = ""
+
+                vm_hosts.append({
+                    "hostname": hostname,
+                    "ip_address": ip_addr,
+                    "username": username,
+                    "password": password,
+                })
+
+    vm_hosts = sorted(vm_hosts, key=lambda x: (_is_workstation_hostname(x["hostname"]), x["hostname"]))
+
+    payload = {
+        "year": year,
+        "network_address": network_address,
+        "subnet": subnet_value,
+        "hosts": vm_hosts,
+    }
+
+    out_path = _targets_file_path()
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2)
+
+    return out_path
+
+def _store_discovered_subnets_session(year: int, discovered_subnets: list[dict]) -> None:
+    DISCOVERED_SUBNETS_SESSION[year] = json.loads(json.dumps(discovered_subnets or []))
+
+
+def _get_discovered_subnets_session(year: int) -> list[dict]:
+    cached = DISCOVERED_SUBNETS_SESSION.get(year, [])
+    return json.loads(json.dumps(cached))
+
+
+def _normalize_discovered_subnet(subnet: dict) -> dict:
+    if not isinstance(subnet, dict):
+        return {}
+
+    hosts_out: list[dict] = []
+    for host in subnet.get("hosts", []) or []:
+        if not isinstance(host, dict):
+            continue
+        hosts_out.append({
+            "service": str(host.get("service", "") or "").strip(),
+            "ip_address": str(host.get("ip_address", "") or "").strip(),
+        })
+
+    return {
+        "id": str(subnet.get("id", "") or "").strip(),
+        "label": str(subnet.get("label", "") or "").strip(),
+        "hosts": hosts_out,
+        "host_count": len(hosts_out),
+    }
+
+
+def _get_discovered_subnet_from_payload_or_session(year: int, payload: dict, subnet_id: str) -> dict | None:
+    selected_subnet = _normalize_discovered_subnet(payload.get("selected_subnet") or {})
+    if selected_subnet.get("id") == subnet_id and selected_subnet.get("hosts"):
+        return selected_subnet
+
+    for subnet in _get_discovered_subnets_session(year):
+        normalized = _normalize_discovered_subnet(subnet)
+        if normalized.get("id") == subnet_id:
+            return normalized
+
+    return None
+
+
+def _scanner_script_path() -> Path:
+    return BASE_DIR / "lab-scanner" / "scripts" / "scanner.py"
+
+
+def _load_targets_json() -> dict:
+    path = _targets_file_path()
+    if not path.exists():
+        return {}
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def _get_matching_target_host(hostname: str, ip_address: str) -> dict | None:
+    targets_doc = _load_targets_json()
+
+    for host in targets_doc.get("hosts", []) or []:
+        target_hostname = str(host.get("hostname", "")).strip().upper().replace("_", "-")
+        current_hostname = str(hostname).strip().upper().replace("_", "-")
+
+        target_ip = str(host.get("ip_address", "")).strip()
+        current_ip = str(ip_address).strip()
+
+        if target_hostname == current_hostname or target_ip == current_ip:
+            return host
+
+    return None
+
+def _load_scanner_module():
+    scanner_path = _scanner_script_path()
+    if not scanner_path.exists():
+        raise FileNotFoundError(f"scanner.py not found: {scanner_path}")
+
+    spec = importlib.util.spec_from_file_location("lab_scanner_runtime", scanner_path)
+    if not spec or not spec.loader:
+        raise RuntimeError(f"Unable to load scanner.py from {scanner_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _merge_scanner_detail(existing_detail: dict, scanned_record: dict) -> dict:
+    detail = _normalize_detail_payload(existing_detail)
+    scanned_detail = scanned_record.get("detail") or {}
+
+    device_profile = scanned_detail.get("device_profile", {}) or {}
+    technical = scanned_detail.get("technical_indicators", {}) or {}
+
+    detail["device_profile"]["os_type"] = str(device_profile.get("os_type", "") or "").strip()
+
+    scanned_os = str(device_profile.get("os_version", "") or "").strip()
+    if not scanned_os:
+        scanned_os = str(scanned_record.get("os_caption", "") or "").strip()
+
+    if scanned_os:
+        detail["device_profile"]["os_version"] = _normalize_os_name(scanned_os)
+
+    detail["device_profile"]["is_domain_joined"] = bool(device_profile.get("is_domain_joined", False))
+
+    if not detail["device_profile"].get("hostname_pattern"):
+        detail["device_profile"]["hostname_pattern"] = str(scanned_record.get("hostname", "") or "").strip()
+
+    detail["technical_indicators"]["open_ports"] = list(technical.get("open_ports", []) or [])
+    detail["technical_indicators"]["running_services"] = list(technical.get("running_services", []) or [])
+    detail["technical_indicators"]["installed_roles"] = list(technical.get("installed_roles", []) or [])
+    detail["technical_indicators"]["installed_software"] = list(technical.get("installed_software", []) or [])
+
+    scanner_role = str(scanned_record.get("role", "") or "").strip()
+    if scanner_role:
+        detail["selected_role"]["role"] = scanner_role
+        detail["selected_role"]["method"] = "scanner.py"
+
+    return detail
+
+
+def _assess_target_host_with_scanner(hostname: str, ip_address: str, target_host: dict) -> dict:
+    scanner = _load_scanner_module()
+    username = str(target_host.get("username", "") or "").strip()
+    password = str(target_host.get("password", "") or "").strip()
+
+    if not username or not password:
+        raise ValueError("Matching target host is missing username or password.")
+
+    windows_data = scanner.get_windows_data(ip_address, username, password)
+    port_scan_output = scanner.run_nmap_port_scan(ip_address)
+    open_ports = scanner.parse_open_ports(port_scan_output)
+
+    return scanner.build_host_record(
+        ip=ip_address,
+        status="Active",
+        windows_data=windows_data,
+        open_ports=open_ports,
+        fallback_hostname=hostname,
+    )
 
 def _count_hosts_by_status(inventory: dict) -> dict[str, int]:
     unknown_count = 0
@@ -2670,71 +3262,72 @@ def explore_network(payload: dict):
     year = int(payload.get("year", 2026))
     network_input = (payload.get("network_mask") or "").strip()
 
-    ou_file = _ou_file(year)
-
     if not network_input:
-        return {"success": False, "message": "Please provide a network address."}
-
-    if not ou_file.exists():
-        return {"success": False, "message": f"OU data file not found: {ou_file}"}
-
-    try:
-        if "/" in network_input:
-            user_value = ipaddress.ip_network(network_input, strict=False)
-        else:
-            user_value = ipaddress.ip_address(network_input)
-    except Exception:
-        return {"success": False, "message": "Invalid network address format."}
+        return {
+            "success": False,
+            "message": "Please provide a network address."
+        }
 
     try:
-        ou_data = _load_json(ou_file)
-    except Exception as e:
-        return {"success": False, "message": f"Failed to read OU.json: {e}"}
+        docker_ready, docker_message = _ensure_docker_lab_running()
+        if not docker_ready:
+            return {
+                "success": False,
+                "message": docker_message
+            }
 
-    nat_cfg = ou_data.get("nat_configuration", {})
-    subnets_raw = nat_cfg.get("subnets", [])
-    subnet_count = len(subnets_raw)
+        discovered_subnets = _extract_lab_subnets_from_docker_compose()
+        if not discovered_subnets:
+            return {
+                "success": False,
+                "message": "No subnets were found in data/docker_lab/docker-compose.yml."
+            }
 
-    private_range = nat_cfg.get("internal_network_summary", {}).get("private_range")
-    if not private_range:
-        return {"success": False, "message": "Private range not found in OU.json."}
-
-    try:
-        base_network = ipaddress.ip_network(private_range, strict=False)
-    except Exception:
-        return {"success": False, "message": "Invalid private range in OU.json."}
-
-    if isinstance(user_value, (ipaddress.IPv4Address, ipaddress.IPv6Address)):
-        matched = user_value in base_network
-    else:
-        matched = (
-            user_value.subnet_of(base_network)
-            or base_network.subnet_of(user_value)
-            or user_value == base_network
+        targets_file = _write_targets_json_for_vm_hosts(
+            year=year,
+            discovered_subnets=discovered_subnets,
+            username=r"CORP\Administrator",
+            password="!MT123456",
         )
 
-    if not matched:
-        return {"success": False, "message": "Network not found."}
+        matched = _network_matches_lab(network_input, discovered_subnets)
+        if not matched:
+            return {
+                "success": False,
+                "message": "Network not found in docker lab architecture."
+            }
+        inventory = _load_inventory_or_blank(year)
+        inventory["network_mask"] = network_input
+        _save_json(_asset_file(year), inventory)
+        _sync_assets_cia_status(year, inventory)
 
-    discovered_subnets = []
-    for idx, subnet in enumerate(subnets_raw, start=1):
-        subnet_id = _get_subnet_id(subnet, idx)
-        subnet_label = _get_subnet_label(subnet, idx)
-        hosts = _get_hosts_from_subnet(subnet)
+        _store_discovered_subnets_session(year, discovered_subnets)
 
-        discovered_subnets.append({
-            "id": subnet_id,
-            "label": subnet_label,
-            "host_count": len(hosts)
-        })
+        return {
+            "success": True,
+            "message": _build_docker_explore_message(discovered_subnets),
+            "subnets": [
+                {
+                    "id": subnet["id"],
+                    "label": subnet["label"],
+                    "hosts": subnet.get("hosts", []),
+                    "host_count": subnet["host_count"]
+                }
+                for subnet in discovered_subnets
+            ]
+        }
 
-    return {
-        "success": True,
-        "message": f"The network scanned and found {subnet_count} subnet{'s' if subnet_count != 1 else ''}.",
-        "subnets": discovered_subnets
-    }
-
-
+    except ValueError as e:
+        return {
+            "success": False,
+            "message": str(e)
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Backend error while exploring docker lab: {e}"
+        }
+        
 @router.post("/assess")
 def assess_subnet(payload: dict):
     year = int(payload.get("year", 2026))
@@ -2751,49 +3344,63 @@ def assess_subnet(payload: dict):
             "inventory": inventory
         }
 
-    ou_file = _ou_file(year)
     asset_file = _asset_file(year)
+    selected = _get_discovered_subnet_from_payload_or_session(year, payload, subnet_id)
 
-    if not ou_file.exists():
-        return {"success": False, "message": f"OU data file not found: {ou_file}"}
-
-    try:
-        ou_data = _load_json(ou_file)
-    except Exception as e:
-        return {"success": False, "message": f"Failed to read OU.json: {e}"}
-
-    nat_cfg = ou_data.get("nat_configuration", {})
-    subnets_raw = nat_cfg.get("subnets", [])
-
-    selected = None
-    selected_idx = None
-
-    for idx, subnet in enumerate(subnets_raw, start=1):
-        current_id = _get_subnet_id(subnet, idx)
-        if current_id == subnet_id:
-            selected = subnet
-            selected_idx = idx
-            break
-
-    if not selected or selected_idx is None:
-        return {"success": False, "message": "Selected subnet not found."}
+    if not selected:
+        return {
+            "success": False,
+            "message": "Selected subnet not found in the current /explore session. Please run /explore again."
+        }
 
     details_index = _index_asset_details_by_hostname(year)
 
-    subnet_name = _get_subnet_id(selected, selected_idx)
-    subnet_label = _get_subnet_label(selected, selected_idx)
-    hosts = _get_hosts_from_subnet(selected)
+    subnet_name = str(selected.get("id", "") or "").strip()
+    subnet_label = str(selected.get("label", "") or "").strip()
+    hosts = list(selected.get("hosts", []) or [])
 
     assets = []
+
     for idx, host in enumerate(hosts, start=1):
-        hostname, default_role = _format_hostname_and_role(host, idx)
-        ip_address = host.get("internal_ip") or host.get("ip_address") or host.get("ip") or ""
-        operating_system = host.get("operating_system") or host.get("os") or "Unknown"
+        hostname = _service_name_to_hostname(str(host.get("service", "") or "").strip())
+        default_role = (
+            "Server" if _is_server_hostname(hostname)
+            else "Workstation" if _is_workstation_hostname(hostname)
+            else "Unassigned"
+        )
+        ip_address = str(host.get("ip_address", "") or "").strip()
+        operating_system = "Unknown"
+
         detail = _lookup_asset_detail(host, hostname, details_index)
+
+        target_host = _get_matching_target_host(hostname, ip_address)
+        if target_host:
+            try:
+                scanned_record = _assess_target_host_with_scanner(hostname, ip_address, target_host)
+
+                print(f"[DEBUG] scanned_record for {hostname}: {json.dumps(scanned_record, indent=2, default=str)}")
+
+                detail = _merge_scanner_detail(detail, scanned_record)
+
+                print(
+                    f"[DEBUG] merged os_version for {hostname}: "
+                    f"{detail.get('device_profile', {}).get('os_version', '')}"
+                )
+            except Exception as e:
+                print(f"[ASSESS][SCAN FAILED] {hostname} {ip_address}: {e}")
+                traceback.print_exc()
+        else:
+            print(f"[WARN] No target host match for {hostname} ({ip_address})")
 
         detail_os_version = str(detail.get("device_profile", {}).get("os_version", "") or "").strip()
         detail_os_type = str(detail.get("device_profile", {}).get("os_type", "") or "").strip()
-        final_os = detail_os_version or detail_os_type or operating_system or "Unknown"
+
+        if detail_os_version:
+            final_os = _normalize_os_name(detail_os_version)
+        elif detail_os_type:
+            final_os = _normalize_os_name(detail_os_type)
+        else:
+            final_os = operating_system
 
         assets.append({
             "hostname": hostname,
@@ -2838,7 +3445,7 @@ def assess_subnet(payload: dict):
     _save_json(asset_file, inventory)
 
     _sync_assets_cia_status(year, inventory)
-    
+
     return {
         "success": True,
         "message": f"Subnet {subnet_name} assessed successfully.",

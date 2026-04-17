@@ -437,6 +437,15 @@ function ConfirmModal({
   );
 }
 
+async function apiRecommendTreatmentActionForAll(
+  year: number
+): Promise<TreatmentRecommendResponse> {
+  return apiPostJSONBody<TreatmentRecommendResponse>(
+    "/api/action-plan-implementation/recommend-treatment-all",
+    { year }
+  );
+}
+
 function AddEvidenceModal({
   open,
   hostLabel,
@@ -754,9 +763,10 @@ export default function ActionPlanImplentation() {
       content:
         "Action Plan / Implementation — Command Mode\n\n" +
         "Available commands:\n" +
-        "/treatment  → Recommend the treatment action for selected control / Implementation table\n" +
+        "/treatment  → Recommend the treatment action for all controls\n" +
         "/delete     → Delete the selected evidence\n" +
         "/add        → Add an evidence for selected host\n" +
+        "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" +
         "/edit       → Edit evidence for selected host\n" +
         "/submit     → Submit the table\n" +
         "/help       → Explain this section\n" +
@@ -861,6 +871,100 @@ export default function ActionPlanImplentation() {
       scrollChatToBottom();
     }
   };
+
+
+  const buildAutoEvidenceForm = (
+    control: ActionPlanControl,
+    host: ActionPlanHost
+  ): ActionPlanEvidenceForm => {
+    const controlId = (control.control_id || control.control || "").trim();
+    const controlName = (control.control_name || "").trim();
+    const treatmentAction = (control.treatment_action || "").trim();
+
+    const hostname = (host.hostname || "").trim();
+    const role = (host.role || "").trim();
+    const vulnerability = (host.vulnerability_name || "").trim();
+
+    const responsibleByRole = (() => {
+      const roleL = role.toLowerCase();
+
+      if (
+        roleL.includes("domain controller") ||
+        roleL.includes("server") ||
+        roleL.includes("dns") ||
+        roleL.includes("dhcp") ||
+        roleL.includes("database") ||
+        roleL.includes("web")
+      ) {
+        return `System Administrator + ISMS Auditor Team`;
+      }
+
+      if (
+        roleL.includes("workstation") ||
+        roleL.includes("client") ||
+        roleL.includes("endpoint") ||
+        roleL.includes("user")
+      ) {
+        return `Endpoint Administrator + ISMS Auditor Team`;
+      }
+
+      if (
+        roleL.includes("firewall") ||
+        roleL.includes("router") ||
+        roleL.includes("switch") ||
+        roleL.includes("network")
+      ) {
+        return `Network Administrator + ISMS Auditor Team`;
+      }
+
+      if (
+        roleL.includes("security") ||
+        roleL.includes("siem") ||
+        roleL.includes("soc") ||
+        roleL.includes("defender")
+      ) {
+        return `Security Team + ISMS Auditor Team`;
+      }
+
+      return `Asset Responsible Team + ISMS Auditor Team`;
+    })();
+
+    const briefDesc = (() => {
+      if (treatmentAction) {
+        const firstLine = treatmentAction
+          .split("\n")
+          .map((x) => x.trim())
+          .find((x) => x && x !== "Recommended treatment actions:" && x !== "-");
+
+        const cleaned = (firstLine || treatmentAction)
+          .replace(/^[-•]\s*/, "")
+          .trim();
+
+        return cleaned
+          ? `Evidence for ${hostname} under control ${controlId}${controlName ? ` (${controlName})` : ""}: ${cleaned}.`
+          : `Evidence for ${hostname} under control ${controlId}${controlName ? ` (${controlName})` : ""}.`;
+      }
+
+      if (vulnerability) {
+        return `Evidence for ${hostname} under control ${controlId}${controlName ? ` (${controlName})` : ""} related to ${vulnerability}.`;
+      }
+
+      return `Evidence for ${hostname} under control ${controlId}${controlName ? ` (${controlName})` : ""}.`;
+    })();
+
+    return {
+      responsible: responsibleByRole,
+      resources: [
+        hostname ? `Host: ${hostname}` : "",
+        role ? `Role: ${role}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | "),
+      date: "",
+      url: "",
+      desc: briefDesc,
+    };
+  };    
     
   const resetEvidenceForm = () => {
     setEvidenceForm({
@@ -902,7 +1006,7 @@ export default function ActionPlanImplentation() {
       scrollChatToBottom();
       return;
     }
-
+ 
     if (!selectedHost) {
       setMessages((prev) => [
         ...prev,
@@ -912,24 +1016,27 @@ export default function ActionPlanImplentation() {
       return;
     }
 
+    const autoForm = buildAutoEvidenceForm(selectedControl, selectedHost);
+    setEvidenceForm(autoForm);
+
     setMessages((prev) => [
       ...prev,
       {
         role: "assistant",
         content:
-          `Add evidence for host - ${selectedHostLabel}\n` +
-          `- Responsible: Who is responsible for this action\n` +
-          `- Resources: Which resources used for this action\n` +
-          `- Date: When this action happened\n` +
-          `- URL/PATH: URL/Path for screenshot, log, file, ...`,
+          `Evidence form opened for host - ${selectedHostLabel}\n` +
+          `The system auto-filled:\n` +
+          `- Responsible\n` +
+          `- Resources\n` +
+          `- Description\n` +
+          `based on selected control, vulnerability, implementation status, justification, and treatment action.`,
       },
     ]);
 
-    resetEvidenceForm();
     setAddEvidenceModalOpen(true);
     scrollChatToBottom();
   };
-
+    
   const handleEvidenceFormChange = (
     field: keyof ActionPlanEvidenceForm,
     value: string
@@ -1001,20 +1108,19 @@ export default function ActionPlanImplentation() {
   };
 
 
-  const handleTreatmentForSelectedControl = async () => {
-    if (selectedControlIndex === null || !controls[selectedControlIndex]) {
+  const handleTreatmentForAllControls = async () => {
+    if (!controls.length) {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Please select a control row first.",
+          content: "No controls found in the Action Plan / Implementation table.",
         },
       ]);
       scrollChatToBottom();
       return;
     }
 
-    const selectedControl = controls[selectedControlIndex];
     setSending(true);
 
     setMessages((prev) => [
@@ -1022,22 +1128,25 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to generate treatment action recommendations for   the selected control.",
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to generate treatment action recommendations for all controls in the table.",
       },
     ]);
 
     try {
-      const data = await apiRecommendTreatmentAction(YEAR, selectedControl.control);
+      await Promise.all(
+        controls.map((control) =>
+          apiRecommendTreatmentAction(YEAR, control.control)
+        )
+      );
 
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      const refreshed = await apiGetActionPlanInventory(YEAR);
+      setControls(Array.isArray(refreshed?.controls) ? refreshed.controls : []);
 
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: "assistant",
-          content:
-            data.message ||
-            `Treatment action was generated and saved for control ${selectedControl.control}.`,
+          content: "Treatment actions were generated and saved for all controls in the table.",
         };
         return updated;
       });
@@ -1049,7 +1158,7 @@ export default function ActionPlanImplentation() {
           content:
             e instanceof Error
               ? e.message
-              : "Backend error while generating treatment action.",
+              : "Backend error while generating treatment actions for all controls.",
         };
         return updated;
       });
@@ -1602,9 +1711,10 @@ export default function ActionPlanImplentation() {
           role: "assistant",
           content:
             "Available commands:\n" +
-            "/treatment  → Recommend the treatment action for selected control / Implementation table\n" +
+            "/treatment  → Recommend the treatment action for all controls\n" +
             "/delete     → Delete the selected evidence\n" +
             "/add        → Add an evidence for selected host\n" +
+            "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" +  
             "/edit       → Edit evidence for selected host\n" +
             "/submit     → Submit the table\n" +
             "/help       → Explain this section\n" +
@@ -1615,7 +1725,11 @@ export default function ActionPlanImplentation() {
       return;
     }
 
-    if (trimmed === "/add") {
+    const command = input.trim().toLowerCase();
+    
+    if (command === "/add" || command === "/evidence") {
+      setMessages((prev) => [...prev, { role: "user", content: input }]);
+      setInput("");
       handleOpenAddEvidence();
       return;
     }
@@ -1649,7 +1763,7 @@ export default function ActionPlanImplentation() {
     }
    
     if (trimmed === "/treatment") {
-      await handleTreatmentForSelectedControl();
+      await handleTreatmentForAllControls();
       return;
     }
 
@@ -1808,7 +1922,7 @@ export default function ActionPlanImplentation() {
                         <div className="px-3 py-3">
                           {c.justification?.trim() ? c.justification : "-"}
                         </div>
-                        <div className="px-3 py-3">
+                        <div className="px-3 py-3 whitespace-pre-wrap">
                           {c.treatment_action?.trim() ? c.treatment_action : "-"}
                         </div>
                       </div>
@@ -1985,7 +2099,7 @@ export default function ActionPlanImplentation() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /treatment /delete /add /edit /submit /help /commands
+          Command mode: /treatment /delete /add /evidence /edit /submit /help /commands
         </div>
       </div>
     </ShellCard>

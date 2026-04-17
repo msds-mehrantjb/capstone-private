@@ -73,8 +73,33 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)",
+                    "Active Directory Domain Services (AD DS)",
+                    "Group Policy Objects (GPO)",
+                    "Role-Based Access Control (RBAC)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware",
+                    "Secure Boot"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ],
+                  "Vulnerability & Patch Management": [
+                    "Patch Management (WSUS / SCCM)"
+                  ],
+                  "Physical & Environmental Controls": [
+                    "Server Room Access Control"
+                  ]
                 }
-              }
+              },
+              "user_behavior": {}
             },
             {
               "hostname": "SRV-02",
@@ -138,8 +163,31 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware",
+                    "Secure Boot"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)",
+                    "DNS Security (DNS filtering / logging)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ],
+                  "Vulnerability & Patch Management": [
+                    "Patch Management (WSUS / SCCM)"
+                  ],
+                  "Physical & Environmental Controls": [
+                    "Server Room Access Control"
+                  ]
                 }
-              }
+              },
+              "user_behavior": {}
             },
             {
               "hostname": "WS-01",
@@ -197,7 +245,34 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ]
                 }
+              },
+              "user_behavior": {
+                "date": "2026-04-13",
+                "user": "CORP\\Administrator",
+                "dailyBehaviorSummary": {
+                  "accessFrequency": 1,
+                  "failedLoginAttempts": 1,
+                  "successfulLoginCount": 120,
+                  "passwordResets": 0,
+                  "loginConsistency": 0.7669,
+                  "sessionDuration": 0.0063
+                },
+                "observations": []
               }
             },
             {
@@ -256,7 +331,34 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ]
                 }
+              },
+              "user_behavior": {
+                "date": "2026-04-13",
+                "user": "CORP\\Administrator",
+                "dailyBehaviorSummary": {
+                  "accessFrequency": 1,
+                  "failedLoginAttempts": 1,
+                  "successfulLoginCount": 120,
+                  "passwordResets": 0,
+                  "loginConsistency": 0.7669,
+                  "sessionDuration": 0.0063
+                },
+                "observations": []
               }
             },
             {
@@ -315,7 +417,34 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ]
                 }
+              },
+              "user_behavior": {
+                "date": "2026-04-13",
+                "user": "CORP\\Administrator",
+                "dailyBehaviorSummary": {
+                  "accessFrequency": 1,
+                  "failedLoginAttempts": 1,
+                  "successfulLoginCount": 120,
+                  "passwordResets": 0,
+                  "loginConsistency": 0.7669,
+                  "sessionDuration": 0.0063
+                },
+                "observations": []
               }
             }
           ]
@@ -385,8 +514,30 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware",
+                    "Secure Boot"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ],
+                  "Vulnerability & Patch Management": [
+                    "Patch Management (WSUS / SCCM)"
+                  ],
+                  "Physical & Environmental Controls": [
+                    "Server Room Access Control"
+                  ]
                 }
-              }
+              },
+              "user_behavior": {}
             },
             {
               "hostname": "SRV-04",
@@ -451,8 +602,30 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware",
+                    "Secure Boot"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ],
+                  "Vulnerability & Patch Management": [
+                    "Patch Management (WSUS / SCCM)"
+                  ],
+                  "Physical & Environmental Controls": [
+                    "Server Room Access Control"
+                  ]
                 }
-              }
+              },
+              "user_behavior": {}
             },
             {
               "hostname": "WS-04",
@@ -510,7 +683,34 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ]
                 }
+              },
+              "user_behavior": {
+                "date": "2026-04-13",
+                "user": "CORP\\Administrator",
+                "dailyBehaviorSummary": {
+                  "accessFrequency": 1,
+                  "failedLoginAttempts": 1,
+                  "successfulLoginCount": 120,
+                  "passwordResets": 0,
+                  "loginConsistency": 0.7669,
+                  "sessionDuration": 0.0063
+                },
+                "observations": []
               }
             },
             {
@@ -572,7 +772,34 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ]
                 }
+              },
+              "user_behavior": {
+                "date": "2026-04-13",
+                "user": "CORP\\Administrator",
+                "dailyBehaviorSummary": {
+                  "accessFrequency": 1,
+                  "failedLoginAttempts": 1,
+                  "successfulLoginCount": 120,
+                  "passwordResets": 0,
+                  "loginConsistency": 0.7669,
+                  "sessionDuration": 0.0063
+                },
+                "observations": []
               }
             },
             {
@@ -634,7 +861,34 @@
                 "selected_role": {
                   "role": "",
                   "method": ""
+                },
+                "existing_control": {
+                  "Identity & Access Management": [
+                    "Password Policies (complexity, rotation)"
+                  ],
+                  "Endpoint Security Controls": [
+                    "Antivirus / Anti-malware"
+                  ],
+                  "Network Security Controls": [
+                    "Windows Firewall (Host-based)"
+                  ],
+                  "Logging, Monitoring & Detection": [
+                    "Windows Event Logging"
+                  ]
                 }
+              },
+              "user_behavior": {
+                "date": "2026-04-13",
+                "user": "CORP\\Administrator",
+                "dailyBehaviorSummary": {
+                  "accessFrequency": 1,
+                  "failedLoginAttempts": 1,
+                  "successfulLoginCount": 120,
+                  "passwordResets": 0,
+                  "loginConsistency": 0.7669,
+                  "sessionDuration": 0.0063
+                },
+                "observations": []
               }
             }
           ]

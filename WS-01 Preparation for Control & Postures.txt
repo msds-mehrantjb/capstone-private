@@ -1,6 +1,11 @@
 WS-01 Preparation for Control & Posture Inference  
 ISO 27001-Based Asset Profiling – Evidence-Driven Configuration
 
+
+Access to VMs: 
+
+net use \\10.0.0.X\C$ /user:Administrator *
+
 ---
 
 ## 1. Objective
