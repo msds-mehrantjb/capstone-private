@@ -32,27 +32,9 @@
     {
       "hostname": "WS-01",
       "ip_address": "10.0.0.10",
-      "role": "Standard Employee Workstation",
+      "role": "Unknown",
       "CIA rating": "Medium",
-      "existing_controls": {
-        "Identity & Access Management": [
-          "Password Policies (complexity, rotation)",
-          "Group Policy Objects (GPO)",
-          "Role-Based Access Control (RBAC)"
-        ],
-        "Endpoint Security Controls": [
-          "Antivirus / Anti-malware"
-        ],
-        "Network Security Controls": [
-          "Windows Firewall (Host-based)"
-        ],
-        "Logging, Monitoring & Detection": [
-          "Windows Event Logging"
-        ],
-        "Vulnerability & Patch Management": [
-          "Patch Management (WSUS / SCCM)"
-        ]
-      }
+      "existing_controls": {}
     },
     {
       "hostname": "WS-02",

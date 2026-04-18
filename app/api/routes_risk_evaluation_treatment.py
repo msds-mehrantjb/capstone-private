@@ -53,7 +53,7 @@ BASE_DIR = find_project_root()
 
 NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 OLLAMA_GEN_URL = "http://localhost:11434/api/generate"
-LLM_MODEL = "llama3"
+LLM_MODEL = "qwen3:14b"
 
 SESSION = requests.Session()
 
@@ -449,6 +449,11 @@ vector: {cve_info.get("vector", "")}
             "stream": False,
             "format": "json",
             "keep_alive": "10m",
+            "options": {
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "num_predict": 300
+            }
         },
         timeout=180,
     )

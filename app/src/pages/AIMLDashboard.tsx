@@ -426,6 +426,7 @@ function DashboardSections() {
                     icon={<Database className="h-5 w-5" />}
                     lines={[
                       "Vector Database: ChromaDB",
+                      "Text Embedding Model: nomic-embed-text:latest",  
                     ]}
                   />
                 </div>
@@ -436,9 +437,9 @@ function DashboardSections() {
                     subtitle=""
                     icon={<Sparkles className="h-5 w-5" />}
                     lines={[
-                      "Model: Llama 3",
-                      "Version: Llama 3.1",
-                      "Parameters: 8B",
+                      "Model: Qwen 3",
+                      "Version: Qwen 3",
+                      "Parameters: 14B",
                       "Deployment Style: Local LLM",
                     ]}
                   />

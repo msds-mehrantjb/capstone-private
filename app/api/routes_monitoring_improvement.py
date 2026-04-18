@@ -141,7 +141,7 @@ def find_project_root() -> Path:
 BASE_DIR = find_project_root()
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")
 OLLAMA_EMBED_URL = os.getenv("OLLAMA_EMBED_URL", "http://localhost:11434/api/embeddings")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 
@@ -1058,8 +1058,12 @@ Affected Hosts:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "options": {
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "num_predict": 300
+        }
     }
-
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
@@ -1386,42 +1390,63 @@ ISO guidance:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "options": {
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "num_predict": 300
+        }
     }
-
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
 
     response_text = _normalize_text(data.get("response"))
-
+    
     if not response_text.startswith("Recommended monitoring actions:"):
         lines = response_text.splitlines()
         clean_bullets = []
-
+    
         for line in lines:
             line = line.strip()
             if not line:
                 continue
-
+    
             line = re.sub(r"^[\-\*\d\.\)\(]+\s*", "", line)
-
+    
             parts = re.split(r";|\.\s+", line)
             for part in parts:
                 part = part.strip()
                 if part:
                     clean_bullets.append(f"- {part}")
-
+    
         seen = set()
         final_bullets = []
         for b in clean_bullets:
             if b not in seen:
                 seen.add(b)
                 final_bullets.append(b)
-
+    
         response_text = "Recommended monitoring actions:\n" + "\n".join(final_bullets)
-
+    
+    # NEW SAFETY CHECK
+    lines_after_header = [
+        x.strip() for x in response_text.splitlines()[1:]
+        if x.strip()
+    ]
+    
+    has_real_bullet = any(x.startswith("-") for x in lines_after_header)
+    
+    if not has_real_bullet:
+        fallback_actions = [
+            f"- Continuously monitor RDP-related logs and authentication events for hosts affected by {control_id}.",
+            f"- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.",
+            f"- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.",
+            f"- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.",
+            f"- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+        ]
+        response_text = "Recommended monitoring actions:\n" + "\n".join(fallback_actions)
+    
     return response_text
-
 
 def _generate_evidence_recommendations_with_llama3(
     year: int,
@@ -1534,6 +1559,11 @@ Relevant ISO Guidance:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "options": {
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "num_predict": 300
+        }
     }
 
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)

@@ -7,6 +7,8 @@ import requests
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+LLM_MODEL = "qwen3:14b"
+
 router = APIRouter(
     prefix="/api/threat-vulnerabilities",
     tags=["threat-vulnerabilities"],
@@ -408,9 +410,14 @@ CVE DATA:
     response = requests.post(
         "http://127.0.0.1:11434/api/generate",
         json={
-            "model": "llama3",
+            "model": LLM_MODEL,
             "prompt": prompt,
             "stream": False,
+            "options": {
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "num_predict": 300
+            }
         },
         timeout=60,
     )
@@ -558,9 +565,12 @@ def _verify_llm():
         response = requests.post(
             "http://127.0.0.1:11434/api/generate",
             json={
-                "model": "llama3",
+                "model": LLM_MODEL,
                 "prompt": "Reply with OK only.",
                 "stream": False,
+                "options": {
+                    "temperature": 0
+                }
             },
             timeout=15,
         )
@@ -575,12 +585,10 @@ def _verify_llm():
             detail=f"LLM service is not reachable: {e}",
         ) from e
 
-
 def _run_preflight(year: int):
     _verify_required_files(year)
     _verify_ml_models()
     _verify_cve_source_available()
-    _verify_scanner()
     _verify_llm()
 
 
@@ -1278,11 +1286,13 @@ Output example:
         response = requests.post(
             "http://127.0.0.1:11434/api/generate",
             json={
-                "model": "llama3",
+                "model": LLM_MODEL,
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": 0.1
+                    "temperature": 0.1,
+                    "top_p": 0.9,
+                    "num_predict": 200
                 },
             },
             timeout=60,

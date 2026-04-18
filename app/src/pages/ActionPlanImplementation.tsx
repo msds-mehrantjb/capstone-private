@@ -763,7 +763,7 @@ export default function ActionPlanImplentation() {
       content:
         "Action Plan / Implementation — Command Mode\n\n" +
         "Available commands:\n" +
-        "/treatment  → Recommend the treatment action for all controls\n" +
+        "/treatment  → Recommend the treatment action for selected row in table\n" +
         "/delete     → Delete the selected evidence\n" +
         "/add        → Add an evidence for selected host\n" +
         "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" +
@@ -1108,6 +1108,81 @@ export default function ActionPlanImplentation() {
   };
 
 
+  const handleTreatmentForSelectedControl = async () => {
+    if (selectedControlIndex === null) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Please select a control first.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
+    const control = controls[selectedControlIndex];
+
+    if (!control?.control) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Selected control row is invalid.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
+    setSending(true);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          `Please wait, while system is using RAG over ISO 27001:2022 controls and ${"Qwen 3"} reasoning to generate treatment action for selected control ${control.control}.`,
+      },
+    ]);
+
+    try {
+      const data = await apiRecommendTreatmentAction(YEAR, control.control);
+
+      const refreshedControls = Array.isArray(data?.inventory?.controls)
+        ? data.inventory.controls
+        : [];
+
+      setControls(refreshedControls);
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            data?.message ||
+            `Treatment action was generated and saved for selected control ${control.control}.`,
+        };
+        return updated;
+      });
+    } catch (e) {
+      setMessages((prev) => {
+        const updated = [...prev];
+          updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            e instanceof Error
+              ? e.message
+              : "Backend error while generating treatment action for selected row.",
+        };
+        return updated;
+      });
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
+    }
+  };
+    
   const handleTreatmentForAllControls = async () => {
     if (!controls.length) {
       setMessages((prev) => [
@@ -1128,7 +1203,7 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to generate treatment action recommendations for all controls in the table.",
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen 3 reasoning to generate treatment action recommendations for all controls in the table.",
       },
     ]);
 
@@ -1238,7 +1313,7 @@ export default function ActionPlanImplentation() {
     if (!selectedControl) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "Please select a control row first." },
+        { role: "assistant", content: "Please select a control first." },
       ]);
       scrollChatToBottom();
       return;
@@ -1451,7 +1526,7 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using Llama3 reasoning and RAG technology to find most accurate controls",
+          "Please wait, while system is using Qwen 3 reasoning and RAG technology to find most accurate controls",
       },
     ]);
 
@@ -1599,7 +1674,7 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is adding the selected control to the table using Llama3 reasoning.",
+          "Please wait, while system is adding the selected control to the table using Qwen 3 reasoning.",
       },
     ]);
 
@@ -1711,7 +1786,7 @@ export default function ActionPlanImplentation() {
           role: "assistant",
           content:
             "Available commands:\n" +
-            "/treatment  → Recommend the treatment action for all controls\n" +
+            "/treatment  → Recommend the treatment action for selected row in table\n" +
             "/delete     → Delete the selected evidence\n" +
             "/add        → Add an evidence for selected host\n" +
             "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" +  
@@ -1762,8 +1837,8 @@ export default function ActionPlanImplentation() {
       return;
     }
    
-    if (trimmed === "/treatment") {
-      await handleTreatmentForAllControls();
+    if (command === "/treatment") {
+      await handleTreatmentForSelectedControl();
       return;
     }
 

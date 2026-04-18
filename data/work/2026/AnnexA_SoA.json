@@ -1,12 +1,48 @@
 {
   "controls": [
     {
+      "control_id": "6.7",
+      "control_name": "Remote working",
+      "domain": "People Controls",
+      "applicable": true,
+      "implementation_status": "Planned",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "related_risks": [
+        "CVE-2020-1350",
+        "CVE-2021-31166"
+      ],
+      "risk_ids": [
+        "R-002",
+        "R-008"
+      ],
+      "source_records": [
+        {
+          "hostname": "SRV-01",
+          "role": "Domain Controller (Active Directory)",
+          "riskid": "R-002",
+          "risk": "Critical",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
+        },
+        {
+          "hostname": "SRV-03",
+          "role": "File Server",
+          "riskid": "R-008",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
+        }
+      ]
+    },
+    {
       "control_id": "8.2",
       "control_name": "Network security",
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To protect networks from exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
       "related_risks": [
         "CVE-2020-1472"
       ],
@@ -21,7 +57,7 @@
           "risk": "Critical",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "reason": "To protect networks from exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472"
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         }
       ]
     },
@@ -31,7 +67,7 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To secure Windows Domain Name System servers and prevent remote code execution vulnerability exploitation.",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
       "related_risks": [
         "CVE-2020-1350",
         "CVE-2017-0144",
@@ -54,7 +90,7 @@
           "risk": "Critical",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "To secure Windows Domain Name System servers and prevent remote code execution vulnerability exploitation."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-02",
@@ -63,7 +99,7 @@
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "The vulnerability exists in Windows Domain Name System servers, making 'Network Services Security' control relevant for securing these services and reducing the attack surface."
+          "reason": "The vulnerability is network-based, so securing network services is essential to mitigate exploitation."
         },
         {
           "hostname": "SRV-03",
@@ -72,7 +108,7 @@
           "risk": "High",
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
-          "reason": "The vulnerability is network-based, making it necessary to secure the network services."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-03",
@@ -81,7 +117,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "The high WinRM Remote Command Execution Exposure CVE-2021-31166 vulnerability is a network-based exploitation, and securing the network service will help mitigate this risk."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-04",
@@ -90,7 +126,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "This control ensures that network services are configured securely to prevent remote code execution attacks like this vulnerability."
+          "reason": "The vulnerability can be exploited over the network, so securing network services is essential to prevent unauthorized access and exploitation."
         },
         {
           "hostname": "SRV-04",
@@ -99,32 +135,32 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "The vulnerability is high-risk and network-based, making it necessary to secure services."
+          "reason": "This control is relevant as the vulnerability involves network-based exploitation, and securing network services can help prevent unauthorized access and exploitation of the vulnerability."
         }
       ]
     },
     {
-      "control_id": "8.24",
-      "control_name": "Cryptography",
+      "control_id": "8.23",
+      "control_name": "Web filtering",
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "Protecting data from potential exploitation is crucial due to the high exposure of this vulnerability.",
+      "justification": "Web filtering can help prevent malicious traffic that may exploit the vulnerability.",
       "related_risks": [
-        "CVE-2021-31166"
+        "CVE-2020-1350"
       ],
       "risk_ids": [
-        "R-010"
+        "R-003"
       ],
       "source_records": [
         {
-          "hostname": "SRV-04",
-          "role": "Application Server",
-          "riskid": "R-010",
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-003",
           "risk": "High",
-          "vulnerability_name": "WinRM Remote Command Execution Exposure",
-          "cve": "CVE-2021-31166",
-          "reason": "Protecting data from potential exploitation is crucial due to the high exposure of this vulnerability."
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "Web filtering can help prevent malicious traffic that may exploit the vulnerability."
         }
       ]
     },
@@ -134,48 +170,16 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "To reduce vulnerabilities and prevent exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
       "related_risks": [
-        "CVE-2020-1472",
-        "CVE-2020-1350",
         "CVE-2017-0144",
         "CVE-2021-44228"
       ],
       "risk_ids": [
-        "R-001",
-        "R-002",
-        "R-003",
         "R-007",
         "R-009"
       ],
       "source_records": [
-        {
-          "hostname": "SRV-01",
-          "role": "Domain Controller (Active Directory)",
-          "riskid": "R-001",
-          "risk": "Critical",
-          "vulnerability_name": "Netlogon Elevation of Privilege",
-          "cve": "CVE-2020-1472",
-          "reason": "To reduce vulnerabilities and prevent exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472"
-        },
-        {
-          "hostname": "SRV-01",
-          "role": "Domain Controller (Active Directory)",
-          "riskid": "R-002",
-          "risk": "Critical",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "reason": "To ensure that vulnerabilities are reduced by implementing secure coding practices."
-        },
-        {
-          "hostname": "SRV-02",
-          "role": "DNS Server",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "reason": "The 'Windows DNS Server Remote Code Execution Vulnerability' (CVE-2020-1350) is a technical vulnerability that requires secure coding practices to reduce the risk of exploitation."
-        },
         {
           "hostname": "SRV-03",
           "role": "File Server",
@@ -183,7 +187,7 @@
           "risk": "High",
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
-          "reason": "The vulnerability is a technical vulnerability that can be mitigated by ensuring secure coding practices."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-04",
@@ -192,42 +196,134 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "This control promotes secure coding practices, which can help reduce the likelihood of similar vulnerabilities in the future."
+          "reason": "The vulnerability arises from insecure coding practices in the application, which can be mitigated through secure coding standards and practices."
         }
       ]
     },
     {
-      "control_id": "8.29",
-      "control_name": "Security testing",
+      "control_id": "8.7",
+      "control_name": "Protection against malware",
       "domain": "Technological Controls",
       "applicable": true,
-      "implementation_status": "In Progress",
-      "justification": "Regular security testing is necessary to identify and validate the effectiveness of controls against this vulnerability.",
+      "implementation_status": "Implemented",
+      "justification": "The control is needed due to unpatched systems, exposed services, and misconfigurations that increase the risk of malware attacks. These weaknesses allow unauthorized access and execution of malicious code, which can compromise system integrity and data confidentiality.",
       "related_risks": [
-        "CVE-2017-0144"
+        "CVE-2020-1350",
+        "CVE-2021-31166",
+        "CVE-2020-1472",
+        "CVE-2017-0144",
+        "CVE-2021-44228"
       ],
       "risk_ids": [
-        "R-007"
+        "R-002",
+        "R-008",
+        "R-001",
+        "R-003",
+        "R-007",
+        "R-009",
+        "R-010"
       ],
       "source_records": [
         {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "riskid": "R-002",
+          "risk": "Critical",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+        },
+        {
           "hostname": "SRV-03",
+          "ip_address": "",
           "role": "File Server",
+          "CIA rating": "",
+          "riskid": "R-008",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "riskid": "R-001",
+          "risk": "Critical",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+        },
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "riskid": "R-003",
+          "risk": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
           "riskid": "R-007",
           "risk": "High",
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
-          "reason": "Regular security testing is necessary to identify and validate the effectiveness of controls against this vulnerability."
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "riskid": "R-009",
+          "risk": "High",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "riskid": "R-010",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "evaluation": "",
+          "treatment": "",
+          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
         }
       ]
     },
     {
-      "control_id": "8.5",
-      "control_name": "Secure authentication",
+      "control_id": "8.8",
+      "control_name": "Technical vulnerability management",
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "This control is needed because it addresses the security concern of unsecured authentication, which can lead to exploitation by attackers. The identified vulnerabilities in existing systems and services indicate that weaknesses in authentication mechanisms are present, making it essential to implement controls to ensure strong authentication practices.",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
       "related_risks": [
         "CVE-2020-1472",
         "CVE-2020-1350",
@@ -247,119 +343,66 @@
       "source_records": [
         {
           "hostname": "SRV-01",
-          "ip_address": "",
           "role": "Domain Controller (Active Directory)",
-          "CIA rating": "",
           "riskid": "R-001",
           "risk": "Critical",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-01",
-          "ip_address": "",
           "role": "Domain Controller (Active Directory)",
-          "CIA rating": "",
           "riskid": "R-002",
           "risk": "Critical",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-02",
-          "ip_address": "",
           "role": "DNS Server",
-          "CIA rating": "",
           "riskid": "R-003",
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+          "reason": "The vulnerability is a technical issue that requires management through vulnerability management processes."
         },
         {
           "hostname": "SRV-03",
-          "ip_address": "",
           "role": "File Server",
-          "CIA rating": "",
           "riskid": "R-007",
           "risk": "High",
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-03",
-          "ip_address": "",
           "role": "File Server",
-          "CIA rating": "",
           "riskid": "R-008",
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+          "reason": "Fallback from retrieval because LLM returned no valid controls."
         },
         {
           "hostname": "SRV-04",
-          "ip_address": "",
           "role": "Application Server",
-          "CIA rating": "",
           "riskid": "R-009",
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
+          "reason": "The vulnerability is a known technical weakness that requires systematic identification, evaluation, and remediation."
         },
         {
           "hostname": "SRV-04",
-          "ip_address": "",
           "role": "Application Server",
-          "CIA rating": "",
           "riskid": "R-010",
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.5."
-        }
-      ]
-    },
-    {
-      "control_id": "8.8",
-      "control_name": "Technical vulnerability management",
-      "domain": "Technological Controls",
-      "applicable": true,
-      "implementation_status": "In Progress",
-      "justification": "This control ensures that the organization has processes in place to manage vulnerabilities, including this high-severity remote code execution vulnerability.",
-      "related_risks": [
-        "CVE-2021-31166"
-      ],
-      "risk_ids": [
-        "R-008"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-03",
-          "role": "File Server",
-          "riskid": "R-008",
-          "risk": "High",
-          "vulnerability_name": "WinRM Remote Command Execution Exposure",
-          "cve": "CVE-2021-31166",
-          "reason": "This control ensures that the organization has processes in place to manage vulnerabilities, including this high-severity remote code execution vulnerability."
+          "reason": "This control directly addresses the management of technical vulnerabilities, which is essential for mitigating the risks posed by the identified CVE-2021-31166 vulnerability."
         }
       ]
     },
@@ -369,7 +412,7 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "The vulnerability is specific to log4j-core configuration, and this control ensures that configurations are reviewed and updated regularly.",
+      "justification": "The vulnerability is related to misconfigurations in the application server's logging configuration, which can be addressed through secure configuration practices.",
       "related_risks": [
         "CVE-2021-44228"
       ],
@@ -384,7 +427,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "The vulnerability is specific to log4j-core configuration, and this control ensures that configurations are reviewed and updated regularly."
+          "reason": "The vulnerability is related to misconfigurations in the application server's logging configuration, which can be addressed through secure configuration practices."
         }
       ]
     }

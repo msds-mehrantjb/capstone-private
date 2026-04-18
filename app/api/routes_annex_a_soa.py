@@ -114,7 +114,7 @@ OLLAMA_GEN_URL = "http://localhost:11434/api/generate"
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 
 EMBED_MODEL = "nomic-embed-text"
-LLM_MODEL = "llama3"
+LLM_MODEL = "qwen3:14b"
 TOP_K = 6
 EMBED_BATCH_SIZE = 32
 
@@ -1504,7 +1504,12 @@ Output Requirements:
             "prompt": prompt,
             "stream": False,
             "format": "json",
-            "keep_alive": "10m"
+            "keep_alive": "10m",
+            "options": {
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "num_predict": 400
+            }
         },
         timeout=180
     )

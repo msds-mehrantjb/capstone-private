@@ -790,7 +790,7 @@ export default function MonitoringImprovement() {
         "Monitoring and Improvement — Command Mode\n\n" +
         "Available commands:\n" +
         "/create     → Create new Monitoring / Improvement table\n" +
-        "/recommend  → Recommend the monitoring action for all vulnerabilities\n" +
+        "/recommend  → Recommend the monitoring action for selected row\n" +
         "/delete     → Delete the selected evidence\n" +
         "/add        → Add an evidence for selected host\n" +
         "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" + 
@@ -875,9 +875,11 @@ export default function MonitoringImprovement() {
         selectedEvidenceIndex
       );
 
-      setMonitoringImprovementControls(
-        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
-      );
+      const updated = Array.isArray(data?.inventory?.cves)
+        ? data.inventory.cves
+        : [];
+    
+      setMonitoringImprovementControls([...updated]); // 🔥 FORCE NEW REFERENCE
       setSelectedEvidenceIndex(null);
 
       setMessages((prev) => [
@@ -976,7 +978,7 @@ export default function MonitoringImprovement() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama 3 reasoning to prepare evidence fields for the selected host.",
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen 3 reasoning to prepare evidence fields for the selected host.",
       },
     ]);
     scrollChatToBottom();
@@ -1097,6 +1099,70 @@ export default function MonitoringImprovement() {
     }
   };
 
+  const handleRecommendForSelectedRow = async () => {
+    if (
+      selectedControlIndex === null ||
+      !monitoringImprovementControls[selectedControlIndex]
+    ) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Please select a CVE first.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
+    const selectedControl = monitoringImprovementControls[selectedControlIndex];
+
+    setSending(true);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+        `Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen 3 reasoning to generate recommended action for selected row ${selectedControl.CVE}.`,
+      },
+    ]);
+
+    try {
+      const data = await apiRecommendAction(YEAR, selectedControl.CVE);
+
+      setMonitoringImprovementControls(
+        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
+      );
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            data?.message ||
+            `Recommended action generated for selected row ${selectedControl.CVE}.`,
+        };
+        return updated;
+      });
+    } catch (e) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            e instanceof Error
+              ? e.message
+              : "Error generating recommended action for selected row.",
+        };
+        return updated;
+      });
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
+    }
+  };  
+    
 
   const handleRecommendForAllControls = async () => {
     if (!monitoringImprovementControls.length) {
@@ -1437,7 +1503,7 @@ export default function MonitoringImprovement() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using Llama3 reasoning and RAG technology to create the Monitoring / Improverment table",
+          "Please wait, while system is using Qwen reasoning and RAG technology to create the Monitoring / Improverment table",
       },
     ]);
 
@@ -1585,7 +1651,7 @@ export default function MonitoringImprovement() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is adding the selected control to the table using Llama3 reasoning.",
+          "Please wait, while system is adding the selected control to the table using Qwen reasoning.",
       },
     ]);
 
@@ -1762,7 +1828,7 @@ export default function MonitoringImprovement() {
     }
    
     if (trimmed === "/recommend") {
-      await handleRecommendForAllControls();
+      await handleRecommendForSelectedRow();
       return;
     }
 

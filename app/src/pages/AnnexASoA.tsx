@@ -380,7 +380,7 @@ export default function AnnexASoA() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using RAG over ISO 27001:2022 controls and Llama3 reasoning to generate control information.",
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen 3 reasoning to generate control information.",
       },
     ]);
 
@@ -616,7 +616,7 @@ export default function AnnexASoA() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using Llama3 reasoning and RAG technology to find most accurate controls",
+          "Please wait, while system is using Qwen 3 reasoning and RAG technology to find most accurate controls",
       },
     ]);
 
@@ -852,7 +852,7 @@ export default function AnnexASoA() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is adding the selected control to the table using Llama3 reasoning.",
+          "Please wait, while system is adding the selected control to the table using Qwen 3 reasoning.",
       },
     ]);
 

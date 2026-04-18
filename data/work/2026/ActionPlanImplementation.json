@@ -1,11 +1,56 @@
 {
   "controls": [
     {
+      "control": "6.7",
+      "control_name": "Remote working",
+      "implementation_status": "Planned",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply security patches for CVE-2020-1350 on SRV-01 immediately to mitigate DNS Server RCE vulnerability  \n- Implement network segmentation to isolate SRV-01 from non-essential network traffic  \n- Disable or restrict WinRM access on SRV-03 to only trusted IP ranges and authenticated users  \n- Enforce multi-factor authentication (MFA) for all remote access to SRV-03  \n- Conduct regular access control reviews to ensure segregation of duties compliance for users accessing SRV-01 and SRV-03  \n- Deploy web filtering solutions to block malicious domains and prevent unauthorized remote access attempts  \n- Encrypt all removable storage media used for remote work and enforce strict media handling policies  \n- Update remote work policies to include mandatory use of secure, approved remote access tools  \n- Perform quarterly vulnerability scans on SRV-01 and SRV-03 to detect and remediate new exposures  \n- Implement role-based access control (RBAC) to limit user permissions on SRV-01 and SRV-03 to the principle of least privilege",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-008",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
       "control": "8.2",
       "control_name": "Network security",
       "implementation_status": "In Progress",
-      "justification": "To protect networks from exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472",
-      "treatment_action": "Recommended treatment actions:\n\n- Disable Netlogon v1.0 and v2.0 services on all Domain Controllers to prevent exploitation of the CVE-2020-1472 vulnerability.\n- Implement Windows Server updates (KB4512496 or later) on all affected hosts, including SRV-01, to patch the vulnerability.\n- Restrict network access to only necessary hosts and services for each user role based on the principle of least privilege.\n- Enforce strong authentication and authorization mechanisms, such as multi-factor authentication, for all users accessing Domain Controllers.\n- Regularly scan and monitor networks for suspicious traffic and potential vulnerabilities using a reputable security information and event management (SIEM) system.",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "treatment_action": "Recommended treatment actions:  \n- Implement least privilege access controls for administrative accounts on SRV-01.  \n- Apply the latest security patches and updates to mitigate CVE-2020-1472 on the Domain Controller.  \n- Enable multi-factor authentication (MFA) for all privileged access sessions.  \n- Conduct regular privileged access reviews and audit logs for unauthorized activities.  \n- Segment the network to isolate SRV-01 from non-essential systems and limit lateral movement.  \n- Deploy intrusion detection systems (IDS) to monitor and alert on suspicious network traffic targeting SRV-01.  \n- Disable unused network services and protocols on SRV-01 to reduce attack surfaces.  \n- Perform vulnerability scans and penetration testing to validate the effectiveness of network security measures.  \n- Configure firewalls and network access control (NAC) to enforce strict communication policies for SRV-01.  \n- Document and enforce policies for secure configuration of network devices and services on the Domain Controller.",
       "hosts": [
         {
           "hostname": "SRV-01",
@@ -23,8 +68,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n\n- Disable Netlogon v1.0 and v2.0 services on all Domain Controllers to prevent exploitation of the CVE-2020-1472 vulnerability.\n- Implement Windows Server updates (KB4512496 or later) on all affected hosts, including SRV-01, to patch the vulnerability.\n- Restrict network access to only necessary hosts and services for each user role based on the principle of least privilege.\n- Enforce strong authentication and authorization mechanisms, such as multi-factor authentication, for all users accessing Domain Controllers.\n- Regularly scan and monitor networks for suspicious traffic and potential vulnerabilities using a reputable security information and event management (SIEM) system."
+          ]
         }
       ]
     },
@@ -32,8 +76,8 @@
       "control": "8.21",
       "control_name": "Network services security",
       "implementation_status": "In Progress",
-      "justification": "To secure Windows Domain Name System servers and prevent remote code execution vulnerability exploitation.",
-      "treatment_action": "Recommended treatment actions:\n- Implement Windows DNS Server updates (CVE-2020-1350) on SRV-01, SRV-02, and all other affected hosts.\n- Configure Windows DNS Servers to only accept encrypted traffic (TLS/SSL).\n- Restrict access to Windows DNS Servers using IP whitelisting or network segmentation.\n- Regularly review and update DNS server configurations to prevent unauthorized changes.\n- Implement SMB protocol restrictions on SRV-03 to prevent exploitation of CVE-2017-0144.\n- Limit WinRM usage and implement authentication controls for SRV-03 to prevent exploitation of CVE-2021-31166.\n- Apply vulnerability patches for Web Application Remote Code Execution (CVE-2021-44228) on SRV-04.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of these treatment actions.",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply critical security patches for CVE-2020-1350 on SRV-01 and SRV-02 immediately  \n- Disable unnecessary network services on all hosts, particularly non-essential protocols on SRV-03 and SRV-04  \n- Implement firewall rules to restrict access to DNS (53), SMB (445), and WinRM (5985/5986) ports to authorized IP ranges  \n- Configure web application firewalls on SRV-04 to mitigate risks from CVE-2021-44228  \n- Enforce TLS 1.2+ encryption for all remote management interfaces (WinRM) across affected hosts  \n- Conduct vulnerability scanning and penetration testing for network services per ISO 27002:2022 8.29  \n- Deploy network segmentation to isolate domain controllers (SRV-01) from other hosts  \n- Implement application layer filtering (ISO 27002:2022 8.23) to block malicious traffic patterns  \n- Update application server configurations on SRV-04 to include input validation and output encoding  \n- Establish baseline security configurations for all hosts using ISO 27002:2022 8.20 network security guidelines",
       "hosts": [
         {
           "hostname": "SRV-01",
@@ -51,8 +95,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement Windows DNS Server updates (CVE-2020-1350) on SRV-01, SRV-02, and all other affected hosts.\n- Configure Windows DNS Servers to only accept encrypted traffic (TLS/SSL).\n- Restrict access to Windows DNS Servers using IP whitelisting or network segmentation.\n- Regularly review and update DNS server configurations to prevent unauthorized changes.\n- Implement SMB protocol restrictions on SRV-03 to prevent exploitation of CVE-2017-0144.\n- Limit WinRM usage and implement authentication controls for SRV-03 to prevent exploitation of CVE-2021-31166.\n- Apply vulnerability patches for Web Application Remote Code Execution (CVE-2021-44228) on SRV-04.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of these treatment actions."
+          ]
         },
         {
           "hostname": "SRV-02",
@@ -70,8 +113,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement Windows DNS Server updates (CVE-2020-1350) on SRV-01, SRV-02, and all other affected hosts.\n- Configure Windows DNS Servers to only accept encrypted traffic (TLS/SSL).\n- Restrict access to Windows DNS Servers using IP whitelisting or network segmentation.\n- Regularly review and update DNS server configurations to prevent unauthorized changes.\n- Implement SMB protocol restrictions on SRV-03 to prevent exploitation of CVE-2017-0144.\n- Limit WinRM usage and implement authentication controls for SRV-03 to prevent exploitation of CVE-2021-31166.\n- Apply vulnerability patches for Web Application Remote Code Execution (CVE-2021-44228) on SRV-04.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of these treatment actions."
+          ]
         },
         {
           "hostname": "SRV-03",
@@ -89,8 +131,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement Windows DNS Server updates (CVE-2020-1350) on SRV-01, SRV-02, and all other affected hosts.\n- Configure Windows DNS Servers to only accept encrypted traffic (TLS/SSL).\n- Restrict access to Windows DNS Servers using IP whitelisting or network segmentation.\n- Regularly review and update DNS server configurations to prevent unauthorized changes.\n- Implement SMB protocol restrictions on SRV-03 to prevent exploitation of CVE-2017-0144.\n- Limit WinRM usage and implement authentication controls for SRV-03 to prevent exploitation of CVE-2021-31166.\n- Apply vulnerability patches for Web Application Remote Code Execution (CVE-2021-44228) on SRV-04.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of these treatment actions."
+          ]
         },
         {
           "hostname": "SRV-03",
@@ -108,8 +149,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement Windows DNS Server updates (CVE-2020-1350) on SRV-01, SRV-02, and all other affected hosts.\n- Configure Windows DNS Servers to only accept encrypted traffic (TLS/SSL).\n- Restrict access to Windows DNS Servers using IP whitelisting or network segmentation.\n- Regularly review and update DNS server configurations to prevent unauthorized changes.\n- Implement SMB protocol restrictions on SRV-03 to prevent exploitation of CVE-2017-0144.\n- Limit WinRM usage and implement authentication controls for SRV-03 to prevent exploitation of CVE-2021-31166.\n- Apply vulnerability patches for Web Application Remote Code Execution (CVE-2021-44228) on SRV-04.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of these treatment actions."
+          ]
         },
         {
           "hostname": "SRV-04",
@@ -127,8 +167,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement Windows DNS Server updates (CVE-2020-1350) on SRV-01, SRV-02, and all other affected hosts.\n- Configure Windows DNS Servers to only accept encrypted traffic (TLS/SSL).\n- Restrict access to Windows DNS Servers using IP whitelisting or network segmentation.\n- Regularly review and update DNS server configurations to prevent unauthorized changes.\n- Implement SMB protocol restrictions on SRV-03 to prevent exploitation of CVE-2017-0144.\n- Limit WinRM usage and implement authentication controls for SRV-03 to prevent exploitation of CVE-2021-31166.\n- Apply vulnerability patches for Web Application Remote Code Execution (CVE-2021-44228) on SRV-04.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of these treatment actions."
+          ]
         },
         {
           "hostname": "SRV-04",
@@ -146,26 +185,25 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement Windows DNS Server updates (CVE-2020-1350) on SRV-01, SRV-02, and all other affected hosts.\n- Configure Windows DNS Servers to only accept encrypted traffic (TLS/SSL).\n- Restrict access to Windows DNS Servers using IP whitelisting or network segmentation.\n- Regularly review and update DNS server configurations to prevent unauthorized changes.\n- Implement SMB protocol restrictions on SRV-03 to prevent exploitation of CVE-2017-0144.\n- Limit WinRM usage and implement authentication controls for SRV-03 to prevent exploitation of CVE-2021-31166.\n- Apply vulnerability patches for Web Application Remote Code Execution (CVE-2021-44228) on SRV-04.\n- Conduct regular security testing (Control Reference 5) to validate the effectiveness of these treatment actions."
+          ]
         }
       ]
     },
     {
-      "control": "8.24",
-      "control_name": "Cryptography",
+      "control": "8.23",
+      "control_name": "Web filtering",
       "implementation_status": "In Progress",
-      "justification": "Protecting data from potential exploitation is crucial due to the high exposure of this vulnerability.",
-      "treatment_action": "Recommended treatment actions:\n\n- Implement cryptographic protocols for secure communication between SRV-04 and other hosts.\n- Use secure encryption algorithms (e.g., AES) for data-at-rest and data-in-transit protection.\n- Enable digital signatures to verify the authenticity of transmitted data.\n- Utilize secure authentication mechanisms (e.g., mutual authentication, Kerberos) for access control.\n- Implement regular key rotation and revocation procedures to maintain cryptographic controls effectiveness.\n- Conduct vulnerability scanning and penetration testing to identify potential weaknesses in cryptography controls.\n- Develop and implement incident response procedures for detecting and responding to data breaches.\n- Collaborate with the Information deletion (8.10), Technical vulnerability management (8.8), Data leakage prevention (8.12), and Data masking (8.11) controls to ensure comprehensive protection.",
+      "justification": "Web filtering can help prevent malicious traffic that may exploit the vulnerability.",
+      "treatment_action": "Recommended treatment actions:  \n- Deploy a web filtering solution on the network perimeter to block access to malicious websites and phishing domains.  \n- Configure the web filter to block traffic to known exploit servers and domains associated with CVE-2020-1350.  \n- Implement real-time updates to the web filtering database to ensure coverage of newly identified malicious URLs.  \n- Monitor and log web traffic to detect and analyze suspicious activity targeting the DNS server.  \n- Integrate web filtering with the organization\u2019s vulnerability management process to block access to IPs linked to unpatched vulnerabilities.  \n- Enforce strict policies to prevent access to external websites that may host malware or exfiltrate data.  \n- Ensure web filtering rules align with data leakage prevention controls to block unauthorized data transfer channels.  \n- Conduct regular audits of web filtering configurations to ensure alignment with network security policies and ISO 27002 requirements.",
       "hosts": [
         {
-          "hostname": "SRV-04",
+          "hostname": "SRV-02",
           "ip_address": "",
-          "role": "Application Server",
+          "role": "DNS Server",
           "CIA rating": "",
-          "vulnerability_name": "WinRM Remote Command Execution Exposure",
-          "cve": "CVE-2021-31166",
-          "riskid": "R-010",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-003",
           "evidence": [
             {
               "responsible": "",
@@ -174,8 +212,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement FIPS-compliant cryptographic protocols on SRV-04, ensuring secure data transmission and storage.\n- Conduct regular vulnerability assessments for cryptography-related issues, focusing on SRV-04 as the affected host.\n- Review and update existing cryptographic controls to ensure compliance with best practices and industry standards.\n- Utilize cryptographic libraries and frameworks that support multiple encryption algorithms and key sizes.\n- Implement a cryptographic governance framework to manage and maintain cryptographic keys and certificates.\n- Perform regular penetration testing and security assessments to identify potential cryptographic vulnerabilities.\n- Implement data deletion mechanisms (Control 8.10) for sensitive data stored on SRV-04, ensuring it is properly sanitized before disposal or destruction.\n- Establish a technical vulnerability management process (Control 8.8) to promptly address identified cryptography-related vulnerabilities.\n- Implement data leakage prevention controls (Control 8.12) to monitor and prevent unauthorized data exfiltration from SRV-04.\n- Utilize data masking techniques (Control 8.11) to protect sensitive data stored on SRV-04, ensuring it remains confidential even in the event of a breach."
+          ]
         }
       ]
     },
@@ -183,66 +220,9 @@
       "control": "8.28",
       "control_name": "Secure coding",
       "implementation_status": "In Progress",
-      "justification": "To reduce vulnerabilities and prevent exploitation of the critical Netlogon Elevation of Privilege CVE-2020-1472",
-      "treatment_action": "Recommended treatment actions:\n- Review and update coding practices to prevent vulnerabilities in Netlogon Elevation of Privilege (CVE-2020-1472) and other identified vulnerabilities.\n- Implement secure coding guidelines for developers and review existing code for potential vulnerabilities.\n- Conduct regular security audits and vulnerability assessments on all affected hosts.\n- Apply software patches and updates as soon as they are available to address identified vulnerabilities.\n- Configure web application firewalls (WAFs) to block malicious traffic and prevent remote code execution attacks.\n- Implement a bug bounty program to identify and remediate potential vulnerabilities in-house.\n- Develop and implement a secure coding training program for all developers.",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply patches for CVE-2017-0144 and CVE-2021-44228 on SRV-03 and SRV-04.  \n- Conduct code reviews and static analysis for the web application on SRV-04 to identify insecure coding practices.  \n- Implement input validation and output encoding in the web application to mitigate RCE vulnerabilities.  \n- Enforce secure coding standards during development and testing phases for all applications.  \n- Provide secure coding training to developers responsible for the applications on SRV-04.  \n- Integrate automated security testing tools (SAST/DAST) into the CI/CD pipeline for the web application.  \n- Restrict access to the source code repositories of the web application to authorized personnel only.  \n- Ensure segregation of duties for code development, testing, and deployment processes.  \n- Configure web filtering rules to block traffic targeting vulnerable endpoints on SRV-04.  \n- Schedule periodic penetration testing and vulnerability assessments for both SRV-03 and SRV-04.",
       "hosts": [
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller (Active Directory)",
-          "CIA rating": "",
-          "vulnerability_name": "Netlogon Elevation of Privilege",
-          "cve": "CVE-2020-1472",
-          "riskid": "R-001",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Review and update coding practices to ensure secure coding guidelines are followed.\n- Conduct code reviews for existing applications to identify and remediate vulnerabilities.\n- Implement automated tools to detect vulnerabilities in software development life cycles.\n- Develop and maintain a secure coding standard, incorporating best practices and industry standards.\n- Provide training and awareness programs for developers on secure coding techniques.\n- Integrate security testing into the software development life cycle, including static analysis, dynamic analysis, and penetration testing.\n- Implement regular vulnerability scanning and patching of systems to reduce exposure to known vulnerabilities."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller (Active Directory)",
-          "CIA rating": "",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "riskid": "R-002",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Review and update coding practices to ensure secure coding guidelines are followed.\n- Conduct code reviews for existing applications to identify and remediate vulnerabilities.\n- Implement automated tools to detect vulnerabilities in software development life cycles.\n- Develop and maintain a secure coding standard, incorporating best practices and industry standards.\n- Provide training and awareness programs for developers on secure coding techniques.\n- Integrate security testing into the software development life cycle, including static analysis, dynamic analysis, and penetration testing.\n- Implement regular vulnerability scanning and patching of systems to reduce exposure to known vulnerabilities."
-        },
-        {
-          "hostname": "SRV-02",
-          "ip_address": "",
-          "role": "DNS Server",
-          "CIA rating": "",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "riskid": "R-003",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Review and update coding practices to ensure secure coding guidelines are followed.\n- Conduct code reviews for existing applications to identify and remediate vulnerabilities.\n- Implement automated tools to detect vulnerabilities in software development life cycles.\n- Develop and maintain a secure coding standard, incorporating best practices and industry standards.\n- Provide training and awareness programs for developers on secure coding techniques.\n- Integrate security testing into the software development life cycle, including static analysis, dynamic analysis, and penetration testing.\n- Implement regular vulnerability scanning and patching of systems to reduce exposure to known vulnerabilities."
-        },
         {
           "hostname": "SRV-03",
           "ip_address": "",
@@ -259,8 +239,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Review and update coding practices to ensure secure coding guidelines are followed.\n- Conduct code reviews for existing applications to identify and remediate vulnerabilities.\n- Implement automated tools to detect vulnerabilities in software development life cycles.\n- Develop and maintain a secure coding standard, incorporating best practices and industry standards.\n- Provide training and awareness programs for developers on secure coding techniques.\n- Integrate security testing into the software development life cycle, including static analysis, dynamic analysis, and penetration testing.\n- Implement regular vulnerability scanning and patching of systems to reduce exposure to known vulnerabilities."
+          ]
         },
         {
           "hostname": "SRV-04",
@@ -278,65 +257,17 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Review and update coding practices to ensure secure coding guidelines are followed.\n- Conduct code reviews for existing applications to identify and remediate vulnerabilities.\n- Implement automated tools to detect vulnerabilities in software development life cycles.\n- Develop and maintain a secure coding standard, incorporating best practices and industry standards.\n- Provide training and awareness programs for developers on secure coding techniques.\n- Integrate security testing into the software development life cycle, including static analysis, dynamic analysis, and penetration testing.\n- Implement regular vulnerability scanning and patching of systems to reduce exposure to known vulnerabilities."
+          ]
         }
       ]
     },
     {
-      "control": "8.29",
-      "control_name": "Security testing",
-      "implementation_status": "In Progress",
-      "justification": "Regular security testing is necessary to identify and validate the effectiveness of controls against this vulnerability.",
-      "treatment_action": "Recommended treatment actions:\n- Implement regular security testing to identify and validate the effectiveness of controls against SMB Remote Code Execution vulnerability on SRV-03.\n- Conduct manual or automated penetration testing to simulate attacks and verify the robustness of controls.\n- Update SRV-03's software and patch levels to ensure compliance with industry standards and mitigate identified vulnerabilities.\n- Review and update existing security policies and procedures related to network security, application security requirements, and outsourced development to ensure alignment with ISO 27001:2022 guidelines.\n- Ensure management direction and support for information security are adequate, effective, and suitable through regular reviews of policies and procedures.",
+      "control": "8.7",
+      "control_name": "Protection against malware",
+      "implementation_status": "Implemented",
+      "justification": "The control is needed due to unpatched systems, exposed services, and misconfigurations that increase the risk of malware attacks. These weaknesses allow unauthorized access and execution of malicious code, which can compromise system integrity and data confidentiality.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply patches for CVE-2020-1350, CVE-2021-31166, CVE-2020-1472, CVE-2017-0144, and CVE-2021-44228 on all affected hosts.  \n- Deploy and configure endpoint detection and response (EDR) solutions on SRV-01, SRV-02, SRV-03, and SRV-04.  \n- Disable unnecessary services (e.g., WinRM, SMBv1) on SRV-03 and SRV-04 to reduce attack surfaces.  \n- Implement network segmentation to isolate Domain Controllers (SRV-01) and Application Servers (SRV-04) from other network zones.  \n- Enforce web filtering policies on SRV-04 to block access to known malicious domains.  \n- Conduct regular vulnerability scans and penetration testing to identify residual risks.  \n- Update and enforce secure coding standards for web applications hosted on SRV-04.  \n- Configure automatic malware signature updates for anti-malware tools across all hosts.  \n- Enable real-time monitoring and alerting for suspicious activities on all affected servers.  \n- Train users on phishing awareness and safe browsing practices to prevent initial malware delivery.",
       "hosts": [
-        {
-          "hostname": "SRV-03",
-          "ip_address": "",
-          "role": "File Server",
-          "CIA rating": "",
-          "vulnerability_name": "SMB Remote Code Execution",
-          "cve": "CVE-2017-0144",
-          "riskid": "R-007",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Perform regular security testing on SRV-03 to identify and validate the effectiveness of controls against SMB Remote Code Execution (CVE-2017-0144).\n- Implement a vulnerability scanning tool to detect and remediate potential security issues.\n- Conduct penetration testing and web application scanning to identify vulnerabilities in the file server's network and applications.\n- Ensure that all security testing is performed by authorized personnel with necessary skills and training.\n- Document test results, including any findings and recommendations for remediation.\n- Develop and implement a plan to remediate identified vulnerabilities on SRV-03."
-        }
-      ]
-    },
-    {
-      "control": "8.5",
-      "control_name": "Secure authentication",
-      "implementation_status": "In Progress",
-      "justification": "This control is needed because it addresses the security concern of unsecured authentication, which can lead to exploitation by attackers. The identified vulnerabilities in existing systems and services indicate that weaknesses in authentication mechanisms are present, making it essential to implement controls to ensure strong authentication practices.",
-      "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing.",
-      "hosts": [
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller (Active Directory)",
-          "CIA rating": "",
-          "vulnerability_name": "Netlogon Elevation of Privilege",
-          "cve": "CVE-2020-1472",
-          "riskid": "R-001",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing."
-        },
         {
           "hostname": "SRV-01",
           "ip_address": "",
@@ -353,46 +284,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing."
-        },
-        {
-          "hostname": "SRV-02",
-          "ip_address": "",
-          "role": "DNS Server",
-          "CIA rating": "",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "riskid": "R-003",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing."
-        },
-        {
-          "hostname": "SRV-03",
-          "ip_address": "",
-          "role": "File Server",
-          "CIA rating": "",
-          "vulnerability_name": "SMB Remote Code Execution",
-          "cve": "CVE-2017-0144",
-          "riskid": "R-007",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing."
+          ]
         },
         {
           "hostname": "SRV-03",
@@ -410,8 +302,61 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing."
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "riskid": "R-007",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         },
         {
           "hostname": "SRV-04",
@@ -429,8 +374,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing."
+          ]
         },
         {
           "hostname": "SRV-04",
@@ -448,8 +392,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Implement multi-factor authentication (MFA) for all domain controllers and file servers.\n- Disable insecure protocols such as NetBIOS over TCP/IP on SRV-01.\n- Enable Windows DNS Server's built-in validation of DNS queries on SRV-02.\n- Patch SMB vulnerabilities using the latest Windows updates on SRV-03.\n- Configure WinRM to only allow trusted connections on SRV-03.\n- Conduct security testing (Control 8.29) to validate secure authentication practices.\n- Ensure proper authentication information management (Control 5.17).\n- Implement technical vulnerability management processes (Control 8.8) to manage vulnerabilities discovered during security testing."
+          ]
         }
       ]
     },
@@ -457,9 +400,81 @@
       "control": "8.8",
       "control_name": "Technical vulnerability management",
       "implementation_status": "In Progress",
-      "justification": "This control ensures that the organization has processes in place to manage vulnerabilities, including this high-severity remote code execution vulnerability.",
-      "treatment_action": "Recommended treatment actions:\n- Here are the recommended treatment actions for the given control:\n- Recommended treatment actions:\n- Remediate the WinRM Remote Command Execution Exposure vulnerability on SRV-03 File Server using a patch or update.\n- Conduct regular security scans and vulnerability assessments to identify potential vulnerabilities before they can be exploited.\n- Implement secure coding practices, as outlined in Control Reference 2 (Secure Coding), to reduce the risk of introducing new vulnerabilities.\n- Ensure that project managers, as outlined in Control Reference 3 (Information Security in Project Management), consider information security risks during project planning and execution.\n- Implement network segmentation and access controls, as outlined in Control Reference 4 (Network Security), to limit the spread of potential attacks.\n- Develop a remote working policy, as outlined in Control Reference 5 (Remote Working), that includes guidelines for secure remote work practices.",
+      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply security patches for CVE-2020-1472, CVE-2020-1350, CVE-2017-0144, CVE-2021-31166, and CVE-2021-44228 on SRV-01, SRV-02, SRV-03, and SRV-04.  \n- Disable or configure WinRM to restrict remote command execution on SRV-03 and SRV-04.  \n- Implement firewall rules to block unauthorized access to vulnerable services (e.g., DNS, SMB) on affected hosts.  \n- Conduct penetration testing on SRV-01, SRV-02, SRV-03, and SRV-04 to validate vulnerability remediation effectiveness.  \n- Deploy web application firewall (WAF) to mitigate risks from CVE-2021-44228 on SRV-04.  \n- Enable and configure logging for DNS, SMB, and WinRM services on all affected hosts to detect exploitation attempts.  \n- Schedule regular vulnerability scans using automated tools to identify and prioritize new vulnerabilities.  \n- Update and enforce secure coding practices for web applications hosted on SRV-04 to prevent future RCE vulnerabilities.  \n- Ensure all hosts are enrolled in a centralized patch management system for timely updates.  \n- Review and update incident response plans to include procedures for addressing critical vulnerabilities like those listed.",
       "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "riskid": "R-007",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
         {
           "hostname": "SRV-03",
           "ip_address": "",
@@ -476,8 +491,43 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n- Here are the recommended treatment actions for the given control:\n- Recommended treatment actions:\n- Remediate the WinRM Remote Command Execution Exposure vulnerability on SRV-03 File Server using a patch or update.\n- Conduct regular security scans and vulnerability assessments to identify potential vulnerabilities before they can be exploited.\n- Implement secure coding practices, as outlined in Control Reference 2 (Secure Coding), to reduce the risk of introducing new vulnerabilities.\n- Ensure that project managers, as outlined in Control Reference 3 (Information Security in Project Management), consider information security risks during project planning and execution.\n- Implement network segmentation and access controls, as outlined in Control Reference 4 (Network Security), to limit the spread of potential attacks.\n- Develop a remote working policy, as outlined in Control Reference 5 (Remote Working), that includes guidelines for secure remote work practices."
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "riskid": "R-009",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-010",
+          "evidence": [
+            {
+              "responsible": "",
+              "resources": "",
+              "date": "",
+              "url": "",
+              "desc": ""
+            }
+          ]
         }
       ]
     },
@@ -485,8 +535,8 @@
       "control": "8.9",
       "control_name": "Configuration management",
       "implementation_status": "In Progress",
-      "justification": "The vulnerability is specific to log4j-core configuration, and this control ensures that configurations are reviewed and updated regularly.",
-      "treatment_action": "Recommended treatment actions:\n\n- Review and update the log4j-core configuration on SRV-04 to ensure it is secure.\n- Implement a change management process to track and manage changes to the configuration.\n- Ensure that all configurations are reviewed and updated regularly as part of the control's purpose.\n- Apply the secure coding principles from Control 8.28 to minimize vulnerabilities in future configurations.\n- Incorporate vulnerability management practices from Control 8.8 to detect and respond to potential issues.\n- Integrate information security considerations into project management, as described in Control 5.8.",
+      "justification": "The vulnerability is related to misconfigurations in the application server's logging configuration, which can be addressed through secure configuration practices.",
+      "treatment_action": "Recommended treatment actions:  \n- Implement a configuration management tool (e.g., Ansible, Puppet) to enforce and automate secure logging configuration settings on SRV-04.  \n- Conduct a manual and automated review of the application server's logging configuration to remove or disable unnecessary logging features (e.g., debug logs, verbose error messages).  \n- Integrate logging configuration changes into the organization's technical vulnerability management process (control 8.8) for continuous monitoring and remediation.  \n- Apply the principle of least privilege to logging configurations, restricting access to log files and ensuring only authorized personnel can modify or view them.  \n- Document and enforce a change management process (control 8.32) for all configuration changes, including approvals, testing, and rollback procedures.  \n- Perform regular configuration audits using tools like OpenSCAP or CIS benchmarks to ensure compliance with secure configuration standards.  \n- Train system administrators and developers on secure configuration practices, including logging configuration best practices, as part of information security awareness programs (control 5.8).  \n- Enable logging of all configuration changes on SRV-04 and store logs in a secure, tamper-evident location for audit and forensic purposes.  \n- Update the application server's software and dependencies to address the CVE-2021-44228 vulnerability, ensuring compatibility with the secure logging configuration.  \n- Establish a configuration baseline for application servers, including logging settings, and enforce it across all hosts in the environment.",
       "hosts": [
         {
           "hostname": "SRV-04",
@@ -504,8 +554,7 @@
               "url": "",
               "desc": ""
             }
-          ],
-          "treatment_action": "Recommended treatment actions:\n\n- Review and update log4j-core configuration on SRV-04 to ensure secure settings.\n- Conduct a thorough vulnerability assessment for the affected host (SRV-04) to identify and remediate any other potential issues.\n- Implement a regular configuration management process for all hosts, including automated monitoring and reporting tools.\n- Incorporate secure coding practices as outlined in Control Reference 4 into future development projects.\n- Ensure that change management processes, as outlined in Control Reference 5, are followed for all changes to configurations or software.\n- Perform a technical vulnerability assessment using the guidance provided in Control Reference 2 to identify and remediate any other potential issues.\n- Consider implementing additional controls, such as logging and monitoring, to detect and respond to future vulnerabilities."
+          ]
         }
       ]
     }
