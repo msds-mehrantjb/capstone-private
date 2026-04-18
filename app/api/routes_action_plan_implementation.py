@@ -12,6 +12,7 @@ import math
 
 import requests
 
+print("LOADED routes_action_plan_implementation.py")
 
 router = APIRouter(
     prefix="/api/action-plan-implementation",
@@ -215,6 +216,18 @@ def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "SystemStatus.json"
 
 
+def _action_implementation_guides_file(year: int) -> Path:
+    return _work_dir(year) / "ActionImplementationGuides.json"
+
+
+def _asset_inventory_file(year: int) -> Path:
+    return _work_dir(year) / "AssetInventory.json"
+
+
+def _existing_controls_postures_file(year: int) -> Path:
+    return _work_dir(year) / "ExistingControlsPostures.json"
+
+
 # =========================================================
 # BASIC HELPERS
 # =========================================================
@@ -240,7 +253,14 @@ def _normalize_key(value: Any) -> str:
 def _safe_join_lines(items: list[str]) -> str:
     return "\n".join(x for x in items if _normalize_text(x) != "")
 
-
+def _ensure_action_implementation_guides_file_exists(year: int):
+    path = _action_implementation_guides_file(year)
+    print("GUIDES PATH =", path)
+    print("GUIDES EXISTS BEFORE =", path.exists())    
+    if not path.exists():
+        doc = _blank_action_implementation_guides_doc(year)
+        _save_action_implementation_guides_doc(year, doc)
+        
 # =========================================================
 # SYSTEM STATUS HELPERS
 # =========================================================
@@ -1196,6 +1216,623 @@ Relevant ISO Guidance:
     return desc.replace("\n", " ").strip()
     
 # =========================================================
+# ACTION IMPLEMENTATION GUIDES HELPERS
+# =========================================================
+def _blank_action_implementation_guides_doc(year: int) -> dict:
+    return {
+        "guides": []
+    }
+
+def _load_json_or_default(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    try:
+        data = _load_json(path)
+        return data if isinstance(data, type(default)) else default
+    except Exception:
+        return default
+
+
+def _load_action_implementation_guides_doc_or_blank(year: int) -> dict:
+    path = _action_implementation_guides_file(year)
+    default_doc = _blank_action_implementation_guides_doc(year)
+    doc = _load_json_or_default(path, default_doc)
+
+    if not isinstance(doc, dict):
+        return default_doc
+
+    if not isinstance(doc.get("guides"), list):
+        doc["guides"] = []
+
+    return doc
+
+
+def _save_action_implementation_guides_doc(year: int, doc: dict) -> None:
+    _save_json(_action_implementation_guides_file(year), doc)
+
+
+def _all_guides(doc: dict) -> list[dict]:
+    guides = doc.get("guides", [])
+    if not isinstance(guides, list):
+        return []
+    return [g for g in guides if isinstance(g, dict)]
+
+
+def _next_guide_id(year: int, guides_doc: dict) -> str:
+    max_n = 0
+
+    for guide in _all_guides(guides_doc):
+        value = _normalize_text(guide.get("guide_id"))
+        m = re.match(rf"^AIG-{int(year)}-(\d+)$", value)
+        if m:
+            max_n = max(max_n, int(m.group(1)))
+
+    return f"AIG-{int(year)}-{max_n + 1:04d}"
+
+
+def _next_evidence_id(year: int, action_doc: dict) -> str:
+    max_n = 0
+    for control in _all_controls(action_doc):
+        hosts = control.get("hosts", [])
+        if not isinstance(hosts, list):
+            continue
+        for host in hosts:
+            if not isinstance(host, dict):
+                continue
+            evidence_list = host.get("evidence", [])
+            if not isinstance(evidence_list, list):
+                continue
+            for evidence in evidence_list:
+                if not isinstance(evidence, dict):
+                    continue
+                value = _normalize_text(evidence.get("evidence_id"))
+                m = re.match(rf"^EVID-{int(year)}-(\d+)$", value)
+                if m:
+                    max_n = max(max_n, int(m.group(1)))
+    return f"EVID-{int(year)}-{max_n + 1:04d}"
+
+
+def _remove_guide_by_key(year: int, evidence_id: str) -> bool:
+    doc = _load_action_implementation_guides_doc_or_blank(year)
+    original = len(_all_guides(doc))
+
+    doc["guides"] = [
+        g for g in _all_guides(doc)
+        if _normalize_key(g.get("evidence_id")) != _normalize_key(evidence_id)
+    ]
+
+    changed = len(doc["guides"]) != original
+    if changed:
+        _save_action_implementation_guides_doc(year, doc)
+
+    return changed
+
+
+def _append_guide(year: int, guide: dict) -> None:
+    doc = _load_action_implementation_guides_doc_or_blank(year)
+    guides = _all_guides(doc)
+    guides.append(guide)
+    doc["guides"] = guides
+    _save_action_implementation_guides_doc(year, doc)
+
+
+def _load_asset_inventory_or_blank(year: int) -> dict:
+    return _load_json_or_default(_asset_inventory_file(year), {})
+
+
+def _load_existing_controls_postures_or_blank(year: int) -> dict:
+    return _load_json_or_default(_existing_controls_postures_file(year), {})
+
+
+def _find_asset_inventory_host(year: int, hostname: str) -> dict:
+    doc = _load_asset_inventory_or_blank(year)
+    for subnet in doc.get("subnets", []):
+        if not isinstance(subnet, dict):
+            continue
+        for asset in subnet.get("assets", []):
+            if isinstance(asset, dict) and _normalize_key(asset.get("hostname")) == _normalize_key(hostname):
+                return asset
+
+    for network in doc.get("networks", []):
+        if not isinstance(network, dict):
+            continue
+        for subnet in network.get("subnets", []):
+            if not isinstance(subnet, dict):
+                continue
+            for host in subnet.get("hosts", []):
+                if isinstance(host, dict) and _normalize_key(host.get("hostname")) == _normalize_key(hostname):
+                    return host
+
+    return {}
+
+
+def _find_existing_controls_posture(year: int, hostname: str) -> dict:
+    doc = _load_existing_controls_postures_or_blank(year)
+    hosts = doc.get("hosts", [])
+    if not isinstance(hosts, list):
+        return {}
+    for item in hosts:
+        if isinstance(item, dict) and _normalize_key(item.get("hostname")) == _normalize_key(hostname):
+            return item
+    return {}
+
+
+def _flatten_existing_controls(existing_controls: Any) -> list[str]:
+    results: list[str] = []
+    if not isinstance(existing_controls, dict):
+        return results
+    for category, values in existing_controls.items():
+        if isinstance(values, list):
+            for value in values:
+                v = _normalize_text(value)
+                if v:
+                    results.append(v)
+        else:
+            v = _normalize_text(values)
+            if v:
+                results.append(v)
+    return results
+
+
+def _derive_evidence_name_from_item(evidence: dict) -> str:
+    desc = _normalize_text(evidence.get("desc"))
+    resources = _normalize_text(evidence.get("resources"))
+    url = _normalize_text(evidence.get("url"))
+
+    text = desc or resources or url
+    if not text:
+        return "Implementation evidence"
+
+    short = text.split("\n", 1)[0].strip()
+    if len(short) > 80:
+        short = short[:77].rstrip() + "..."
+    return short
+
+
+def _derive_evidence_type_from_item(evidence: dict) -> str:
+    url = _normalize_text(evidence.get("url")).lower()
+    desc = _normalize_text(evidence.get("desc")).lower()
+
+    if any(url.endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"]):
+        return "Screenshot"
+    if url.endswith(".pdf"):
+        return "PDF"
+    if any(term in desc for term in ["scan", "scanner", "report"]):
+        return "Scan Report"
+    if any(term in desc for term in ["log", "event", "audit"]):
+        return "Log Export"
+    return "Document"
+
+
+def _safe_department_from_asset(asset: dict) -> str:
+    detail = asset.get("detail", {}) if isinstance(asset, dict) else {}
+    business_context = detail.get("business_context", {}) if isinstance(detail, dict) else {}
+    return _normalize_text(business_context.get("department"))
+
+
+def _safe_os_version_from_asset(asset: dict) -> str:
+    if not isinstance(asset, dict):
+        return ""
+    value = _normalize_text(asset.get("operating_system"))
+    if value:
+        return value
+    detail = asset.get("detail", {})
+    if isinstance(detail, dict):
+        profile = detail.get("device_profile", {})
+        if isinstance(profile, dict):
+            return _normalize_text(profile.get("os_version"))
+    return ""
+
+
+def _safe_device_type_from_asset(asset: dict) -> str:
+    return _normalize_text(asset.get("device_type") or ("Server" if "server" in _normalize_text(asset.get("role")).lower() else "Workstation"))
+
+
+def _safe_ip_from_asset(asset: dict) -> str:
+    if not isinstance(asset, dict):
+        return ""
+    value = _normalize_text(asset.get("ip_address"))
+    if value:
+        return value
+    location = asset.get("location", {})
+    if isinstance(location, dict):
+        return _normalize_text(location.get("ip_address"))
+    return ""
+
+
+def _safe_cia_from_asset(asset: dict, fallback: str = "") -> str:
+    if not isinstance(asset, dict):
+        return fallback
+    cia_rating = asset.get("cia_rating")
+    if isinstance(cia_rating, dict):
+        criticality = _normalize_text(cia_rating.get("criticality"))
+        if criticality:
+            return criticality
+    cia_impact = asset.get("cia_impact")
+    if isinstance(cia_impact, dict):
+        values = [
+            _normalize_text(cia_impact.get("confidentiality")),
+            _normalize_text(cia_impact.get("integrity")),
+            _normalize_text(cia_impact.get("availability")),
+        ]
+        values = [v for v in values if v]
+        if values:
+            return "/".join(values)
+    return fallback
+
+
+def _ensure_evidence_ids_for_host(year: int, action_doc: dict, host: dict) -> bool:
+    changed = False
+    evidence_list = host.get("evidence", [])
+    if not isinstance(evidence_list, list):
+        evidence_list = []
+
+    new_list = []
+    for evidence in evidence_list:
+        if not isinstance(evidence, dict):
+            continue
+        item = dict(evidence)
+        if _normalize_text(item.get("evidence_id")) == "":
+            item["evidence_id"] = _next_evidence_id(year, action_doc)
+            changed = True
+        new_list.append(item)
+
+    if changed:
+        host["evidence"] = new_list
+    return changed
+
+def _build_minimal_guide_references(cve_id: str) -> list[dict]:
+    cve_id = _normalize_text(cve_id)
+
+    refs = [
+        {
+            "ref_id": "MS-01",
+            "source": f"Microsoft Security Update {cve_id}" if cve_id else "Microsoft Security Update"
+        },
+        {
+            "ref_id": "CISA-01",
+            "source": "CISA Known Exploited Vulnerabilities Catalog"
+        },
+        {
+            "ref_id": "NVD-01",
+            "source": f"NVD {cve_id} Technical Details" if cve_id else "NVD Technical Details"
+        },
+        {
+            "ref_id": "MS-Baseline",
+            "source": "Microsoft Security Compliance Toolkit"
+        }
+    ]
+
+    return refs
+
+def _build_vulnerability_generation_hints(cve_id: str, vulnerability_name: str, role: str) -> str:
+    cve_id_l = _normalize_text(cve_id).lower()
+    vuln_l = _normalize_text(vulnerability_name).lower()
+    role_l = _normalize_text(role).lower()
+
+    hints = []
+
+    # DNS
+    if "dns" in vuln_l or "cve-2020-1350" in cve_id_l:
+        hints.extend([
+            "Affected service is likely Windows DNS Server.",
+            "Relevant commands may include Get-Service DNS, Restart-Service DNS, Resolve-DnsName.",
+            "Relevant hardening may include TCP/UDP 53 firewall restrictions.",
+            "Relevant evidence may include DNS service status, firewall rules, hotfix output, and DNS logs."
+        ])
+
+    # SMB / file sharing
+    if "smb" in vuln_l or "445" in vuln_l:
+        hints.extend([
+            "Relevant commands may include Get-SmbServerConfiguration and firewall rules for TCP 445.",
+            "Relevant evidence may include SMB configuration output and firewall rule listings."
+        ])
+
+    # WinRM / remote management
+    if "winrm" in vuln_l or "wsman" in vuln_l or "5985" in vuln_l or "5986" in vuln_l:
+        hints.extend([
+            "Relevant commands may include Get-ChildItem WSMan:\\localhost\\Service and Set-Item WSMan:\\localhost\\Service\\AllowUnencrypted -Value false.",
+            "Relevant evidence may include WSMan configuration output and firewall rules."
+        ])
+
+    # RDP
+    if "rdp" in vuln_l or "3389" in vuln_l:
+        hints.extend([
+            "Relevant commands may include firewall restrictions for TCP 3389 and registry or policy validation for RDP hardening.",
+            "Relevant evidence may include firewall rules, service status, and policy screenshots."
+        ])
+
+    # IIS / web app
+    if "iis" in vuln_l or "http" in vuln_l or "https" in vuln_l or "web" in vuln_l or "apache" in vuln_l or "nginx" in vuln_l:
+        hints.extend([
+            "Relevant actions may include service validation, TLS hardening, application firewall rules, and web configuration review.",
+            "Relevant evidence may include service status, config export, WAF configuration, and log review."
+        ])
+
+    # Patch / update
+    if "patch" in vuln_l or "update" in vuln_l or cve_id_l.startswith("cve-"):
+        hints.extend([
+            "If patching is relevant, use Get-WindowsUpdate, Install-WindowsUpdate, and Get-HotFix where applicable.",
+            "Relevant evidence may include installed hotfix output and screenshots."
+        ])
+
+    # Firewall / network exposure
+    if "firewall" in vuln_l or "port" in vuln_l or "network" in vuln_l or "exposure" in vuln_l:
+        hints.extend([
+            "If network restriction is relevant, use New-NetFirewallRule and validation with Get-NetFirewallRule or exported firewall configuration.",
+            "Relevant evidence may include rule listings and firewall export."
+        ])
+
+    # Logging / monitoring
+    if "monitor" in vuln_l or "logging" in vuln_l or "detect" in vuln_l or "audit" in vuln_l:
+        hints.extend([
+            "Relevant commands may include event log export, Defender detection review, and service-specific diagnostic logging.",
+            "Relevant evidence may include EVTX export, log screenshots, and detection output."
+        ])
+
+    # Malware / Defender
+    if "malware" in vuln_l or "defender" in vuln_l or "antivirus" in vuln_l:
+        hints.extend([
+            "Relevant commands may include Get-MpComputerStatus and Get-MpThreatDetection.",
+            "Relevant evidence may include Defender status and threat detection output."
+        ])
+
+    # Baseline / hardening
+    if "hardening" in vuln_l or "baseline" in vuln_l or "misconfiguration" in vuln_l or "configuration" in vuln_l:
+        hints.extend([
+            "Relevant actions may include Microsoft Security Compliance Toolkit baseline application or policy validation.",
+            "Relevant evidence may include GPO report, local policy export, or screenshots."
+        ])
+
+    # Domain controller safety
+    if "domain controller" in role_l or "active directory" in role_l:
+        hints.extend([
+            "Preserve domain services availability during remediation.",
+            "Prefer validation commands safe for a domain controller."
+        ])
+
+    if not hints:
+        hints.extend([
+            "Generate concrete Windows remediation steps based on the treatment action, host role, and vulnerability context.",
+            "Prefer technical commands, validation commands, and concrete evidence collection instructions."
+        ])
+
+    return "\\n".join(hints)
+
+
+def _generate_real_implementation_steps_with_llm(context: dict) -> list[dict]:
+    import json
+    import re
+
+    prompt = f"""
+You are a senior Windows security engineer and enterprise remediation specialist.
+
+Generate a REAL technical remediation guide for a Windows enterprise host.
+
+STRICT RULES:
+- Output ONLY valid JSON
+- No markdown
+- No explanations
+- Use the EXACT JSON schema provided below
+- Do NOT change the schema
+- Every step must be technical and implementation-oriented
+- Do NOT use generic steps like:
+  - Review scope
+  - Apply treatment action
+  - Validate remediation
+- Break work into specific technical actions
+- Prefer 4 to 8 steps
+- Each step must contain:
+  - title
+  - description
+  - commands
+  - expected_result
+  - output_type
+  - evidence_capture
+- commands must be a JSON array of strings
+- Use real Windows / PowerShell / CMD commands where applicable
+- If a task is manual, keep commands as an empty array and explain the action in description
+- expected_result must be concrete and technical
+- evidence_capture must say exactly what proof to capture
+- Do not merge all work into one or two steps
+- Do not repeat the treatment text verbatim
+- Make the guide specific to the vulnerability, host role, control, and treatment action
+- If the issue is patch-related, include install and validation commands
+- If the issue is service-related, include service validation commands
+- If the issue is firewall/network-related, include actual firewall commands
+- If the issue is hardening-related, include configuration commands or concrete admin actions
+- If the issue is monitoring-related, include logging/monitoring commands or exact tool usage
+- If the issue is evidence-oriented, include concrete evidence collection commands
+
+Context:
+Host: {context.get("hostname", "")}
+Role: {context.get("role", "")}
+OS: {context.get("os_version", "")}
+Control: {context.get("control_id", "")} - {context.get("control_name", "")}
+Vulnerability: {context.get("vulnerability_name", "")}
+CVE: {context.get("cve_id", "")}
+Severity: {context.get("severity", "")}
+Treatment Action: {context.get("treatment_action", "")}
+
+Technical Hints:
+{context.get("generation_hints", "")}
+
+Return JSON in this exact format:
+[
+  {{
+    "step_no": 1,
+    "title": "Short technical step title",
+    "description": "Concrete technical instruction for this step.",
+    "commands": [
+      "command 1",
+      "command 2"
+    ],
+    "expected_result": "Concrete technical expected result.",
+    "output_type": "Command output / screenshot / log export / firewall rule list / service status / patch list / PDF / report",
+    "evidence_capture": "Exactly what evidence to capture for this step."
+  }}
+]
+
+Generate only the JSON array.
+""".strip()
+
+    cleaned = ""
+
+    try:
+        payload = {
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+        }
+        
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        
+        response = _normalize_text(data.get("response"))
+
+        if not isinstance(response, str):
+            raise ValueError("LLM response is not a string.")
+
+        cleaned = response.strip()
+        cleaned = cleaned.replace("\\u2013", "-").replace("\\u2014", "-")
+
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?", "", cleaned).strip()
+            cleaned = re.sub(r"```$", "", cleaned).strip()
+
+        match = re.search(r"\[\s*{.*}\s*\]", cleaned, re.DOTALL)
+        if match:
+            cleaned = match.group(0)
+
+        steps = json.loads(cleaned)
+
+        if not isinstance(steps, list):
+            raise ValueError("LLM response is not a JSON list.")
+
+        normalized_steps = []
+        for i, step in enumerate(steps, start=1):
+            if not isinstance(step, dict):
+                continue
+
+            commands = step.get("commands", [])
+            if not isinstance(commands, list):
+                commands = []
+
+            normalized_steps.append({
+                "step_no": int(step.get("step_no", i)),
+                "title": str(step.get("title", "")).strip() or f"Step {i}",
+                "description": str(step.get("description", "")).strip(),
+                "commands": [str(cmd).strip() for cmd in commands if str(cmd).strip()],
+                "expected_result": str(step.get("expected_result", "")).strip(),
+                "output_type": str(step.get("output_type", "")).strip(),
+                "evidence_capture": str(step.get("evidence_capture", "")).strip(),
+            })
+
+        if not normalized_steps:
+            raise ValueError("No usable steps returned by LLM.")
+
+        return normalized_steps
+
+    except Exception as e:
+        print("LLM PARSE / GENERATION ERROR:")
+        print(e)
+        print("RAW RESPONSE:")
+        print(cleaned)
+        raise
+
+def _generate_flat_action_implementation_guide(year: int, control: dict, host: dict, evidence: dict) -> dict:
+    guides_doc = _load_action_implementation_guides_doc_or_blank(year)
+
+    evidence_id = _normalize_text(evidence.get("evidence_id"))
+    if evidence_id == "":
+        raise ValueError("Evidence item is missing evidence_id.")
+
+    asset_host = _find_asset_inventory_host(year, _normalize_text(host.get("hostname")))
+
+    hostname = _normalize_text(host.get("hostname"))
+    role = _normalize_text(host.get("role")) or _normalize_text(asset_host.get("role"))
+    department = _safe_department_from_asset(asset_host)
+    os_version = _safe_os_version_from_asset(asset_host)
+
+    control_id = _normalize_text(control.get("control_id") or control.get("control"))
+    control_name = _normalize_text(control.get("control_name"))
+
+    cve_id = _normalize_text(host.get("cve"))
+    vulnerability_name = _normalize_text(host.get("vulnerability_name"))
+    severity = _normalize_text(host.get("risk")) or _normalize_text(host.get("severity"))
+
+    treatment_action = _normalize_text(host.get("treatment_action") or control.get("treatment_action"))
+
+    evidence_name = _derive_evidence_name_from_item(evidence)
+    evidence_description = _normalize_text(evidence.get("desc")) or evidence_name
+    evidence_format = "PDF + Logs + Firewall Export"
+
+    references = _build_minimal_guide_references(cve_id)
+    generation_hints = _build_vulnerability_generation_hints(
+        cve_id,
+        vulnerability_name,
+        role
+    )
+    
+    implementation_steps = _generate_real_implementation_steps_with_llm({
+        "hostname": hostname,
+        "role": role,
+        "os_version": os_version,
+        "control_id": control_id,
+        "control_name": control_name,
+        "vulnerability_name": vulnerability_name,
+        "cve_id": cve_id,
+        "severity": severity,
+        "treatment_action": treatment_action,
+        "generation_hints": generation_hints,   # 🔥 ADD THIS
+    })
+    return {
+        "guide_id": _next_guide_id(year, guides_doc),
+        "evidence_id": evidence_id,
+        "hostname": hostname,
+        "role": role,
+        "department": department,
+        "os_version": os_version,
+        "control_id": control_id,
+        "control_name": control_name,
+        "cve_id": cve_id,
+        "vulnerability_name": vulnerability_name,
+        "severity": severity,
+        "treatment_action": treatment_action,
+        "evidence_name": evidence_name,
+        "evidence_description": evidence_description,
+        "evidence_format": evidence_format,
+        "references": references,
+        "implementation_steps": implementation_steps,
+    }
+
+def _replace_guide_for_evidence(year: int, control: dict, host: dict, evidence: dict) -> dict:
+    evidence_id = _normalize_text(evidence.get("evidence_id"))
+    if evidence_id == "":
+        raise ValueError("Evidence item is missing evidence_id.")
+
+    _ensure_action_implementation_guides_file_exists(year)
+    doc = _load_action_implementation_guides_doc_or_blank(year)
+    print("REPLACING GUIDE FOR EVIDENCE:", evidence_id)
+
+    doc["guides"] = [
+        g for g in doc.get("guides", [])
+        if _normalize_key(g.get("evidence_id")) != _normalize_key(evidence_id)
+    ]
+
+    guide = _generate_flat_action_implementation_guide(year, control, host, evidence)
+    steps = guide.get("implementation_steps")
+    if not isinstance(steps, list) or len(steps) == 0:
+        raise ValueError("Guide generation failed: no implementation steps returned.")
+    
+    doc["guides"].append(guide)
+
+    _save_action_implementation_guides_doc(year, doc)
+    return guide
+
+    
+# =========================================================
 # ROUTES
 # =========================================================
 @router.get("/inventory")
@@ -1598,42 +2235,44 @@ def add_evidence_to_host(payload: AddEvidenceRequest):
         }
 
     host = hosts[target_host_index]
+    _ensure_evidence_ids_for_host(year, doc, host)
+
     existing_evidence = host.get("evidence", [])
     if not isinstance(existing_evidence, list):
         existing_evidence = []
-    
-    # remove legacy / blank evidence rows
+
     cleaned_evidence = []
     for item in existing_evidence:
         if not isinstance(item, dict):
             continue
-    
+
         normalized_item = {
+            "evidence_id": _normalize_text(item.get("evidence_id")) or _next_evidence_id(year, doc),
             "responsible": _normalize_text(item.get("responsible")),
             "resources": _normalize_text(item.get("resources")),
             "date": _normalize_text(item.get("date")),
             "url": _normalize_text(item.get("url")),
             "desc": _normalize_text(item.get("desc")),
         }
-    
-        if any(normalized_item.values()):
+
+        if any(v for k, v in normalized_item.items() if k != "evidence_id"):
             cleaned_evidence.append(normalized_item)
-    
+
     existing_evidence = cleaned_evidence
-    
+
     control_id = _normalize_text(control.get("control_id") or control.get("control"))
     control_name = _normalize_text(control.get("control_name"))
     justification = _normalize_text(control.get("justification"))
-    
+
     hostname = _normalize_text(host.get("hostname"))
     role = _normalize_text(host.get("role"))
     vulnerability_name = _normalize_text(host.get("vulnerability_name"))
     cve = _normalize_text(host.get("cve"))
     risk = _normalize_text(host.get("risk"))
     treatment_action = _normalize_text(host.get("treatment_action") or control.get("treatment_action"))
-    
+
     desc_value = _normalize_text(payload.evidence.desc)
-    
+
     if desc_value == "":
         try:
             desc_value = _generate_meaningful_evidence_desc_with_llama3(
@@ -1653,16 +2292,17 @@ def add_evidence_to_host(payload: AddEvidenceRequest):
                 f"Evidence confirms the treatment action for host {hostname} "
                 f"under control {control_id} ({control_name}) was implemented."
             )
-    
+
     new_evidence = {
+        "evidence_id": _next_evidence_id(year, doc),
         "responsible": _normalize_text(payload.evidence.responsible),
         "resources": _normalize_text(payload.evidence.resources),
         "date": _normalize_text(payload.evidence.date),
         "url": _normalize_text(payload.evidence.url),
         "desc": desc_value,
     }
-    
-    if not any(new_evidence.values()):
+
+    if not any(v for k, v in new_evidence.items() if k != "evidence_id"):
         return {
             "success": False,
             "message": "At least one evidence field must be provided.",
@@ -1680,14 +2320,38 @@ def add_evidence_to_host(payload: AddEvidenceRequest):
         doc["controls"] = controls
 
     _save_json(_action_plan_implementation_file(year), doc)
-    _sync_action_plan_status(year, doc)
 
+    guide = None
+    try:
+        _ensure_action_implementation_guides_file_exists(year)
+    
+        guide = _replace_guide_for_evidence(
+            year=year,
+            control=control,
+            host=host,
+            evidence=new_evidence,
+        )
+    
+    except Exception as e:
+        import traceback
+        print("GUIDE GENERATION FAILED")
+        print(traceback.format_exc())
+    
+        return {
+            "success": False,
+            "message": f"Evidence was added but guide generation failed: {str(e)}",
+            "inventory": doc,
+        }
+
+    _sync_action_plan_status(year, doc)
+    print("GUIDE FILE PATH:", _action_implementation_guides_file(year))
     return {
         "success": True,
-        "message": f"Evidence added for host {payload.hostname} under control {payload.control_id}.",
+        "message": f"Evidence added for host {payload.hostname} under control {payload.control_id}. Guide generated successfully.",
+        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
+        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,
     }
-
 
 @router.post("/upload-evidence")
 async def upload_evidence(file: UploadFile = File(...), year: int = 2026):
@@ -1746,6 +2410,7 @@ def delete_evidence(payload: DeleteEvidenceRequest):
         }
 
     host = hosts[target_host_index]
+    _ensure_evidence_ids_for_host(year, doc, host)
     evidence = host.get("evidence", [])
     if not isinstance(evidence, list):
         evidence = []
@@ -1757,7 +2422,9 @@ def delete_evidence(payload: DeleteEvidenceRequest):
             "inventory": doc,
         }
 
-    evidence.pop(payload.evidence_index)
+    removed_item = evidence.pop(payload.evidence_index) if isinstance(evidence[payload.evidence_index], dict) else {}
+    removed_evidence_id = _normalize_text(removed_item.get("evidence_id"))
+
     host["evidence"] = evidence
     hosts[target_host_index] = host
     control["hosts"] = hosts
@@ -1768,11 +2435,13 @@ def delete_evidence(payload: DeleteEvidenceRequest):
         doc["controls"] = controls
 
     _save_json(_action_plan_implementation_file(year), doc)
+    guide_deleted = _remove_guide_by_key(year, removed_evidence_id) if removed_evidence_id else False
     _sync_action_plan_status(year, doc)
 
     return {
         "success": True,
         "message": "Selected evidence was deleted successfully.",
+        "guide_deleted": guide_deleted,
         "inventory": doc,
     }
 
@@ -1821,6 +2490,7 @@ def edit_evidence(payload: EditEvidenceRequest):
         }
 
     host = hosts[target_host_index]
+    _ensure_evidence_ids_for_host(year, doc, host)
     evidence_list = host.get("evidence", [])
     if not isinstance(evidence_list, list):
         evidence_list = []
@@ -1833,7 +2503,11 @@ def edit_evidence(payload: EditEvidenceRequest):
             "inventory": doc,
         }
 
+    old_item = evidence_list[evidence_index] if isinstance(evidence_list[evidence_index], dict) else {}
+    evidence_id = _normalize_text(old_item.get("evidence_id")) or _next_evidence_id(year, doc)
+
     updated_evidence = {
+        "evidence_id": evidence_id,
         "responsible": _normalize_text(payload.evidence.responsible),
         "resources": _normalize_text(payload.evidence.resources),
         "date": _normalize_text(payload.evidence.date),
@@ -1841,7 +2515,7 @@ def edit_evidence(payload: EditEvidenceRequest):
         "desc": _normalize_text(payload.evidence.desc),
     }
 
-    if not any(updated_evidence.values()):
+    if not any(v for k, v in updated_evidence.items() if k != "evidence_id"):
         return {
             "success": False,
             "message": "Please fill at least one evidence field.",
@@ -1859,11 +2533,24 @@ def edit_evidence(payload: EditEvidenceRequest):
         doc["controls"] = controls
 
     _save_json(_action_plan_implementation_file(year), doc)
+
+    guide = None
+    try:
+        guide = _replace_guide_for_evidence(year, control, host, updated_evidence)
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Evidence was updated but guide regeneration failed: {str(e)}",
+            "inventory": doc,
+        }
+
     _sync_action_plan_status(year, doc)
 
     return {
         "success": True,
-        "message": f"Evidence updated for host '{payload.hostname}'.",
+        "message": f"Evidence updated for host '{payload.hostname}'. Guide regenerated successfully.",
+        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
+        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,
     }
 

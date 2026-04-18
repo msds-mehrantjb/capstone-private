@@ -43,6 +43,7 @@ type ActionPlanEvidenceForm = {
 };
 
 type ActionPlanEvidence = {
+  evidence_id?: string;
   responsible?: string;
   resources?: string;
   date?: string;
@@ -118,6 +119,10 @@ type AnnexUpdateResponse = {
   success?: boolean;
   message?: string;
   inventory?: AnnexInventoryResponse;
+  evidence_id?: string;
+  guide_id?: string;
+  guide_key?: string;
+  guide_deleted?: boolean;
 };
 
 type AnnexSubmitResponse = {
@@ -131,6 +136,9 @@ type AddEvidenceResponse = {
   success?: boolean;
   message?: string;
   inventory?: AnnexInventoryResponse;
+  evidence_id?: string;
+  guide_id?: string;
+  guide_key?: string;
 };
 
   type EditEvidenceForm = {
@@ -855,7 +863,9 @@ export default function ActionPlanImplentation() {
         ...prev,
         {
           role: "assistant",
-          content: data.message || "Selected evidence was deleted successfully.",
+          content:
+            data.message ||
+            "Selected evidence and its linked implementation guide were deleted successfully.",
         },
       ]);
     } catch (e) {
@@ -1086,7 +1096,9 @@ export default function ActionPlanImplentation() {
         ...prev,
         {
           role: "assistant",
-          content: data.message || `Evidence added for host ${selectedHostLabel}.`,
+          content:
+            data.message ||
+            `Evidence added for host ${selectedHostLabel} and the linked implementation guide was generated.`,
         },
       ]);
 
@@ -1402,7 +1414,9 @@ export default function ActionPlanImplentation() {
         ...prev,
         {
           role: "assistant",
-          content: data.message || `Evidence updated for host ${selectedHostLabel}.`,
+          content:
+            data.message ||
+            `Evidence updated for host ${selectedHostLabel} and the linked implementation guide was regenerated.`,
         },
       ]);
 

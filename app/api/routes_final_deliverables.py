@@ -98,6 +98,8 @@ def _action_plan_implementation_file(year: int) -> Path:
 def _monitoring_improvement_file(year: int) -> Path:
     return _work_dir(year) / "MonitoringImprovement.json"
 
+def _action_plan_implementation_guides_file(year: int) -> Path:
+    return _work_dir(year) / "ActionImplementationGuides.json"
 
 def _read_json(path: Path, default: Any) -> Any:
     if not path.exists():
@@ -287,6 +289,7 @@ def _first_non_empty(*values: Any, default: str = "NA") -> str:
         if text:
             return text
     return default
+
 
 
 def _extract_scope_text_block(scope_doc: dict, keys: list[str]) -> str:
@@ -498,6 +501,176 @@ SECTION_BUILDERS = {
 }
 
 
+def _find_action_implementation_guide(year: int, guide_id: str) -> dict | None:
+    doc = _read_json(_action_plan_implementation_guides_file(year), {})
+    guides = doc.get("guides", [])
+    if not isinstance(guides, list):
+        return None
+
+    for guide in guides:
+        if isinstance(guide, dict) and str(guide.get("guide_id", "")).strip() == guide_id:
+            return guide
+
+    return None
+
+def _html_escape(value: Any) -> str:
+    text = "" if value is None else str(value)
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _list_to_html(items: list[str]) -> str:
+    if not items:
+        return "<p>-</p>"
+    lis = "".join(f"<li>{_html_escape(item)}</li>" for item in items)
+    return f"<ul>{lis}</ul>"
+
+
+def _guide_to_printable_html(guide_doc: dict) -> str:
+    def _html_escape(value):
+        text = "" if value is None else str(value)
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace('"', "&quot;")
+        )
+
+    # NEW STRUCTURE (flat)
+    guide_id = guide_doc.get("guide_id", "-")
+    hostname = guide_doc.get("hostname", "-")
+    role = guide_doc.get("role", "-")
+    control_id = guide_doc.get("control_id", "-")
+    control_name = guide_doc.get("control_name", "-")
+    vulnerability = guide_doc.get("vulnerability_name", "-")
+
+    steps = guide_doc.get("implementation_steps", [])
+    references = guide_doc.get("references", [])
+    evidence_name = guide_doc.get("evidence_name", "-")
+    evidence_description = guide_doc.get("evidence_description", "-")
+    evidence_format = guide_doc.get("evidence_format", "-")
+
+    # -------- Steps HTML --------
+    steps_html = ""
+    for step in steps:
+        commands_html = ""
+        if step.get("commands"):
+            commands_html = "".join(
+                f"<pre>{_html_escape(cmd)}</pre>"
+                for cmd in step.get("commands", [])
+            )
+
+        steps_html += f"""
+        <div class="step-card">
+            <div class="step-header">Step {step.get("step_no", "-")}: {_html_escape(step.get("title", "-"))}</div>
+            <p>{_html_escape(step.get("description", "-"))}</p>
+            {commands_html}
+            <p><strong>Expected Result:</strong> {_html_escape(step.get("expected_result", "-"))}</p>
+            <p><strong>Output Type:</strong> {_html_escape(step.get("output_type", "-"))}</p>
+            <p><strong>Evidence Capture:</strong> {_html_escape(step.get("evidence_capture", "-"))}</p>
+        </div>
+        """
+
+    # -------- References --------
+    refs_html = ""
+    for ref in references:
+        refs_html += f"""
+        <tr>
+            <td>{_html_escape(ref.get("ref_id", "-"))}</td>
+            <td>{_html_escape(ref.get("source", "-"))}</td>
+        </tr>
+        """
+
+    return f"""
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial; padding: 20px; }}
+            h1 {{ text-align: center; }}
+            table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
+            th, td {{ border: 1px solid #999; padding: 8px; }}
+            .step-card {{ border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }}
+            pre {{background: #f5f5f5; color: #000; padding: 10px; border: 1px solid #ddd; border-radius: 4px; overflow-x: auto; font-size: 12px;
+                 font-family: Consolas, "Courier New", monospace; font-style: normal; font-weight: normal; }}
+            pre, code {{font-style: normal !important; font-weight: normal !important; color: #000 !important;}}     
+        </style>
+    </head>
+    <body>
+
+    <h1>Implementation Guide</h1>
+
+    <table>
+        <tr>
+            <th>Guide ID</th><td>{_html_escape(guide_id)}</td>
+            <th>Host</th><td>{_html_escape(hostname)}</td>
+        </tr>
+        <tr>
+            <th>Role</th><td>{_html_escape(role)}</td>
+            <th>Control</th><td>{_html_escape(control_id)} - {_html_escape(control_name)}</td>
+        </tr>
+        <tr>
+            <th>Vulnerability</th>
+            <td colspan="3">{_html_escape(vulnerability)}</td>
+        </tr>
+    </table>
+
+    <h2>Implementation Steps</h2>
+    {steps_html if steps_html else "<p>No steps available.</p>"}
+
+    <h2>Expected Final Output</h2>
+    <table>
+        <tr><th>Name</th><td>{_html_escape(evidence_name)}</td></tr>
+        <tr><th>Description</th><td>{_html_escape(evidence_description)}</td></tr>
+        <tr><th>Format</th><td>{_html_escape(evidence_format)}</td></tr>
+    </table>
+
+    <h2>References</h2>
+    <table>
+        <tr><th>Ref ID</th><th>Source</th></tr>
+        {refs_html if refs_html else "<tr><td colspan='2'>No references</td></tr>"}
+    </table>
+
+    </body>
+    </html>
+    """
+
+@router.get("/action-plan-implementation/guide/{guide_id}")
+def get_action_implementation_guide(
+    guide_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _find_action_implementation_guide(resolved_year, guide_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Guide not found.")
+
+    return {
+        "success": True,
+        "year": resolved_year,
+        "guide": guide,
+    }
+
+
+@router.get("/action-plan-implementation/guide/{guide_id}/document")
+def get_action_implementation_guide_document(
+    guide_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _find_action_implementation_guide(resolved_year, guide_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Guide not found.")
+
+    html = _guide_to_printable_html(guide)
+    return Response(content=html, media_type="text/html")
+
+
 @router.get("/system-year")
 def get_final_deliveries_system_year():
     year = get_system_year()
@@ -531,6 +704,44 @@ def get_final_delivery_section(
         "markdown": markdown,
     }
 
+def _render_html_to_pdf(html: str, output_pdf: Path) -> None:
+    wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+
+    if not wkhtmltopdf_path:
+        raise HTTPException(
+            status_code=500,
+            detail="Guide PDF export is not available because wkhtmltopdf is not installed.",
+        )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        html_path = tmpdir_path / "guide.html"
+
+        html_path.write_text(html, encoding="utf-8")
+
+        cmd = [
+            wkhtmltopdf_path,
+            "--enable-local-file-access",
+            "--margin-top", "8mm",
+            "--margin-bottom", "8mm",
+            "--margin-left", "8mm",
+            "--margin-right", "8mm",
+            str(html_path),
+            str(output_pdf),
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            raise HTTPException(
+                status_code=500,
+                detail=result.stderr.strip() or "Failed to generate guide PDF.",
+            )
 
 def _render_markdown_to_pdf(markdown: str, output_pdf: Path) -> None:
     pandoc_path = shutil.which("pandoc")
@@ -682,5 +893,42 @@ def export_final_delivery_pdf(payload: ExportPdfRequest):
         media_type="application/pdf",
         headers={
             "Content-Disposition": f'attachment; filename="{section}-{resolved_year}.pdf"'
+        },
+    )
+
+from fastapi.responses import Response
+
+@router.get(
+    "/action-plan-implementation/guide/{guide_id}/pdf",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "PDF file"
+        }
+    }
+)
+def download_action_implementation_guide_pdf(
+    guide_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+
+    guide = _find_action_implementation_guide(resolved_year, guide_id)
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Guide not found.")
+
+    html = _guide_to_printable_html(guide)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = Path(tmpdir) / f"{guide_id}.pdf"
+        _render_html_to_pdf(html, pdf_path)
+        pdf_bytes = pdf_path.read_bytes()
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{guide_id}.pdf"'
         },
     )

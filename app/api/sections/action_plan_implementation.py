@@ -1,6 +1,7 @@
 def build_action_plan_implementation_markdown(year: int) -> str:
     from app.api.routes_final_deliverables import (
         _action_plan_implementation_file,
+        _action_plan_implementation_guides_file,
         _load_dashboard_context,
         _read_json,
     )
@@ -24,6 +25,86 @@ def build_action_plan_implementation_markdown(year: int) -> str:
         text = _safe(value, "-")
         return _esc(text).replace("\n", "<br>")
 
+    def _normalize_text(value) -> str:
+        if value is None:
+            return ""
+        return str(value).strip().lower()
+
+    def _extract_guide_records(guides_doc) -> list[dict]:
+        if isinstance(guides_doc, list):
+            return [g for g in guides_doc if isinstance(g, dict)]
+
+        if isinstance(guides_doc, dict):
+            for key in ["guides", "records", "items", "evidence_guides"]:
+                value = guides_doc.get(key)
+                if isinstance(value, list):
+                    return [g for g in value if isinstance(g, dict)]
+
+        return []
+
+    def _find_matching_guide(
+        guide_records: list[dict],
+        control_row: dict,
+        host: dict,
+        evidence: dict,
+        evidence_index: int,
+    ) -> dict | None:
+        control_id = _normalize_text(
+            control_row.get("control_id") or control_row.get("control")
+        )
+        hostname = _normalize_text(host.get("hostname"))
+        vulnerability_name = _normalize_text(host.get("vulnerability_name"))
+        evidence_id = _normalize_text(evidence.get("evidence_id"))
+        evidence_desc = _normalize_text(evidence.get("desc"))
+    
+        # Best match: evidence_id
+        if evidence_id:
+            for guide in guide_records:
+                if _normalize_text(guide.get("evidence_id")) == evidence_id:
+                    return guide
+    
+        # Fallback match for older evidence rows if evidence_id is missing
+        for guide in guide_records:
+            guide_control = _normalize_text(guide.get("control_id"))
+            guide_host = _normalize_text(guide.get("hostname"))
+            guide_vuln = _normalize_text(guide.get("vulnerability_name"))
+            guide_desc = _normalize_text(guide.get("evidence_description"))
+    
+            if (
+                guide_control == control_id
+                and guide_host == hostname
+                and guide_vuln == vulnerability_name
+                and (
+                    not evidence_desc
+                    or evidence_desc == guide_desc
+                    or evidence_desc in guide_desc
+                    or guide_desc in evidence_desc
+                )
+            ):
+                return guide
+    
+        return None
+
+    def _guide_icon_html(guide: dict | None) -> str:
+        if not guide:
+            return "-"
+    
+        guide_id = str(guide.get("guide_id", "")).strip()
+        if not guide_id:
+            return "-"
+    
+        pdf_url = (
+            f"http://127.0.0.1:8000"
+            f"/api/final-deliveries/action-plan-implementation/guide/{_esc(guide_id)}/pdf"
+        )
+    
+        return (
+            f'<a href="{pdf_url}" '
+            f'target="_blank" rel="noopener noreferrer" '
+            f'style="text-decoration: none; font-size: 16px;" '
+            f'title="Download Guide PDF">📄</a>'
+        )
+    
     def _main_control_table(control_row: dict) -> str:
         control_id = _safe(control_row.get("control"))
         control_name = _safe(control_row.get("control_name"))
@@ -63,7 +144,7 @@ def build_action_plan_implementation_markdown(year: int) -> str:
             '</table>',
         ])
 
-    def _hosts_evidence_table(control_row: dict) -> str:
+    def _hosts_evidence_table(control_row: dict, guide_records: list[dict]) -> str:
         hosts = control_row.get("hosts", [])
         if not isinstance(hosts, list) or not hosts:
             return "_No host evidence available._"
@@ -88,10 +169,10 @@ def build_action_plan_implementation_markdown(year: int) -> str:
                 '    <tr>',
                 f'      <th style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Host: {_esc(hostname)}</th>',
                 f'      <th style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Role: {_esc(role)}</th>',
-                f'      <th colspan="3" style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Vulnerability: {_esc(vulnerability)}</th>',
+                f'      <th colspan="4" style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Vulnerability: {_esc(vulnerability)}</th>',
                 '    </tr>',
                 '    <tr>',
-                '      <th colspan="5" style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: center; font-weight: bold;">Evidence(s)</th>',
+                '      <th colspan="6" style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: center; font-weight: bold;">Evidence(s)</th>',
                 '    </tr>',
                 '    <tr>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Responsible</th>',
@@ -99,12 +180,13 @@ def build_action_plan_implementation_markdown(year: int) -> str:
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Date</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">URL/PATH</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Desc</th>',
+                '      <th style="background-color: #eef5fb; padding: 4px 6px; border: 1px solid #999; text-align: center; width: 1%; white-space: nowrap;">Guide</th>',
                 '    </tr>',
                 '  </thead>',
                 '  <tbody>',
             ]
 
-            for evidence in evidence_list:
+            for evidence_index, evidence in enumerate(evidence_list):
                 if not isinstance(evidence, dict):
                     evidence = {}
 
@@ -114,6 +196,16 @@ def build_action_plan_implementation_markdown(year: int) -> str:
                 url = _safe(evidence.get("url"))
                 desc = _safe(evidence.get("desc"))
 
+                matched_guide = _find_matching_guide(
+                    guide_records=guide_records,
+                    control_row=control_row,
+                    host=host,
+                    evidence=evidence,
+                    evidence_index=evidence_index,
+                )
+
+                guide_cell = _guide_icon_html(matched_guide)
+
                 lines.extend([
                     '    <tr>',
                     f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(responsible)}</td>',
@@ -121,6 +213,7 @@ def build_action_plan_implementation_markdown(year: int) -> str:
                     f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(date)}</td>',
                     f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(url)}</td>',
                     f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(desc)}</td>',
+                    f'      <td style="padding: 4px 6px; border: 1px solid #999; vertical-align: middle; text-align: center; width: 1%; white-space: nowrap;">{guide_cell}</td>',
                     '    </tr>',
                 ])
 
@@ -135,6 +228,8 @@ def build_action_plan_implementation_markdown(year: int) -> str:
 
     ctx = _load_dashboard_context(year)
     doc = _read_json(_action_plan_implementation_file(year), {})
+    guides_doc = _read_json(_action_plan_implementation_guides_file(year), {})
+    guide_records = _extract_guide_records(guides_doc)
     rows = doc.get("controls", [])
 
     lines = [
@@ -229,14 +324,14 @@ This process ensures that all treatment actions are relevant, practical, and ali
         lines.extend([
             _main_control_table(row),
             "",
-            _hosts_evidence_table(row),
+            _hosts_evidence_table(row, guide_records),
             "",
         ])
-    
-    # ✅ NOW SAFE
+
     lines.extend([
         "",
         methodology,
         "",
     ])
+
     return "\n".join(lines)

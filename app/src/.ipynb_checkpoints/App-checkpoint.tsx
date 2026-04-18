@@ -54,6 +54,40 @@ export default function App() {
   });
 
   useEffect(() => {
+    (window as any).downloadGuidePdf = async (guideId: string) => {
+      try {
+        const backendBase = "http://127.0.0.1:8000";
+        const url = `${backendBase}/api/final-deliveries/action-plan-implementation/guide/${encodeURIComponent(guideId)}/pdf`;
+
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to download PDF: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+
+        const link = document.createElement("a");
+        const objectUrl = window.URL.createObjectURL(blob);
+
+        link.href = objectUrl;
+        link.download = `${guideId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        window.URL.revokeObjectURL(objectUrl);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to download guide PDF");
+      }
+    };
+
+    return () => {
+      delete (window as any).downloadGuidePdf;
+    };
+  }, []);
+
+  useEffect(() => {
     const onHashChange = () => setRoute(getRouteFromHash());
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);

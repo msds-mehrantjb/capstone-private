@@ -1,0 +1,365 @@
+{
+  "guides": [
+    {
+      "guide_id": "AIG-2026-0001",
+      "evidence_id": "EVID-2026-0001",
+      "hostname": "SRV-01",
+      "role": "Domain Controller (Active Directory)",
+      "department": "IT",
+      "os_version": "Windows Server 2022",
+      "control_id": "8.21",
+      "control_name": "Network services security",
+      "cve_id": "CVE-2020-1350",
+      "vulnerability_name": "Windows DNS Server Remote Code Execution",
+      "severity": "",
+      "treatment_action": "Recommended treatment actions:  \n- Apply critical security patches for CVE-2020-1350 on SRV-01 and SRV-02 immediately  \n- Disable unnecessary network services on all hosts, particularly non-essential protocols on SRV-03 and SRV-04  \n- Implement firewall rules to restrict access to DNS (53), SMB (445), and WinRM (5985/5986) ports to authorized IP ranges  \n- Configure web application firewalls on SRV-04 to mitigate risks from CVE-2021-44228  \n- Enforce TLS 1.2+ encryption for all remote management interfaces (WinRM) across affected hosts  \n- Conduct vulnerability scanning and penetration testing for network services per ISO 27002:2022 8.29  \n- Deploy network segmentation to isolate domain controllers (SRV-01) from other hosts  \n- Implement application layer filtering (ISO 27002:2022 8.23) to block malicious traffic patterns  \n- Update application server configurations on SRV-04 to include input validation and output encoding  \n- Establish baseline security configurations for all hosts using ISO 27002:2022 8.20 network security guidelines",
+      "evidence_name": "Evidence for SRV-01 under control 8.21 (Network services security): Apply cri...",
+      "evidence_description": "Evidence for SRV-01 under control 8.21 (Network services security): Apply critical security patches for CVE-2020-1350 on SRV-01 and SRV-02 immediately.",
+      "evidence_format": "PDF + Logs + Firewall Export",
+      "references": [
+        {
+          "ref_id": "MS-01",
+          "source": "Microsoft Security Update CVE-2020-1350"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2020-1350 Technical Details"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify DNS Service Status",
+          "description": "Check the current status of the DNS Server service to ensure it is running and configured correctly.",
+          "commands": [
+            "Get-Service -Name DNS"
+          ],
+          "expected_result": "DNS service status shows 'Running' with a StartType of 'Automatic'.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of 'Get-Service -Name DNS' as a text file."
+        },
+        {
+          "step_no": 2,
+          "title": "Check Installed Patches for CVE-2020-1350",
+          "description": "Verify if the critical security patch for CVE-2020-1350 is installed on SRV-01.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -like \"KB4556784\" }"
+          ],
+          "expected_result": "The output displays the KB4556784 hotfix with installation date and status.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the output of 'Get-HotFix' filtered for KB4556784 as a screenshot."
+        },
+        {
+          "step_no": 3,
+          "title": "Install Missing Security Patches",
+          "description": "Install the critical security update for CVE-2020-1350 using Windows Update.",
+          "commands": [
+            "Install-WindowsUpdate -UpdateType Software -MicrosoftUpdate -AutoReboot"
+          ],
+          "expected_result": "The update completes successfully, and the system reboots if required.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of 'Install-WindowsUpdate' and confirm reboot logs."
+        },
+        {
+          "step_no": 4,
+          "title": "Restrict DNS Port (53) with Firewall Rules",
+          "description": "Create firewall rules to restrict access to DNS (port 53) to authorized IP ranges.",
+          "commands": [
+            "New-NetFirewallRule -Name \"DNS-TCP-Restricted\" -DisplayName \"DNS TCP Restricted\" -Direction Inbound -LocalPort 53 -Protocol TCP -Action Allow -RemoteIpAddress 192.168.1.0/24",
+            "New-NetFirewallRule -Name \"DNS-UDP-Restricted\" -DisplayName \"DNS UDP Restricted\" -Direction Inbound -LocalPort 53 -Protocol UDP -Action Allow -RemoteIpAddress 192.168.1.0/24"
+          ],
+          "expected_result": "Two new firewall rules named 'DNS-TCP-Restricted' and 'DNS-UDP-Restricted' are created with the specified IP range.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Export the firewall rules using 'Get-NetFirewallRule' and save as a CSV file."
+        },
+        {
+          "step_no": 5,
+          "title": "Disable Non-Essential Network Services",
+          "description": "Disable unnecessary network services (e.g., NetBIOS) to reduce attack surface.",
+          "commands": [
+            "Set-Service -Name NetBT -StartupType Disabled"
+          ],
+          "expected_result": "The NetBT service startup type is set to 'Disabled' with status 'Stopped'.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the output of 'Get-Service -Name NetBT' after modification."
+        },
+        {
+          "step_no": 6,
+          "title": "Enforce TLS 1.2 for WinRM",
+          "description": "Configure the registry to enforce TLS 1.2 for WinRM remote management.",
+          "commands": [
+            "Set-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.2\\Client\" -Name \"Enabled\" -Value 1",
+            "Set-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.2\\Server\" -Name \"Enabled\" -Value 1"
+          ],
+          "expected_result": "Registry keys for TLS 1.2 under both Client and Server subkeys have 'Enabled' set to 1.",
+          "output_type": "Registry key value",
+          "evidence_capture": "Export the registry keys using 'reg export' and save as a .reg file."
+        },
+        {
+          "step_no": 7,
+          "title": "Validate Firewall Rule Application",
+          "description": "Verify that the newly created DNS firewall rules are applied and active.",
+          "commands": [
+            "Get-NetFirewallRule -Name \"DNS-*\" | Format-List Name, Enabled, Action, RemoteIpAddress"
+          ],
+          "expected_result": "The rules 'DNS-TCP-Restricted' and 'DNS-UDP-Restricted' show 'Enabled' as 'True' with the correct IP range.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of 'Get-NetFirewallRule' as a text file."
+        },
+        {
+          "step_no": 8,
+          "title": "Review DNS Logs for Anomalies",
+          "description": "Check DNS server logs for any suspicious activity post-remediation.",
+          "commands": [
+            "Get-WinEvent -LogName \"Microsoft-Windows-DNS-Server/Operational\" -MaxEvents 50 | Format-Table TimeCreated, Id, Message"
+          ],
+          "expected_result": "The output displays recent DNS events with no errors or suspicious activity.",
+          "output_type": "Log export",
+          "evidence_capture": "Export the DNS logs using 'Get-WinEvent' and save as a .evtx file."
+        }
+      ]
+    },
+    {
+      "guide_id": "AIG-2026-0002",
+      "evidence_id": "EVID-2026-0002",
+      "hostname": "SRV-03",
+      "role": "File Server",
+      "department": "Finance",
+      "os_version": "Windows Server 2016",
+      "control_id": "6.7",
+      "control_name": "Remote working",
+      "cve_id": "CVE-2021-31166",
+      "vulnerability_name": "WinRM Remote Command Execution Exposure",
+      "severity": "",
+      "treatment_action": "Recommended treatment actions:  \n- Apply security patches for CVE-2020-1350 on SRV-01 immediately to mitigate DNS Server RCE vulnerability  \n- Implement network segmentation to isolate SRV-01 from non-essential network traffic  \n- Disable or restrict WinRM access on SRV-03 to only trusted IP ranges and authenticated users  \n- Enforce multi-factor authentication (MFA) for all remote access to SRV-03  \n- Conduct regular access control reviews to ensure segregation of duties compliance for users accessing SRV-01 and SRV-03  \n- Deploy web filtering solutions to block malicious domains and prevent unauthorized remote access attempts  \n- Encrypt all removable storage media used for remote work and enforce strict media handling policies  \n- Update remote work policies to include mandatory use of secure, approved remote access tools  \n- Perform quarterly vulnerability scans on SRV-01 and SRV-03 to detect and remediate new exposures  \n- Implement role-based access control (RBAC) to limit user permissions on SRV-01 and SRV-03 to the principle of least privilege",
+      "evidence_name": "Evidence for SRV-03 under control 6.7 (Remote working): Apply security patche...",
+      "evidence_description": "Evidence for SRV-03 under control 6.7 (Remote working): Apply security patches for CVE-2020-1350 on SRV-01 immediately to mitigate DNS Server RCE vulnerability.",
+      "evidence_format": "PDF + Logs + Firewall Export",
+      "references": [
+        {
+          "ref_id": "MS-01",
+          "source": "Microsoft Security Update CVE-2021-31166"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2021-31166 Technical Details"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Disable WinRM Unencrypted Traffic",
+          "description": "Configure WinRM to disallow unencrypted traffic.",
+          "commands": [
+            "Set-Item WSMan:\\localhost\\Service\\AllowUnencrypted -Value false"
+          ],
+          "expected_result": "AllowUnencrypted property is set to False in WinRM configuration.",
+          "output_type": "Command output",
+          "evidence_capture": "Output of 'Get-Item WSMan:\\localhost\\Service\\AllowUnencrypted'"
+        },
+        {
+          "step_no": 2,
+          "title": "Restrict WinRM Access via Firewall",
+          "description": "Create a firewall rule to allow WinRM only from trusted IP ranges.",
+          "commands": [
+            "New-NetFirewallRule -Name \"WinRM-Restricted\" -DisplayName \"WinRM Restricted Access\" -Direction Inbound -LocalPort 5985 -Protocol TCP -RemoteIP 192.168.1.0/24 -Action Allow -Enabled True"
+          ],
+          "expected_result": "Firewall rule 'WinRM-Restricted' is created and enabled.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Output of 'Get-NetFirewallRule -Name \"WinRM-Restricted\"'"
+        },
+        {
+          "step_no": 3,
+          "title": "Verify WinRM Configuration",
+          "description": "Validate WinRM service configuration for encryption and access restrictions.",
+          "commands": [
+            "Get-ChildItem WSMan:\\localhost\\Service"
+          ],
+          "expected_result": "Display shows AllowUnencrypted=False and other secure settings.",
+          "output_type": "Command output",
+          "evidence_capture": "Screenshot of WSMan service configuration output"
+        },
+        {
+          "step_no": 4,
+          "title": "Install Security Patches",
+          "description": "Apply patches for CVE-2021-31166 and related vulnerabilities.",
+          "commands": [
+            "Get-WindowsUpdate -Title \"*CVE-2021-31166*\"",
+            "Install-WindowsUpdate -Title \"*CVE-2021-31166*\"",
+            "Get-HotFix | Find-AzureRmResource"
+          ],
+          "expected_result": "Patches for CVE-2021-31166 are installed and listed in hotfix history.",
+          "output_type": "Patch list",
+          "evidence_capture": "Output of 'Get-HotFix' showing installed KB numbers"
+        },
+        {
+          "step_no": 5,
+          "title": "Enforce MFA for Remote Access",
+          "description": "Configure Azure AD or Active Directory to require MFA for remote sessions.",
+          "commands": [],
+          "expected_result": "MFA is enforced for all remote access users via directory service policies.",
+          "output_type": "Policy configuration",
+          "evidence_capture": "Screenshot of MFA enforcement settings in Azure AD or GPO"
+        },
+        {
+          "step_no": 6,
+          "title": "Export Firewall Rules for Audit",
+          "description": "Export current firewall rules for compliance and audit purposes.",
+          "commands": [
+            "Export-NetFirewallRule -Name \"WinRM-Restricted\" -Path \"C:\\FirewallRules\\WinRM-Restricted.xml\""
+          ],
+          "expected_result": "Firewall rule exported to specified XML file.",
+          "output_type": "Log export",
+          "evidence_capture": "Copy of 'C:\\FirewallRules\\WinRM-Restricted.xml'"
+        }
+      ]
+    },
+    {
+      "guide_id": "AIG-2026-0003",
+      "evidence_id": "EVID-2026-0004",
+      "hostname": "SRV-04",
+      "role": "Application Server",
+      "department": "Marketing",
+      "os_version": "Windows Server 2016",
+      "control_id": "8.9",
+      "control_name": "Configuration management",
+      "cve_id": "CVE-2021-44228",
+      "vulnerability_name": "Web Application Remote Code Execution",
+      "severity": "",
+      "treatment_action": "Recommended treatment actions:  \n- Implement a configuration management tool (e.g., Ansible, Puppet) to enforce and automate secure logging configuration settings on SRV-04.  \n- Conduct a manual and automated review of the application server's logging configuration to remove or disable unnecessary logging features (e.g., debug logs, verbose error messages).  \n- Integrate logging configuration changes into the organization's technical vulnerability management process (control 8.8) for continuous monitoring and remediation.  \n- Apply the principle of least privilege to logging configurations, restricting access to log files and ensuring only authorized personnel can modify or view them.  \n- Document and enforce a change management process (control 8.32) for all configuration changes, including approvals, testing, and rollback procedures.  \n- Perform regular configuration audits using tools like OpenSCAP or CIS benchmarks to ensure compliance with secure configuration standards.  \n- Train system administrators and developers on secure configuration practices, including logging configuration best practices, as part of information security awareness programs (control 5.8).  \n- Enable logging of all configuration changes on SRV-04 and store logs in a secure, tamper-evident location for audit and forensic purposes.  \n- Update the application server's software and dependencies to address the CVE-2021-44228 vulnerability, ensuring compatibility with the secure logging configuration.  \n- Establish a configuration baseline for application servers, including logging settings, and enforce it across all hosts in the environment.",
+      "evidence_name": "Evidence for SRV-04 under control 8.9 (Configuration management): Implement a...",
+      "evidence_description": "Evidence for SRV-04 under control 8.9 (Configuration management): Implement a configuration management tool (e.g., Ansible, Puppet) to enforce and automate secure logging configuration settings on SRV-04..",
+      "evidence_format": "PDF + Logs + Firewall Export",
+      "references": [
+        {
+          "ref_id": "MS-01",
+          "source": "Microsoft Security Update CVE-2021-44228"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2021-44228 Technical Details"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Install and configure Ansible for configuration management",
+          "description": "Install Ansible using Chocolatey and configure it to manage logging settings on SRV-04.",
+          "commands": [
+            "choco install ansible -y",
+            "ansible-galaxy collection install ansible.windows"
+          ],
+          "expected_result": "Ansible installed successfully with Windows module support.",
+          "output_type": "Command output",
+          "evidence_capture": "Screenshot of successful installation and collection installation."
+        },
+        {
+          "step_no": 2,
+          "title": "Disable verbose logging in IIS",
+          "description": "Modify IIS logging settings to disable verbose error messages and debug logs.",
+          "commands": [
+            "appcmd set config \"Default Web Site\" /section:system.webServer/httpErrors /existingResponse=\"Custom\" /commit:apphost"
+          ],
+          "expected_result": "IIS configured to use custom error responses instead of verbose messages.",
+          "output_type": "Command output",
+          "evidence_capture": "Exported IIS configuration using appcmd list config \"Default Web Site\"."
+        },
+        {
+          "step_no": 3,
+          "title": "Secure log file permissions",
+          "description": "Restrict access to log files using NTFS permissions.",
+          "commands": [
+            "icacls \"C:\\inetpub\\logs\\\" /reset",
+            "icacls \"C:\\inetpub\\logs\\\" /grant \"NT AUTHORITY\\SYSTEM:F\" /grant \"BUILTIN\\Administrators:F\" /deny \"BUILTIN\\Users:FA\""
+          ],
+          "expected_result": "Log directory permissions restricted to SYSTEM and Administrators, denying Users access.",
+          "output_type": "Command output",
+          "evidence_capture": "Screenshot of icacls output and log directory security tab."
+        },
+        {
+          "step_no": 4,
+          "title": "Enable auditing for log directory changes",
+          "description": "Configure Windows auditing to track changes to log files.",
+          "commands": [
+            "auditpol set /subcategory:\"Object Access\" /success:enable /failure:enable",
+            "auditpol set /category:\"System\" /success:enable /failure:enable"
+          ],
+          "expected_result": "Auditing enabled for object access and system events.",
+          "output_type": "Command output",
+          "evidence_capture": "Audit policy configuration export using auditpol get /category:*."
+        },
+        {
+          "step_no": 5,
+          "title": "Apply CIS benchmark for Windows Server 2016",
+          "description": "Run OpenSCAP to audit and remediate configuration against CIS benchmarks.",
+          "commands": [
+            "oscap xccdf eval --profile CIS Microsoft Windows Server 2016 Security Benchmark --remediate --results results.xml --report report.html"
+          ],
+          "expected_result": "CIS benchmark scan completed with remediation applied.",
+          "output_type": "Log export",
+          "evidence_capture": "Exported results.xml and report.html from OpenSCAP scan."
+        },
+        {
+          "step_no": 6,
+          "title": "Install security updates for CVE-2021-44228",
+          "description": "Check for and install Windows updates addressing the vulnerability.",
+          "commands": [
+            "Get-WindowsUpdate -List",
+            "Install-WindowsUpdate -UpdateID \"KBxxxxx\""
+          ],
+          "expected_result": "Relevant security updates installed successfully.",
+          "output_type": "Command output",
+          "evidence_capture": "Output from Get-HotFix showing installed KB numbers."
+        },
+        {
+          "step_no": 7,
+          "title": "Enable logging of configuration changes",
+          "description": "Configure Windows Event Log to track configuration changes via PowerShell.",
+          "commands": [
+            "Set-WinEvent -ProviderName \"Microsoft-Windows-GroupPolicy\" -LogName \"Security\" -MaximumSize 1024MB",
+            "wevtutil sl \"Microsoft-Windows-GroupPolicy/Operational\" -ms 1024"
+          ],
+          "expected_result": "Event log configured to store 1GB of configuration change events.",
+          "output_type": "Event log entry",
+          "evidence_capture": "Screenshot of Event Viewer showing GroupPolicy logs."
+        },
+        {
+          "step_no": 8,
+          "title": "Document configuration baseline",
+          "description": "Export current configuration settings as a baseline for future audits.",
+          "commands": [
+            "Get-SysmonConfig | Export-Clixml -Path \"C:\\ConfigBaseline.xml\"",
+            "Export-CimSession -ComputerName SRV-04 -Path \"C:\\ConfigBaseline.cim\""
+          ],
+          "expected_result": "Configuration baseline exported to XML and CIM files.",
+          "output_type": "File export",
+          "evidence_capture": "Hash of ConfigBaseline.xml and CIM file stored in secure repository."
+        }
+      ]
+    }
+  ]
+}

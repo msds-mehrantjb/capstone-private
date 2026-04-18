@@ -15,15 +15,7 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-002",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "evidence": []
         },
         {
           "hostname": "SRV-03",
@@ -35,11 +27,12 @@
           "riskid": "R-008",
           "evidence": [
             {
-              "responsible": "",
-              "resources": "",
+              "evidence_id": "EVID-2026-0002",
+              "responsible": "System Administrator + ISMS Auditor Team",
+              "resources": "Host: SRV-03 | Role: File Server",
               "date": "",
               "url": "",
-              "desc": ""
+              "desc": "Evidence for SRV-03 under control 6.7 (Remote working): Apply security patches for CVE-2020-1350 on SRV-01 immediately to mitigate DNS Server RCE vulnerability."
             }
           ]
         }
@@ -60,15 +53,7 @@
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
           "riskid": "R-001",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "evidence": []
         }
       ]
     },
@@ -89,11 +74,12 @@
           "riskid": "R-002",
           "evidence": [
             {
-              "responsible": "",
-              "resources": "",
+              "evidence_id": "EVID-2026-0001",
+              "responsible": "System Administrator + ISMS Auditor Team",
+              "resources": "Host: SRV-01 | Role: Domain Controller (Active Directory)",
               "date": "",
               "url": "",
-              "desc": ""
+              "desc": "Evidence for SRV-01 under control 8.21 (Network services security): Apply critical security patches for CVE-2020-1350 on SRV-01 and SRV-02 immediately."
             }
           ]
         },
@@ -105,15 +91,7 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-003",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "evidence": []
         },
         {
           "hostname": "SRV-03",
@@ -204,15 +182,7 @@
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
           "riskid": "R-003",
-          "evidence": [
-            {
-              "responsible": "",
-              "resources": "",
-              "date": "",
-              "url": "",
-              "desc": ""
-            }
-          ]
+          "evidence": []
         }
       ]
     },
@@ -548,11 +518,12 @@
           "riskid": "R-009",
           "evidence": [
             {
-              "responsible": "",
-              "resources": "",
+              "evidence_id": "EVID-2026-0004",
+              "responsible": "System Administrator + ISMS Auditor Team",
+              "resources": "Host: SRV-04 | Role: Application Server",
               "date": "",
               "url": "",
-              "desc": ""
+              "desc": "Evidence for SRV-04 under control 8.9 (Configuration management): Implement a configuration management tool (e.g., Ansible, Puppet) to enforce and automate secure logging configuration settings on SRV-04.."
             }
           ]
         }
