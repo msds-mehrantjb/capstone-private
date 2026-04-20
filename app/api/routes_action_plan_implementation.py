@@ -12,6 +12,12 @@ import math
 
 import requests
 
+from app.api.aiml_kpi_telemetry import (
+    ollama_total_tokens,
+    safe_increment_llm_counter,
+    safe_increment_rag_counter,
+)
+
 print("LOADED routes_action_plan_implementation.py")
 
 router = APIRouter(
@@ -192,12 +198,20 @@ def _work_dir(year: int) -> Path:
     return BASE_DIR / "data" / "work" / str(year)
 
 
+def _knowledge_base_dir() -> Path:
+    return BASE_DIR / "data" / "knowledge_base"
+
+
+def _ml_dir() -> Path:
+    return BASE_DIR / "data" / "ml"
+
+
 def _iso_csv_path(year: int) -> Path:
-    return _work_dir(year) / "iso27002_controls_2022.csv"
+    return _knowledge_base_dir() / "iso27002_controls_2022.csv"
 
 
 def _iso_embedding_cache_path(year: int) -> Path:
-    return _work_dir(year) / "iso27002_local_embeddings.pkl"
+    return _ml_dir() / "iso27002_local_embeddings.pkl"
 
 
 def _annex_a_soa_file(year: int) -> Path:
@@ -248,6 +262,74 @@ def _normalize_text(value: Any) -> str:
 
 def _normalize_key(value: Any) -> str:
     return _normalize_text(value).lower()
+
+
+GENERIC_RETRIEVAL_FALLBACK_REASON = "Fallback from retrieval because LLM returned no valid controls."
+
+
+def _is_generic_retrieval_fallback_reason(value: Any) -> bool:
+    return _normalize_text(value).lower() == GENERIC_RETRIEVAL_FALLBACK_REASON.lower()
+
+
+def _unique_nonempty(values: list[Any], limit: int = 3) -> list[str]:
+    unique = []
+    seen = set()
+
+    for value in values:
+        text = _normalize_text(value)
+        key = text.lower()
+        if text == "" or key in seen:
+            continue
+        seen.add(key)
+        unique.append(text)
+        if len(unique) >= limit:
+            break
+
+    return unique
+
+
+def _source_record_context(source_records: Any) -> str:
+    if not isinstance(source_records, list):
+        return ""
+
+    records = [item for item in source_records if isinstance(item, dict)]
+    vulnerabilities = _unique_nonempty([item.get("vulnerability_name") for item in records])
+    risks = _unique_nonempty([item.get("risk") for item in records])
+    roles = _unique_nonempty([item.get("role") for item in records])
+
+    context_parts = []
+    if vulnerabilities:
+        context_parts.append(f"vulnerabilities such as {', '.join(vulnerabilities)}")
+    elif risks:
+        context_parts.append(f"risks such as {', '.join(risks)}")
+
+    if roles:
+        context_parts.append(f"affected {', '.join(roles)} assets")
+
+    return " across ".join(context_parts)
+
+
+def _build_contextual_control_justification(
+    control_id: str,
+    control_name: str,
+    source_records: Any = None,
+) -> str:
+    control_label = _normalize_text(control_id)
+    name = _normalize_text(control_name)
+    if name:
+        control_label = f"{control_label} ({name})" if control_label else name
+
+    source_context = _source_record_context(source_records)
+    if source_context:
+        return (
+            f"Control {control_label} is recommended to address {source_context} "
+            "and support the selected mitigation treatment."
+        )
+
+    return (
+        f"Control {control_label} is recommended based on the retrieved ISO 27002 "
+        "match and the current risk evaluation context."
+    )
 
 
 def _safe_join_lines(items: list[str]) -> str:
@@ -363,6 +445,13 @@ def _build_action_plan_doc(year: int, annex_doc: dict) -> dict:
         source_records = control.get("source_records", [])
         if not isinstance(source_records, list):
             source_records = []
+
+        if _is_generic_retrieval_fallback_reason(justification):
+            justification = _build_contextual_control_justification(
+                control_id=control_id,
+                control_name=control_name,
+                source_records=source_records,
+            )
 
         hosts = []
         for record in source_records:
@@ -716,7 +805,9 @@ def _retrieve_relevant_iso_controls(
         _save_embedding_cache(year, cache)
 
     scored.sort(key=lambda x: x[0], reverse=True)
-    return [item[1] for item in scored[:top_k]]
+    retrieved = [item[1] for item in scored[:top_k]]
+    safe_increment_rag_counter(year, success=bool(retrieved))
+    return retrieved
 
 
 def _build_evidence_query_context(
@@ -829,6 +920,7 @@ def _fallback_evidence_recommendations(
 
     
 def _generate_treatment_action_with_llama3(
+    year: int,
     control_id: str,
     control_name: str,
     justification: str,
@@ -885,6 +977,7 @@ ISO guidance:
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     response_text = _normalize_text(data.get("response"))
 
@@ -1054,6 +1147,7 @@ Relevant ISO Guidance:
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     raw_text = _normalize_text(data.get("response"))
     if raw_text == "":
@@ -1204,6 +1298,7 @@ Relevant ISO Guidance:
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     desc = _normalize_text(data.get("response"))
 
@@ -1600,7 +1695,7 @@ def _build_vulnerability_generation_hints(cve_id: str, vulnerability_name: str, 
     return "\\n".join(hints)
 
 
-def _generate_real_implementation_steps_with_llm(context: dict) -> list[dict]:
+def _generate_real_implementation_steps_with_llm(year: int, context: dict) -> list[dict]:
     import json
     import re
 
@@ -1688,6 +1783,7 @@ Generate only the JSON array.
         res = requests.post(OLLAMA_URL, json=payload, timeout=180)
         res.raise_for_status()
         data = res.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(data))
         
         response = _normalize_text(data.get("response"))
 
@@ -1775,7 +1871,7 @@ def _generate_flat_action_implementation_guide(year: int, control: dict, host: d
         role
     )
     
-    implementation_steps = _generate_real_implementation_steps_with_llm({
+    implementation_steps = _generate_real_implementation_steps_with_llm(year, {
         "hostname": hostname,
         "role": role,
         "os_version": os_version,
@@ -2162,6 +2258,7 @@ def recommend_treatment_action(payload: RecommendTreatmentRequest):
         )
 
         generated_treatment_action = _generate_treatment_action_with_llama3(
+            year=year,
             control_id=control_id,
             control_name=control_name,
             justification=justification,
@@ -2616,6 +2713,7 @@ def recommend_treatment_action_all(payload: RecommendAllTreatmentRequest):
         # LLM wrapped in try/except
         try:
             generated_treatment_action = _generate_treatment_action_with_llama3(
+                year=year,
                 control_id=control_id,
                 control_name=control_name,
                 justification=justification_for_prompt,

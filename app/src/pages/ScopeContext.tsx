@@ -105,11 +105,19 @@ export default function ScopeContext() {
     {
       role: "assistant",
       content:
-        "I’m in command mode.\n" +
-        "Use: /help, /commands, /fill, /autofill, /load, /submit, /reset, /cancel\n" +
-        "Confirmations: /yes, /no\n" +
-        "Conversation mode: /exit\n\n" +
-        "Tip: Type /commands to see the full list.",
+        "Scope & Context — Command Mode\n\n" +
+        "Available commands:\n" +
+        "/fill      → Fill the scope document in conversation mode\n" +
+        "/autofill  → Load a specified version of the scope document or samples\n" +
+        "/load      → Load latest saved versions as buttons\n" +
+        "/submit    → Save as a new version and update dashboard/system status\n" +
+        "/cancel    → Discard unsaved changes and reload the latest saved version\n" +
+        "/reset     → Reset to the baseline template\n" +
+        "/exit      → Exit fill mode\n" +
+        "/yes       → Confirm the pending action\n" +
+        "/no        → Cancel the pending action\n" +
+        "/commands  → Show available commands\n" +
+        "/help      → More information",
     },
   ]);
 
@@ -119,20 +127,6 @@ export default function ScopeContext() {
   const [loadOptions, setLoadOptions] = useState<LoadOption[] | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
-
-  const NAV_ITEMS = [
-    { step: 1, name: "Scope & Context", href: "#/scope" },
-    { step: 2, name: "Asset Inventory & CIA", href: "#/assets" },
-    { step: 3, name: "Threats & Vulnerabilities", href: "#/threats" },
-    { step: 4, name: "Existing Controls & Posture", href: "#/controls" },
-    { step: 5, name: "Risk Analysis", href: "#/" },
-    { step: 6, name: "Risk Evaluation", href: "#/" },
-    { step: 7, name: "Risk Treatment", href: "#/" },
-    { step: 8, name: "Annex A & SoA", href: "#/" },
-    { step: 9, name: "Action Plan / Implementation", href: "#/" },
-    { step: 10, name: "Monitoring & Improvement", href: "#/" },
-    { step: 11, name: "Final Deliverables", href: "#/" },
-  ];
 
   const LEFT_MENU_ITEMS = [
     { step: 1, name: "Scope & Context", href: "#/scope" },
@@ -574,9 +568,9 @@ export default function ScopeContext() {
                 </div>
 
                 <div className="mt-3 shrink-0 text-xs text-slate-500">
-                  Command mode: /help /commands /fill /autofill /load /submit /reset /cancel
-                  <br />
                   Conversation mode: /exit
+                  <br />
+                  Command mode: /fill /autofill /load /submit /reset /cancel /commands /help
                 </div>
               </div>
             </ShellCard>
@@ -840,9 +834,9 @@ export default function ScopeContext() {
               </div>
 
               <div className="mt-3 shrink-0 text-xs text-slate-500">
-                Command mode: /help /commands /fill /autofill /load /submit /reset /cancel
-                <br />
                 Conversation mode: /exit
+                <br />
+                Command mode: /fill /autofill /load /submit /reset /cancel /commands /help
               </div>
             </div>
           </ShellCard>

@@ -1,5 +1,3 @@
-# app/agent/graph.py
-
 from __future__ import annotations
 
 from typing import TypedDict, Dict, Any
@@ -9,21 +7,15 @@ from langgraph.graph import StateGraph, END
 from app.agent.events import hub, new_event
 
 
-# Graph state definition
 class AgentState(TypedDict):
-
     run_id: str
     input: str
-
     plan: Dict[str, Any]
     evidence: Dict[str, Any]
-
     report: Dict[str, Any]
 
 
-# PLAN NODE
 async def plan_node(state: AgentState) -> AgentState:
-
     run_id = state["run_id"]
 
     await hub.publish(
@@ -34,7 +26,6 @@ async def plan_node(state: AgentState) -> AgentState:
         )
     )
 
-    # placeholder logic
     plan = {
         "objective": "Perform ISO 27001 risk assessment",
         "steps": [
@@ -55,13 +46,10 @@ async def plan_node(state: AgentState) -> AgentState:
     )
 
     state["plan"] = plan
-
     return state
 
 
-# EXECUTE NODE
 async def execute_node(state: AgentState) -> AgentState:
-
     run_id = state["run_id"]
 
     await hub.publish(
@@ -88,13 +76,10 @@ async def execute_node(state: AgentState) -> AgentState:
     )
 
     state["evidence"] = evidence
-
     return state
 
 
-# SUMMARIZE NODE
 async def summarize_node(state: AgentState) -> AgentState:
-
     run_id = state["run_id"]
 
     await hub.publish(
@@ -124,27 +109,23 @@ async def summarize_node(state: AgentState) -> AgentState:
     )
 
     state["report"] = report
-
     return state
 
 
-# GRAPH CONSTRUCTION
 def build_graph():
-
     graph = StateGraph(AgentState)
 
-    graph.add_node("plan", plan_node)
-    graph.add_node("execute", execute_node)
-    graph.add_node("summarize", summarize_node)
+    graph.add_node("planner", plan_node)
+    graph.add_node("executor", execute_node)
+    graph.add_node("summarizer", summarize_node)
 
-    graph.set_entry_point("plan")
+    graph.set_entry_point("planner")
 
-    graph.add_edge("plan", "execute")
-    graph.add_edge("execute", "summarize")
-    graph.add_edge("summarize", END)
+    graph.add_edge("planner", "executor")
+    graph.add_edge("executor", "summarizer")
+    graph.add_edge("summarizer", END)
 
     return graph.compile()
 
 
-# Singleton graph instance
 agent_graph = build_graph()

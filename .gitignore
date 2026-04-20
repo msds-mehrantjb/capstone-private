@@ -8,6 +8,11 @@ __pycache__/
 .ipynb_checkpoints/
 .env
 .env.*
+*.env
+*.env.txt
+apikey.txt
+*api key*.txt
+*API key*.txt
 venv/
 .env/
 
@@ -24,7 +29,15 @@ build/
 # Vector Database
 # ===============================
 chroma_db/
+chroma_iso27002/
+app/src/pages/chroma_control_to_cve/
 *.sqlite3
+
+# ===============================
+# Local generated data / notebooks
+# ===============================
+*.ipynb_checkpoints/
+.ipynb_checkpoints/
 
 # ===============================
 # Logs

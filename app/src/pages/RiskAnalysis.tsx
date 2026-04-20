@@ -696,7 +696,6 @@ export default function RiskAnalysis() {
   const [popupText, setPopupText] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
-  const [confirmAction, setConfirmAction] = useState<null | "new-analysis">(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -711,9 +710,9 @@ export default function RiskAnalysis() {
         "/delete     → Remove highlighted row from the table\n" +
         "/submit     → Finalize risk analysis results\n" +
         "/reset      → Clear the table\n" +
-        "/help       → Explain this section\n" +
+        "/exit       → Exit the current command mode\n" +
         "/commands   → Show all available commands\n" +
-        "/exit       → Exit the current command mode",
+        "/help       → Explain this section",
     },
   ]);
     
@@ -765,7 +764,7 @@ export default function RiskAnalysis() {
     const finding = host.findings[selectedFinding.index];
     if (!finding) return null;
 
-    return { host, finding, index: selectedFinding.index };
+    return { host, finding };
   }, [rows, selectedFinding]);
 
   const criticalImpactCount = useMemo(
@@ -845,27 +844,19 @@ export default function RiskAnalysis() {
 
   const closePopup = () => setPopupOpen(false);
 
-  const openConfirm = (text: string, action: "new-analysis") => {
+  const openConfirm = (text: string) => {
     setConfirmText(text);
-    setConfirmAction(action);
     setConfirmOpen(true);
   };
 
   const closeConfirm = () => {
     setConfirmOpen(false);
-    setConfirmAction(null);
   };
 
   const scrollChatToBottom = (behavior: ScrollBehavior = "smooth") => {
     requestAnimationFrame(() => {
       chatBottomRef.current?.scrollIntoView({ behavior, block: "end" });
     });
-  };
-
-  const findRowByHostname = (hostname: string): RiskHostRow | null => {
-    const normalized = hostname.trim().toLowerCase();
-    if (!normalized) return null;
-    return rows.find((r) => (r.hostname || "").trim().toLowerCase() === normalized) ?? null;
   };
 
   const formatList = (items?: Array<string | number>) => {
@@ -881,8 +872,7 @@ export default function RiskAnalysis() {
 
   const formatSelectedFindingDetails = (
     row: RiskHostRow,
-    f: RiskFinding,
-    index: number
+    f: RiskFinding
   ) => {
     const ub = f.userBehavior ?? {};
 
@@ -994,8 +984,7 @@ export default function RiskAnalysis() {
 
       if (existingRows.length > 0) {
         openConfirm(
-          "You are in middle of risk analysis.\n\nDo you want to start a new one?",
-          "new-analysis"
+          "You are in middle of risk analysis.\n\nDo you want to start a new one?"
         );
         return;
       }
@@ -1422,9 +1411,9 @@ export default function RiskAnalysis() {
               "/delete     → Remove highlighted row from the table\n" +
               "/submit     → finalize risk analysis results\n" +
               "/reset      → Clear the table\n" +
-              "/help       → Explain this section\n" +
+              "/exit       → Exit the current command mode\n" +
               "/commands   → Show all available commands\n" +
-              "/exit       → Exit the current command mode",
+              "/help       → Explain this section",
           },
         ]);
         return;
@@ -1498,8 +1487,7 @@ export default function RiskAnalysis() {
             role: "assistant",
             content: formatSelectedFindingDetails(
               selectedFindingContext.host,
-              selectedFindingContext.finding,
-              selectedFindingContext.index
+              selectedFindingContext.finding
             ),
           },
         ]);
@@ -1879,7 +1867,7 @@ export default function RiskAnalysis() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-            Command mode: /analysis /train /setrisk /details /delete /submit /reset /help /commands /exit
+            Command mode: /analysis /train /setrisk /details /delete /submit /reset /exit /commands /help
         </div>
       </div>
     </ShellCard>

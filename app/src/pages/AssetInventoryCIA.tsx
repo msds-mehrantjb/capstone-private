@@ -70,16 +70,6 @@ type SystemStatusDTO = {
   sections: Record<string, { status: StepStatus; scope_file_name?: string }>;
 };
 
-type ScopeDocDTO = {
-  meta?: Record<string, any>;
-  sections?: Array<{
-    id?: string;
-    title?: string;
-    body?: string;
-    bullets?: string[];
-  }>;
-};
-
 type DashboardRawDTO = {
   scope?: {
     name?: string;
@@ -257,12 +247,6 @@ async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
   );
 }
 
-async function apiGetScopeFile(year: number, filename: string): Promise<ScopeDocDTO> {
-  return apiGetJSON<ScopeDocDTO>(
-    `/api/scope/file?year=${encodeURIComponent(String(year))}&filename=${encodeURIComponent(filename)}`
-  );
-}
-
 async function apiGetAssetInventory(year: number): Promise<AssetInventoryWorkDTO> {
   return apiGetJSON<AssetInventoryWorkDTO>(
     `/api/assets/inventory?year=${encodeURIComponent(String(year))}`
@@ -408,14 +392,26 @@ function CiaPill({ value }: { value: AssetRow["cia"] }) {
 
 function StatusCell({ value }: { value: AssetRow["status"] }) {
   if (value === "Active") {
-    return <CircleCheck className="h-5 w-5 text-emerald-300" title="Active" />;
+    return (
+      <span title="Active" aria-label="Active">
+        <CircleCheck className="h-5 w-5 text-emerald-300" />
+      </span>
+    );
   }
 
   if (value === "Not Active") {
-    return <CircleOff className="h-5 w-5 text-slate-400" title="Inactive" />;
+    return (
+      <span title="Inactive" aria-label="Inactive">
+        <CircleOff className="h-5 w-5 text-slate-400" />
+      </span>
+    );
   }
 
-  return <HelpCircle className="h-5 w-5 text-amber-300" title="Unknown" />;
+  return (
+    <span title="Unknown" aria-label="Unknown">
+      <HelpCircle className="h-5 w-5 text-amber-300" />
+    </span>
+  );
 }
 
 export default function AssetInventoryCIA() {
@@ -449,7 +445,6 @@ export default function AssetInventoryCIA() {
 
   const [systemStatus, setSystemStatus] = useState<SystemStatusDTO | null>(null);
   const [dashboardRaw, setDashboardRaw] = useState<DashboardRawDTO | null>(null);
-  const [scopeDoc, setScopeDoc] = useState<ScopeDocDTO | null>(null);
   const [scopeErr, setScopeErr] = useState<string | null>(null);
 
   const [rows, setRows] = useState<AssetRow[]>([]);
@@ -477,9 +472,9 @@ export default function AssetInventoryCIA() {
         "/delete      → Remove a host from the table\n" +
         "/submit      → Submit Asset Inventory & CIA results\n" +
         "/reset       → Clear the inventory table\n" +
-        "/help        → Explain this section\n" +
+        "/exit        → Exit assess mode\n" +
         "/commands    → Show all available commands\n" +
-        "/exit        → Exit assess mode\n\n" +
+        "/help        → Explain this section\n\n" +
         "Tip: Use /explore first, then /assess.",
     },
   ]);
@@ -487,23 +482,6 @@ export default function AssetInventoryCIA() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
-
-  const NAV_ITEMS = useMemo(
-    () => [
-      { step: 1, name: "Scope & Context", href: "#/scope" },
-      { step: 2, name: "Asset Inventory & CIA", href: "#/assets" },
-      { step: 3, name: "Threats & Vulnerabilities", href: "#/threats" },
-      { step: 4, name: "Existing Controls & Posture", href: "#/controls" },      
-      { step: 5, name: "Risk Analysis", href: "#/" },
-      { step: 6, name: "Risk Evaluation", href: "#/" },
-      { step: 7, name: "Risk Treatment", href: "#/" },
-      { step: 8, name: "Annex A & SoA", href: "#/" },
-      { step: 9, name: "Action Plan / Implementation", href: "#/" },
-      { step: 10, name: "Monitoring & Improvement", href: "#/" },
-      { step: 11, name: "Final Deliverables", href: "#/" },
-    ],
-    []
-  );
 
   const LEFT_MENU_ITEMS = useMemo(
     () => [
@@ -526,7 +504,6 @@ export default function AssetInventoryCIA() {
   const assetsCiaStatus: StepStatus =
     backendAssetsCiaStatus ?? "Not Started";
     
-  const scopeFileName = systemStatus?.sections?.scope_context?.scope_file_name;
   const displayScopeName = dashboardRaw?.scope?.name ?? "NA";
   const assetCount = rows.length;
 
@@ -819,21 +796,6 @@ export default function AssetInventoryCIA() {
   useEffect(() => {
     (async () => {
       try {
-        if (!scopeFileName) {
-          setScopeDoc(null);
-          return;
-        }
-        const doc = await apiGetScopeFile(YEAR, scopeFileName);
-        setScopeDoc(doc);
-      } catch {
-        setScopeDoc(null);
-      }
-    })();
-  }, [scopeFileName]);
-
-  useEffect(() => {
-    (async () => {
-      try {
         const doc = await apiGetAssetInventory(YEAR);
         setRows(flattenInventoryToRows(doc));
 
@@ -1082,49 +1044,6 @@ export default function AssetInventoryCIA() {
     }
   };
 
-  const handleSubmitConfirmYes = async () => {
-    setSending(true);
-
-    try {
-      const data = await apiPostJSONBody<SubmitCleanupResponse>("/api/assets/submit", {
-        year: YEAR,
-        confirm: true,
-      });
-
-      if (data.inventory) {
-        setRows(flattenInventoryToRows(data.inventory));
-      } else {
-        await refreshInventoryRows();
-      }
-
-      const sys = await apiGetSystemStatus();
-      setSystemStatus(sys);
-
-      setPendingCommand(null);
-      setPendingHostname(null);
-      setConfirmSubnetId(null);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            data.message ||
-            `Removed ${data.removed_unknown ?? 0} Unknown host(s) and ${data.removed_inactive ?? 0} Inactive host(s).`,
-        },
-      ]);
-    } catch {
-      setPendingCommand(null);
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Backend error while submitting the inventory." },
-      ]);
-    } finally {
-      setSending(false);
-      scrollChatToBottom();
-    }
-  };
-
   const onSend = async () => {
     const text = input.trim();
     if (!text || sending) return;
@@ -1360,9 +1279,9 @@ export default function AssetInventoryCIA() {
               "/delete      → Remove a host from the table\n" +
               "/submit      → Submit Asset Inventory & CIA results\n" +
               "/reset       → Clear the inventory table\n" +
-              "/help        → Explain this section\n" +
+              "/exit        → Exit assess mode\n" +
               "/commands    → Show all available commands\n" +
-              "/exit        → Exit assess mode",
+              "/help        → Explain this section",
           },
         ]);
         return;
@@ -2078,7 +1997,7 @@ export default function AssetInventoryCIA() {
 
                 <div className="mt-3 shrink-0 text-xs text-slate-500">
                   Command mode: /explore /assess /setstatus /assignroles /details /train /delete
-                  /submit /reset /help /commands /exit
+                  /submit /reset /exit /commands /help
                 </div>
               </div>
             </ShellCard>
@@ -2664,7 +2583,7 @@ export default function AssetInventoryCIA() {
 
               <div className="mt-3 shrink-0 text-xs text-slate-500">
                 Command mode: /explore /assess /setstatus /assignroles /details /train /delete
-                /submit /reset /help /commands /exit
+                /submit /reset /exit /commands /help
               </div>
             </div>
           </ShellCard>

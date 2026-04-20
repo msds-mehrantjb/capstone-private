@@ -75,11 +75,6 @@ type CreateThreatAssessmentResponse = {
   message?: string;
 };
 
-type ResetThreatAssessmentResponse = {
-  success?: boolean;
-  message?: string;
-};
-
 type CveDetailDTO = {
   success?: boolean;
   source_file?: string;
@@ -186,28 +181,6 @@ async function apiCreateThreatAssessment(
   }
 
   return data as CreateThreatAssessmentResponse;
-}
-
-async function apiResetThreatVulnerabilities(
-  year: number
-): Promise<ResetThreatAssessmentResponse> {
-  const res = await fetch(`${API_BASE}/api/threat-vulnerabilities/reset`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-cache",
-      Pragma: "no-cache",
-    },
-    body: JSON.stringify({ year }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(data?.detail || `HTTP ${res.status}`);
-  }
-
-  return data as ResetThreatAssessmentResponse;
 }
 
 async function apiGetCveDetail(cveId: string): Promise<any> {
@@ -472,7 +445,6 @@ export default function ThreatVulnerabilities() {
   const [tvErr, setTvErr] = useState<string | null>(null);
   const [tvLoading, setTvLoading] = useState(false);
 
-  const [creatingAssessment, setCreatingAssessment] = useState(false);
   const [resettingAssessment, setResettingAssessment] = useState(false);
 
   const [awaitingCveDetail, setAwaitingCveDetail] = useState(false);
@@ -484,6 +456,7 @@ export default function ThreatVulnerabilities() {
 
   const [showResetPopup, setShowResetPopup] = useState(false);
   const [resetPopupLoading, setResetPopupLoading] = useState(false);
+  const creatingAssessment = resettingAssessment || resetPopupLoading;
     
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -491,13 +464,13 @@ export default function ThreatVulnerabilities() {
       content:
         "Threats & Vulnerabilities — Command Mode\n\n" +
         "Available commands:\n" +
-        "/help        → Explain this section\n" +
-        "/commands    → Show available commands\n" +
         "/details      → Show host threat/vulnerability details\n" +
         "/assess      → New vulnerability and threat assessment\n" +
         "/submit      → Submit this section\n" +
         "/reset       → Clear vulnerabilities section\n" +
-        "/exit        → Exit current mode",
+        "/exit        → Exit current mode\n" +
+        "/commands    → Show available commands\n" +
+        "/help        → Explain this section",
     },
   ]);
 
@@ -506,23 +479,6 @@ export default function ThreatVulnerabilities() {
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
   const hosts = tvData?.hosts ?? [];
-
-  const NAV_ITEMS = useMemo(
-    () => [
-      { step: 1, name: "Scope & Context", href: "#/scope" },
-      { step: 2, name: "Asset Inventory & CIA", href: "#/assets" },
-      { step: 3, name: "Threats & Vulnerabilities", href: "#/threats" },
-      { step: 4, name: "Existing Controls & Posture", href: "#/controls" },
-      { step: 5, name: "Risk Analysis", href: "#/risk-analysis" },
-      { step: 6, name: "Risk Evaluation", href: "#/risk-evaluation-treatment" },
-      { step: 7, name: "Risk Treatment", href: "#/risk-evaluation-treatment" },
-      { step: 8, name: "Annex A & SoA", href: "#/" },
-      { step: 9, name: "Action Plan / Implementation", href: "#/" },
-      { step: 10, name: "Monitoring & Improvement", href: "#/" },
-      { step: 11, name: "Final Deliverables", href: "#/" },
-    ],
-    []
-  );
 
   const LEFT_MENU_ITEMS = useMemo(
     () => [
@@ -907,13 +863,13 @@ export default function ThreatVulnerabilities() {
             role: "assistant",
             content:
               "Available commands:\n" +
-              "/help        → Explain this section\n" +
-              "/commands    → Show available commands\n" +
               "/detail      → Lookup CVE details\n" +
               "/assess      → New vulnerability and threat assessment\n" +
               "/submit      → Submit this section\n" +
               "/reset       → Clear vulnerabilities section\n" +
-              "/exit        → Exit current mode",
+              "/exit        → Exit current mode\n" +
+              "/commands    → Show available commands\n" +
+              "/help        → Explain this section",
           },
         ]);
         return;
@@ -1309,7 +1265,7 @@ export default function ThreatVulnerabilities() {
                 </div>
 
                 <div className="mt-3 shrink-0 text-xs text-slate-500">
-                  Command mode: /help /commands /details /assess /submit /reset /exit
+                  Command mode: /details /assess /submit /reset /exit /commands /help
                 </div>
               </div>
             </ShellCard>
@@ -1662,7 +1618,7 @@ export default function ThreatVulnerabilities() {
               </div>
 
               <div className="mt-3 shrink-0 text-xs text-slate-500">
-                Command mode: /help /commands /details /submit /reset /exit
+                Command mode: /details /submit /reset /exit /commands /help
               </div>
             </div>
           </ShellCard>

@@ -1,16 +1,17 @@
-import { useEffect, useState } from "react";
-import Dashboard from "./pages/Dashboard";
-import ScopeContext from "./pages/ScopeContext";
-import AssetInventoryCIA from "./pages/AssetInventoryCIA";
-import ThreatVulnerabilities from "./pages/ThreatVulnerabilities";
-import ControlsPostures from "./pages/ControlsPostures";
-import RiskAnalysis from "./pages/RiskAnalysis";
-import RiskEvaluationTreatment from "./pages/RiskEvaluationTreatment";
-import AnnexASoA from "./pages/AnnexASoA";
-import ActionPlanImplementation from "./pages/ActionPlanImplementation";
-import MonitoringImprovement from "./pages/MonitoringImprovement";
-import FinalDeliverables from "./pages/FinalDeliverables";
-import AIMLDashboard from "./pages/AIMLDashboard"; // <-- import AI/ML page
+import { lazy, Suspense, useEffect, useState } from "react";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const ScopeContext = lazy(() => import("./pages/ScopeContext"));
+const AssetInventoryCIA = lazy(() => import("./pages/AssetInventoryCIA"));
+const ThreatVulnerabilities = lazy(() => import("./pages/ThreatVulnerabilities"));
+const ControlsPostures = lazy(() => import("./pages/ControlsPostures"));
+const RiskAnalysis = lazy(() => import("./pages/RiskAnalysis"));
+const RiskEvaluationTreatment = lazy(() => import("./pages/RiskEvaluationTreatment"));
+const AnnexASoA = lazy(() => import("./pages/AnnexASoA"));
+const ActionPlanImplementation = lazy(() => import("./pages/ActionPlanImplementation"));
+const MonitoringImprovement = lazy(() => import("./pages/MonitoringImprovement"));
+const FinalDeliverables = lazy(() => import("./pages/FinalDeliverables"));
+const AIMLDashboard = lazy(() => import("./pages/AIMLDashboard"));
 
 type RouteKey =
   | "dashboard"
@@ -93,31 +94,57 @@ export default function App() {
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
+  let page: React.ReactNode;
+
   switch (route) {
     case "scope":
-      return <ScopeContext />;
+      page = <ScopeContext />;
+      break;
     case "assets":
-      return <AssetInventoryCIA />;
+      page = <AssetInventoryCIA />;
+      break;
     case "threats":
-      return <ThreatVulnerabilities />;
+      page = <ThreatVulnerabilities />;
+      break;
     case "controls":
-      return <ControlsPostures />;
+      page = <ControlsPostures />;
+      break;
     case "risk-analysis":
-      return <RiskAnalysis />;
+      page = <RiskAnalysis />;
+      break;
     case "risk-evaluation-treatment":
-      return <RiskEvaluationTreatment />;
+      page = <RiskEvaluationTreatment />;
+      break;
     case "annex-a-soa":
-      return <AnnexASoA />;
+      page = <AnnexASoA />;
+      break;
     case "action-plan-implementation":
-      return <ActionPlanImplementation />;
+      page = <ActionPlanImplementation />;
+      break;
     case "monitoring-improvement":
-      return <MonitoringImprovement />;
+      page = <MonitoringImprovement />;
+      break;
     case "final-deliveries":
-      return <FinalDeliverables />;
-    case "ai-ml": 
-      return <AIMLDashboard />;
+      page = <FinalDeliverables />;
+      break;
+    case "ai-ml":
+      page = <AIMLDashboard />;
+      break;
     case "dashboard":
     default:
-      return <Dashboard />;
+      page = <Dashboard />;
+      break;
   }
+
+  return (
+    <Suspense
+      fallback={
+        <div className="grid min-h-screen place-items-center bg-[#070A12] text-slate-100">
+          Loading...
+        </div>
+      }
+    >
+      {page}
+    </Suspense>
+  );
 }

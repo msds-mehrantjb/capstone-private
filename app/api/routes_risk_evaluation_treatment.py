@@ -5,6 +5,8 @@ from typing import Any
 import requests
 from pydantic import BaseModel
 
+from app.api.aiml_kpi_telemetry import ollama_total_tokens, safe_increment_llm_counter
+
 router = APIRouter(
     prefix="/api/risk-evaluation-treatment",
     tags=["risk-evaluation-treatment"],
@@ -400,7 +402,7 @@ def _derive_default_evaluation(record: dict) -> str:
 
     return _derive_risk_evaluation_from_risk(risk)
 
-def _ask_llama3_for_monitoring_fields(record: dict, cve_info: dict) -> tuple[str, str]:
+def _ask_llama3_for_monitoring_fields(record: dict, cve_info: dict, year: int = 2026) -> tuple[str, str]:
     hostname = str(record.get("hostname") or "").strip()
     role = str(record.get("role") or "").strip()
     cia_rating = str(record.get("CIA rating") or "").strip()
@@ -459,7 +461,9 @@ vector: {cve_info.get("vector", "")}
     )
     response.raise_for_status()
 
-    raw = response.json().get("response", "{}")
+    response_data = response.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(response_data))
+    raw = response_data.get("response", "{}")
     try:
         parsed = json.loads(raw)
     except Exception:
@@ -471,7 +475,7 @@ vector: {cve_info.get("vector", "")}
     return justification, recommended_action
 
 
-def _safe_generate_monitoring_fields(record: dict) -> tuple[str, str]:
+def _safe_generate_monitoring_fields(record: dict, year: int = 2026) -> tuple[str, str]:
     cve_id = str(record.get("cve") or "").strip()
 
     cve_info = {
@@ -489,7 +493,7 @@ def _safe_generate_monitoring_fields(record: dict) -> tuple[str, str]:
             pass
 
     try:
-        justification, recommended_action = _ask_llama3_for_monitoring_fields(record, cve_info)
+        justification, recommended_action = _ask_llama3_for_monitoring_fields(record, cve_info, year=year)
         return justification, recommended_action
     except Exception:
         vulnerability_name = str(record.get("vulnerability_name") or "").strip()
@@ -506,9 +510,9 @@ def _safe_generate_monitoring_fields(record: dict) -> tuple[str, str]:
         return fallback_justification, fallback_action
     
 
-def _build_monitoring_improvement_record(record: dict) -> dict:
+def _build_monitoring_improvement_record(record: dict, year: int = 2026) -> dict:
     r = _normalize_existing_record(record)
-    justification, recommended_action = _safe_generate_monitoring_fields(r)
+    justification, recommended_action = _safe_generate_monitoring_fields(r, year=year)
 
     return {
         "hostname": str(r.get("hostname") or "").strip(),
@@ -691,7 +695,7 @@ def submit_risk_evaluation_treatment(payload: SubmitRequest):
     normalized_hosts = [_normalize_existing_record(h) for h in hosts]
 
     monitoring_records = [
-        _build_monitoring_improvement_record(h)
+        _build_monitoring_improvement_record(h, year=year)
         for h in normalized_hosts
         if str(h.get("evaluation") or "").strip() == "Monitor"
     ]

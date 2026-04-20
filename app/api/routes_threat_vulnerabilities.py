@@ -7,6 +7,8 @@ import requests
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+from app.api.aiml_kpi_telemetry import ollama_total_tokens, safe_increment_llm_counter
+
 LLM_MODEL = "qwen3:14b"
 
 router = APIRouter(
@@ -367,7 +369,7 @@ def _find_cve_details_from_nvd_api(cve_id: str) -> Optional[dict]:
     return parsed
 
 
-def _ollama_format_cve(cve_data: dict) -> str:
+def _ollama_format_cve(cve_data: dict, year: int = 2026) -> str:
     prompt = f"""
 You are a cybersecurity analyst.
 
@@ -424,6 +426,7 @@ CVE DATA:
     response.raise_for_status()
 
     raw = response.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(raw))
     text = str(raw.get("response", "")).strip()
 
     if not text:
@@ -1171,7 +1174,7 @@ def _run_ml_prioritization_with_existing_helpers(host: dict, evidence: dict, vul
 
     return result
     
-def _generate_mitigations_with_existing_helpers(vuln: dict) -> list[str]:
+def _generate_mitigations_with_existing_helpers(vuln: dict, year: int = 2026) -> list[str]:
     """
     Uses LLM reasoning to generate recommended_mitigation only.
     Enforces enterprise-safe, technically accurate mitigations.
@@ -1299,6 +1302,7 @@ Output example:
         )
         response.raise_for_status()
         raw = response.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(raw))
         text = str(raw.get("response", "")).strip()
 
         parsed = json.loads(text)
@@ -1407,7 +1411,7 @@ def create_new_threat_assessment(req: CreateThreatAssessmentRequest):
                     "cvss_score": vuln.get("cvss_score", ""),
                     "known_exploited": bool(vuln.get("known_exploited", False)),
                     "exploit_available": bool(vuln.get("exploit_available", False)),
-                    "recommended_mitigation": _generate_mitigations_with_existing_helpers(vuln),
+                    "recommended_mitigation": _generate_mitigations_with_existing_helpers(vuln, year=req.year),
                     "cve": vuln.get("cve", ""),
                     "evidence": {
                         "open_ports": evidence.get("open_ports", []),

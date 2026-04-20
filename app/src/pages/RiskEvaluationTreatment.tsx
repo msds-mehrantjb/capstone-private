@@ -127,15 +127,6 @@ async function apiGetJSON<T>(path: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function apiPostJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { method: "POST" });
-  if (!res.ok) {
-    const txt = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status}${txt ? ` - ${txt}` : ""}`);
-  }
-  return (await res.json()) as T;
-}
-
 async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
@@ -158,47 +149,6 @@ async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
 
   return data as T;
 }
-
-async function apiSetEvaluation(body: {
-  year: number;
-  hostname: string;
-  cve: string;
-  evaluation: EvaluationValue;
-}): Promise<{ success?: boolean; message?: string; inventory?: any }> {
-  return apiPostJSONBody(
-    "/api/risk-evaluation-treatment/set-evaluation",
-    body
-  );
-}
-
-
-async function persistDefaultEvaluationsOnLoad(doc: any, year: number) {
-  const hosts = Array.isArray(doc?.hosts) ? doc.hosts : [];
-
-  for (const h of hosts) {
-    const currentEvaluation = String(h?.evaluation ?? "").trim();
-    const risk = normalizeSeverity(h?.risk ?? h?.risk_rating);
-    const defaultEvaluation = getDefaultEvaluation({
-      cve: String(h?.cve ?? ""),
-      vulnerability: String(h?.vulnerability_name ?? ""),
-      risk: normalizeSeverity(h?.risk ?? h?.risk_rating),
-    });    
-
-    if (!currentEvaluation && defaultEvaluation && h?.hostname && h?.cve) {
-      const result = await apiSetEvaluation({
-        year,
-        hostname: String(h.hostname),
-        cve: String(h.cve),
-        evaluation: defaultEvaluation,
-      });
-
-      if (result?.success === false) {
-        throw new Error(result.message || "Failed to update evaluation.");
-      }
-    }
-  }
-}
-
 
 async function apiReinitializeTreatment(year: number) {
   return apiPostJSONBody<any>("/api/risk-evaluation-treatment/reinitialize", {
@@ -240,13 +190,6 @@ async function loadTreatmentDataSafe(year: number) {
   return await apiGetTreatmentInventory(year);
 }
 
-function getRiskLabelFromScore(score: number): SeverityValue {
-  if (score >= 15) return "Critical";
-  if (score >= 12) return "High";
-  if (score >= 6) return "Medium";
-  return "Low";
-}
-
 function normalizeSeverity(value?: string): SeverityValue {
   if (!value) return "Unscanned";
   const v = String(value).trim().toLowerCase();
@@ -256,46 +199,6 @@ function normalizeSeverity(value?: string): SeverityValue {
   if (v === "medium") return "Medium";
   if (v === "low") return "Low";
   return "Unscanned";
-}
-
-function toText(value: any, fallback = "NA"): string {
-  if (value === null || value === undefined) return fallback;
-  const s = String(value).trim();
-  return s ? s : fallback;
-}
-
-function firstDefined(...values: any[]) {
-  for (const v of values) {
-    if (v !== undefined && v !== null && String(v).trim() !== "") return v;
-  }
-  return undefined;
-}
-
-function getEvaluationFromRisk(risk: SeverityValue): EvaluationValue {
-  if (risk === "Low") return "Accept";
-  if (risk === "Medium") return "Monitor";
-  if (risk === "High" || risk === "Critical") return "Treat";
-  return "";
-}
-
-function applyDefaultEvaluationsToDoc(doc: any) {
-  const hosts = Array.isArray(doc?.hosts) ? doc.hosts : [];
-
-  const nextHosts = hosts.map((h: any) => {
-    const risk = normalizeSeverity(h?.risk ?? h?.risk_rating);
-    const evaluation = getEvaluationFromRisk(risk);
-
-    return {
-      ...h,
-      evaluation,
-      treatment: evaluation === "Treat" ? h?.treatment ?? "" : "",
-    };
-  });
-
-  return {
-    ...doc,
-    hosts: nextHosts,
-  };
 }
 
 function flattenInventoryToRows(doc: any): RiskHostRow[] {
@@ -356,8 +259,7 @@ function buildInitialFindingEdits(rows: RiskHostRow[]): FindingEditMap {
   for (const row of rows) {
     row.findings.forEach((f, index) => {
       const key = getFindingKey(row.hostname, f, index);
-      const evaluation =
-        f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluation(f);
+      const evaluation = f.evaluation || getDefaultEvaluation(f);
 
       const savedTreatment = getDisplayTreatmentValue(f.treatment);
 
@@ -382,7 +284,7 @@ function buildSubmitPayload(rows: RiskHostRow[], findingEdits: FindingEditMap) {
 
       const evaluation =
         findingEdits[key]?.evaluation ??
-        (f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluation(f));
+        (f.evaluation || getDefaultEvaluation(f));
 
       const treatment =
         evaluation === "Treat"
@@ -579,7 +481,7 @@ function RiskFindingsCard({
     const key = getFindingKey(row.hostname, f, index);
     return (
       findingEdits[key]?.evaluation ??
-      (f.evaluation && f.evaluation !== "" ? f.evaluation : getDefaultEvaluation(f))
+      (f.evaluation || getDefaultEvaluation(f))
     );
   };
 
@@ -815,9 +717,9 @@ export default function RiskEvaluationTreatment() {
         "Risk Evaluation & Treatment — Command Mode\n\n" +
         "Available commands:\n" +
         "/submit     → Submit risk evaluation & treatment results\n" +
-        "/help       → Explain this section\n" +
+        "/exit       → Exit the current command mode\n" +
         "/commands   → Show all available commands\n" +
-        "/exit       → Exit the current command mode",
+        "/help       → Explain this section",
     },
   ]);
 
@@ -993,9 +895,7 @@ export default function RiskEvaluationTreatment() {
 
     const previousEvaluation =
       (findingEdits[key]?.evaluation ??
-        (finding.evaluation && finding.evaluation !== ""
-          ? finding.evaluation
-          : getDefaultEvaluation(finding))) as EvaluationValue;
+        (finding.evaluation || getDefaultEvaluation(finding))) as EvaluationValue;
 
     const previousTreatment =
       (findingEdits[key]?.treatment ?? getDisplayTreatmentValue(finding.treatment)) as TreatmentValue;
@@ -1061,9 +961,7 @@ export default function RiskEvaluationTreatment() {
 
     const previousEvaluation =
       (findingEdits[key]?.evaluation ??
-        (finding.evaluation && finding.evaluation !== ""
-          ? finding.evaluation
-          : getDefaultEvaluation(finding))) as EvaluationValue;
+        (finding.evaluation || getDefaultEvaluation(finding))) as EvaluationValue;
 
     const previousTreatment =
       (findingEdits[key]?.treatment ?? getDisplayTreatmentValue(finding.treatment)) as TreatmentValue;
@@ -1144,9 +1042,7 @@ export default function RiskEvaluationTreatment() {
 
         const evaluation =
           findingEdits[key]?.evaluation ??
-          (finding.evaluation && finding.evaluation !== ""
-            ? finding.evaluation
-            : getDefaultEvaluation(finding));
+          (finding.evaluation || getDefaultEvaluation(finding));
 
         const treatment =
           evaluation === "Treat"
@@ -1302,9 +1198,9 @@ export default function RiskEvaluationTreatment() {
             content:
               "Available commands:\n\n" +
               "/submit     → Submit risk evaluation & treatment results\n" +
-              "/help       → Explain this section\n" +
+              "/exit       → Exit the current command mode\n" +
               "/commands   → Show all available commands\n" +
-              "/exit       → Exit the current command mode",
+              "/help       → Explain this section",
           },
         ]);
         return;
@@ -1373,10 +1269,6 @@ export default function RiskEvaluationTreatment() {
   useEffect(() => {
     (async () => {
       try {
-        const rawDoc = await loadTreatmentDataSafe(YEAR);
-
-        //  await persistDefaultEvaluationsOnLoad(rawDoc, YEAR);
-
         const refreshedDoc = await loadTreatmentDataSafe(YEAR);
         const nextRows = flattenInventoryToRows(refreshedDoc);
 
@@ -1525,7 +1417,7 @@ export default function RiskEvaluationTreatment() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /commands /submit /help /exit
+          Command mode: /submit /exit /commands /help
         </div>
       </div>
     </ShellCard>
@@ -1869,4 +1761,3 @@ export default function RiskEvaluationTreatment() {
     </div>
   );
 }
-

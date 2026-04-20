@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,11 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.ensemble import RandomForestClassifier
+from app.api.aiml_kpi_telemetry import (
+    append_aiml_kpi_event,
+    append_aiml_kpi_events,
+    safe_increment_manual_correction_counter,
+)
 
 router = APIRouter(prefix="/api/risk-analysis", tags=["risk-analysis"])
 
@@ -40,6 +46,8 @@ class SubmitRequest(BaseModel):
     confirm: bool = False
 
 class TrainRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
+
     year: int | None = 2026
     dataset_path: str | None = None
     model_dir: str | None = None
@@ -109,6 +117,55 @@ def _save_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+
+def _safe_append_aiml_kpi_event(year: int, bucket: str, event: dict) -> None:
+    try:
+        append_aiml_kpi_event(year, bucket, event)
+    except Exception as e:
+        print(f"[aiml-kpi] failed to append {bucket}: {e}")
+
+
+def _safe_append_aiml_kpi_events(year: int, bucket: str, events: list[dict]) -> None:
+    try:
+        append_aiml_kpi_events(year, bucket, events)
+    except Exception as e:
+        print(f"[aiml-kpi] failed to append {bucket}: {e}")
+
+
+def _build_behavior_prediction_telemetry_events(inventory: dict, source_endpoint: str) -> list[dict]:
+    events: list[dict] = []
+    timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
+
+    for record in _all_hosts(inventory):
+        user_behavior = record.get("user_behavior")
+        if not isinstance(user_behavior, dict):
+            continue
+
+        hostname = str(record.get("hostname") or "").strip()
+        if not hostname:
+            continue
+
+        events.append({
+            "event_id": f"behavior_{hostname}_{timestamp}",
+            "hostname": hostname,
+            "cve": record.get("cve", ""),
+            "model_type": "user_behavior",
+            "failedLoginAttempts": user_behavior.get("failedLoginAttempts"),
+            "accessFrequency": user_behavior.get("accessFrequency"),
+            "loginConsistency": user_behavior.get("loginConsistency"),
+            "passwordResets": user_behavior.get("passwordResets"),
+            "sessionDuration": user_behavior.get("sessionDuration"),
+            "rule_score": user_behavior.get("rule_score"),
+            "ml_score": user_behavior.get("ml_score"),
+            "behaviorRiskScore": user_behavior.get("behaviorRiskScore"),
+            "likelihood": user_behavior.get("likelihood") or record.get("likelihood", ""),
+            "risk": record.get("risk", ""),
+            "source_endpoint": source_endpoint,
+        })
+
+    return events
+
 
 def _user_behavior_activity_file(year: int) -> Path:
     return _work_dir(year) / "UserBehaviorActivity.json"
@@ -1072,7 +1129,7 @@ def _train_user_behavior_model(dataset_path: Path, model_dir: Path) -> dict:
         n_estimators=400,
         max_depth=10,
         random_state=42,
-        n_jobs=-1,
+        n_jobs=1,
     )
 
     pipeline = Pipeline([
@@ -1216,11 +1273,17 @@ def run_risk_analysis(payload: AnalysisRequest):
 
     _save_json(_risk_analysis_file(year), risk_inventory)
     _set_risk_analysis_status(year, "In Progress")
+    behavior_events = _build_behavior_prediction_telemetry_events(
+        risk_inventory,
+        source_endpoint="/api/risk-analysis/analysis",
+    )
+    _safe_append_aiml_kpi_events(year, "behavior_prediction_events", behavior_events)
 
     return {
         "success": True,
         "message": "Risk analysis completed successfully.",
         "processed_hosts": len(_all_hosts(risk_inventory)),
+        "aiml_kpi_events_appended": len(behavior_events),
         "inventory": risk_inventory,
     }
     
@@ -1270,6 +1333,8 @@ def set_risk(payload: SetRiskRequest):
 
     _save_json(_risk_analysis_file(year), inventory)
     _sync_risk_analysis_status(year, inventory)
+    if old_risk != normalized_risk:
+        safe_increment_manual_correction_counter(year, "risk")
 
     return {
         "success": True,
@@ -1338,6 +1403,7 @@ def delete_risk_record(payload: DeleteRequest):
 
 @router.post("/train")
 def train_user_behavior_model(payload: TrainRequest):
+    year = int(payload.year or 2026)
     try:
         dataset_path = (
             Path(payload.dataset_path)
@@ -1358,6 +1424,24 @@ def train_user_behavior_model(payload: TrainRequest):
             model_dir = BASE_DIR / model_dir
 
         result = _train_user_behavior_model(dataset_path, model_dir)
+        _safe_append_aiml_kpi_event(year, "behavior_model_training_runs", {
+            "run_id": f"behavior_train_{datetime.now().astimezone().strftime('%Y-%m-%d_%H-%M-%S')}",
+            "model_type": "user_behavior",
+            "dataset_path": result.get("dataset_path"),
+            "model_path": result.get("model_path"),
+            "label_encoder_path": result.get("label_encoder_path"),
+            "accuracy": result.get("accuracy"),
+            "accuracy_pct": (
+                round(float(result["accuracy"]) * 100, 4)
+                if result.get("accuracy") is not None
+                else None
+            ),
+            "classification_report": result.get("classification_report"),
+            "confusion_matrix": result.get("confusion_matrix"),
+            "feature_importance": result.get("feature_importance"),
+            "sample_predictions": result.get("sample_predictions"),
+            "source_endpoint": "/api/risk-analysis/train",
+        })
         return result
 
     except Exception as e:

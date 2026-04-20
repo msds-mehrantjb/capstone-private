@@ -69,17 +69,6 @@ type MonitoringImprovementEvidence = {
   desc?: string;
 };
 
-type MonitoringImprovementRecommendResponse = {
-  success?: boolean;
-  message?: string;
-  recommended_evidence?: string[];
-  recommended_control_to_add?: {
-    control_id: string;
-    control_name: string;
-  } | null;
-  inventory?: MonitoringInventoryResponse;
-};
-
 type MonitoringImprovementHost = {
   hostname?: string;
   ip_address?: string;
@@ -105,25 +94,6 @@ type DashboardRawDTO = {
     bullets?: string[];
     body?: string;
   };
-};
-
-type AnnexRecommendItem = {
-  control_id: string;
-  control_name: string;
-  related_cves?: string[];
-  justification?: string;
-};
-
-type AnnexRecommendResponse = {
-  success?: boolean;
-  message?: string;
-  recommendations?: AnnexRecommendItem[];
-};
-
-type AnnexAddResponse = {
-  success?: boolean;
-  message?: string;
-  inventory?: MonitoringInventoryResponse;
 };
 
 type MonitoringInventoryResponse = {
@@ -297,16 +267,6 @@ async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
   }
 
   return data as T;
-}
-
-async function apiAddAnnexControl(
-  year: number,
-  control_id: string
-): Promise<AnnexAddResponse> {
-  return apiPostJSONBody<AnnexAddResponse>("/api/annex-a-soa/add", {
-    year,
-    control_id,
-  });
 }
 
 async function apiUploadEvidence(file: File): Promise<string> {
@@ -766,9 +726,6 @@ export default function MonitoringImprovement() {
   const [dashboardRaw, setDashboardRaw] = useState<DashboardRawDTO | null>(null);
   const [scopeErr, setScopeErr] = useState<string | null>(null);
 
-  const [assistantMode, setAssistantMode] = useState<null | "awaiting_add_control_id">(null);
-  const [recommendedControls, setRecommendedControls] = useState<AnnexRecommendItem[]>([]);
-
   const [editEvidenceForm, setEditEvidenceForm] = useState<EditEvidenceForm>({
     responsible: "",
     date: "",
@@ -778,7 +735,7 @@ export default function MonitoringImprovement() {
   });
 
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupText, setPopupText] = useState("");
+  const [popupText] = useState("");
 
   const [pendingAssistantAction, setPendingAssistantAction] = useState<
     null | "recreate_annex" | "reset_annex" | "delete_annex_row" | "delete_evidence" | "submit_annex"
@@ -796,8 +753,8 @@ export default function MonitoringImprovement() {
         "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" + 
         "/edit       → Edit evidence for selected host\n" +
         "/submit     → Submit the table\n" +
-        "/help       → Explain this section\n" +
-        "/commands   → Display available commands",
+        "/commands   → Display available commands\n" +
+        "/help       → Explain this section",
     },
   ]);
   const [input, setInput] = useState("");
@@ -1164,62 +1121,6 @@ export default function MonitoringImprovement() {
   };  
     
 
-  const handleRecommendForAllControls = async () => {
-    if (!monitoringImprovementControls.length) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "No controls found in the table." },
-      ]);
-      return;
-    }
-
-    setSending(true);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "Please wait, generating recommended monitoring actions for ALL controls using ISO 27001:2022 and LLM reasoning...",
-      },
-    ]);
-
-    try {
-      for (const control of monitoringImprovementControls) {
-        await apiRecommendAction(YEAR, control.CVE);
-      }
-
-      // reload updated inventory
-      const updated = await apiGetMonitoringImprovementInventory(YEAR);
-
-      setMonitoringImprovementControls( 
-        Array.isArray(updated?.cves) ? updated.cves : []
-      );
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "Recommended monitoring actions generated for ALL vulnerabilities.",
-        },
-      ]);
-    } catch (e) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            e instanceof Error
-              ? e.message
-              : "Error generating monitoring actions.",
-        },
-      ]);
-    } finally {
-      setSending(false);
-    }
-  };
-    
   const handleConfirmRecreateYes = async () => {
     setConfirmRecreateOpen(false);
     await createMonitoringImprovementTableConfirmed();
@@ -1615,77 +1516,6 @@ export default function MonitoringImprovement() {
   };
 
     
-  const handleStartAddCommand = () => {
-    if (!Array.isArray(recommendedControls) || recommendedControls.length === 0) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Recommendation list is empty. Run /recommend first, then use /add.",
-        },
-      ]);
-      scrollChatToBottom();
-      return;
-    }
-
-    setAssistantMode("awaiting_add_control_id");
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "Enter control id from the recommendation list.\n\nAvailable control ids:\n" +
-          recommendedControls.map((item) => item.control_id).join(", "),
-      },
-    ]);
-
-    scrollChatToBottom();
-  };
-
-  const handleAddControlToTable = async (controlId: string) => {
-    setSending(true);
-
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "Please wait, while system is adding the selected control to the table using Qwen reasoning.",
-      },
-    ]);
-
-    try {
-      const data = await apiAddAnnexControl(YEAR, controlId);
-
-      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
-
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: data?.message || `Control ${controlId} was added successfully.`,
-        };
-        return updated;
-      });
-
-      setAssistantMode(null);
-    } catch (e) {
-      setMessages((prev) => {
-        const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content:
-            e instanceof Error ? e.message : "Backend error while adding the selected control.",
-        };
-        return updated;
-      });
-    } finally {
-      setSending(false);
-      scrollChatToBottom();
-    }
-  };
-
   const handleSubmitMonitoringImprovement = async () => {
     setSending(true);
 
@@ -1767,8 +1597,8 @@ export default function MonitoringImprovement() {
             "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" + 
             "/edit       → Edit evidence for selected host\n" +
             "/submit     → Submit the table\n" +
-            "/help       → Explain this section\n" +
-            "/commands   → Display available commands",
+            "/commands   → Display available commands\n" +
+            "/help       → Explain this section",
         },
       ]);
       scrollChatToBottom();
@@ -2166,7 +1996,7 @@ export default function MonitoringImprovement() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /create /recommend /delete /add /evidence /edit /submit /help /commands
+          Command mode: /create /recommend /delete /add /evidence /edit /submit /commands /help
         </div>
       </div>
     </ShellCard>

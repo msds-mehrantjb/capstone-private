@@ -1,4 +1,4 @@
-AI/ML Dashboard jsdon
+AI/ML Dashboard json
 
 {
   "meta": {
@@ -15,15 +15,7 @@ AI/ML Dashboard jsdon
         "name": "Example Audit Scope",
         "asset_count": 24
       },
-      "status": {
-        "asset_inventory_cia": "Completed",
-        "threats_vulnerabilities": "Completed",
-        "risk_analysis": "Completed",
-        "annex_a_soa": "Completed",
-        "action_plan_implementation": "In Progress",
-        "monitoring_improvement": "In Progress"
-      },
-      "kpis": {
+       "kpis": {
         "core_ml": {
           "role_prediction_accuracy_pct": {
             "value": 91.4,

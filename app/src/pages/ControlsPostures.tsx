@@ -390,12 +390,12 @@ export default function ControlsPostures() {
       content:
         "Existing Controls & Postures — Command Mode\n\n" +
         "Available commands:\n" +
-        "/help        → Explain this section\n" +
-        "/commands    → Show available commands\n" +
         "/assess      → Existing controls and postures assessment\n" +
         "/submit      → Submit this section\n" +
         "/reset       → Clear controls and postures section\n" +
-        "/exit        → Exit current mode",
+        "/exit        → Exit current mode\n" +
+        "/commands    → Show available commands\n" +
+        "/help        → Explain this section",
     },
   ]);
 
@@ -409,23 +409,6 @@ export default function ControlsPostures() {
       cia_rating: h.cia_rating || h.CIA_rating || "Unscanned",
     }));
   }, [cpData]);
-    
-  const NAV_ITEMS = useMemo(
-    () => [
-      { step: 1, name: "Scope & Context", href: "#/scope" },
-      { step: 2, name: "Asset Inventory & CIA", href: "#/assets" },
-      { step: 3, name: "Threats & Vulnerabilities", href: "#/threats" },
-      { step: 4, name: "Existing Controls & Posture", href: "#/controls" },
-      { step: 5, name: "Risk Analysis", href: "#/" },
-      { step: 6, name: "Risk Evaluation", href: "#/" },
-      { step: 7, name: "Risk Treatment", href: "#/" },
-      { step: 8, name: "Annex A & SoA", href: "#/" },
-      { step: 9, name: "Action Plan / Implementation", href: "#/" },
-      { step: 10, name: "Monitoring & Improvement", href: "#/" },
-      { step: 11, name: "Final Deliverables", href: "#/" },
-    ],
-    []
-  );
     
   const LEFT_MENU_ITEMS = useMemo(
     () => [
@@ -465,7 +448,7 @@ export default function ControlsPostures() {
 
       return (
         sum +
-        Object.values(controls).reduce(
+        Object.values(controls).reduce<number>(
           (innerSum, arr) => innerSum + (Array.isArray(arr) ? arr.length : 0),
           0
         )
@@ -805,12 +788,12 @@ export default function ControlsPostures() {
             role: "assistant",
             content:
               "Available commands:\n" +
-              "/help        → Explain this section\n" +
-              "/commands    → Show available commands\n" +
               "/assess      → Existing controls and postures assessment\n" +
               "/submit      → Submit this section\n" +
               "/reset       → Clear controls and postures section\n" +
-              "/exit        → Exit current mode",
+              "/exit        → Exit current mode\n" +
+              "/commands    → Show available commands\n" +
+              "/help        → Explain this section",
           },
         ]);
         return;
@@ -1217,7 +1200,7 @@ export default function ControlsPostures() {
                 </div>
 
                 <div className="mt-3 shrink-0 text-xs text-slate-500">
-                  Command mode: /help /commands /assess /submit /reset /exit
+                  Command mode: /assess /submit /reset /exit /commands /help
                 </div>
               </div>
             </ShellCard>
@@ -1567,7 +1550,7 @@ export default function ControlsPostures() {
               </div>
 
               <div className="mt-3 shrink-0 text-xs text-slate-500">
-                Command mode: /help /commands /assess /submit /reset /exit
+                Command mode: /assess /submit /reset /exit /commands /help
               </div>
             </div>
           </ShellCard>

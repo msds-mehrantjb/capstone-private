@@ -11,6 +11,8 @@ from app.rag.chroma_client import get_chroma_client
 from app.rag.ingest import ingest_documents
 from app.rag.query import rag_query
 
+from app.api.aiml_kpi_telemetry import safe_increment_rag_counter
+
 
 # IMPORTANT: this name must be `router`
 router = APIRouter(prefix="/rag", tags=["RAG"])
@@ -36,6 +38,25 @@ class QueryRequest(BaseModel):
     top_k: int = Field(5, ge=1, le=20)
     embedding_model: str = Field("sentence-transformers/all-MiniLM-L6-v2")
     where: Optional[Dict[str, Any]] = None
+    year: int = Field(2026, ge=2000, le=2100)
+
+
+def _rag_result_has_hits(result: Any) -> bool:
+    if isinstance(result, list):
+        return len(result) > 0
+    if not isinstance(result, dict):
+        return bool(result)
+
+    for key in ("results", "documents", "ids", "matches"):
+        value = result.get(key)
+        if not isinstance(value, list):
+            continue
+        for item in value:
+            if isinstance(item, list) and item:
+                return True
+            if not isinstance(item, list) and item:
+                return True
+    return False
 
 
 @router.get("/collections")
@@ -58,10 +79,15 @@ async def ingest(req: IngestRequest):
 
 @router.post("/query")
 async def query(req: QueryRequest):
-    return rag_query(
-        collection=req.collection,
-        query=req.query,
-        top_k=req.top_k,
-        embedding_model=req.embedding_model,
-        where=req.where,
-    )
+    try:
+        result = rag_query(
+            query_text=req.query,
+            n_results=req.top_k,
+            where=req.where,
+        )
+    except Exception:
+        safe_increment_rag_counter(req.year, success=False)
+        raise
+
+    safe_increment_rag_counter(req.year, success=_rag_result_has_hits(result))
+    return result

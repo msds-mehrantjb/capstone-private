@@ -5,26 +5,15 @@
       "control_name": "Remote working",
       "domain": "People Controls",
       "applicable": true,
-      "implementation_status": "Planned",
-      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "implementation_status": "Implemented",
+      "justification": "Control 6.7 (Remote working) is recommended to address vulnerabilities such as WinRM Remote Command Execution Exposure across affected File Server assets and support the selected mitigation treatment.",
       "related_risks": [
-        "CVE-2020-1350",
         "CVE-2021-31166"
       ],
       "risk_ids": [
-        "R-002",
         "R-008"
       ],
       "source_records": [
-        {
-          "hostname": "SRV-01",
-          "role": "Domain Controller (Active Directory)",
-          "riskid": "R-002",
-          "risk": "Critical",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
-        },
         {
           "hostname": "SRV-03",
           "role": "File Server",
@@ -32,7 +21,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "Control 6.7 (Remote working) is recommended to address vulnerabilities such as WinRM Remote Command Execution Exposure across affected File Server assets and support the selected mitigation treatment."
         }
       ]
     },
@@ -41,8 +30,8 @@
       "control_name": "Network security",
       "domain": "Technological Controls",
       "applicable": true,
-      "implementation_status": "In Progress",
-      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "implementation_status": "Planned",
+      "justification": "Control 8.2 (Network security) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege across affected Domain Controller (Active Directory) assets and support the selected mitigation treatment.",
       "related_risks": [
         "CVE-2020-1472"
       ],
@@ -57,7 +46,7 @@
           "risk": "Critical",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "Control 8.2 (Network security) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege across affected Domain Controller (Active Directory) assets and support the selected mitigation treatment."
         }
       ]
     },
@@ -67,7 +56,7 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "justification": "This control focuses on securing services, which is essential for mitigating network-based exploitation risks associated with the vulnerability.",
       "related_risks": [
         "CVE-2020-1350",
         "CVE-2017-0144",
@@ -90,7 +79,7 @@
           "risk": "Critical",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "This control focuses on securing services, which is essential for mitigating network-based exploitation risks associated with the vulnerability."
         },
         {
           "hostname": "SRV-02",
@@ -99,7 +88,7 @@
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "The vulnerability is network-based, so securing network services is essential to mitigate exploitation."
+          "reason": "Control 8.21 (Network services security) is recommended to address vulnerabilities such as Windows DNS Server Remote Code Execution, SMB Remote Code Execution, WinRM Remote Command Execution Exposure across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-03",
@@ -108,7 +97,7 @@
           "risk": "High",
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "Control 8.21 (Network services security) is recommended to address vulnerabilities such as Windows DNS Server Remote Code Execution, SMB Remote Code Execution, WinRM Remote Command Execution Exposure across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-03",
@@ -117,7 +106,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "Control 8.21 (Network services security) is recommended to address vulnerabilities such as Windows DNS Server Remote Code Execution, SMB Remote Code Execution, WinRM Remote Command Execution Exposure across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-04",
@@ -126,7 +115,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "The vulnerability can be exploited over the network, so securing network services is essential to prevent unauthorized access and exploitation."
+          "reason": "Control 8.21 (Network services security) is recommended to address vulnerabilities such as Windows DNS Server Remote Code Execution, SMB Remote Code Execution, WinRM Remote Command Execution Exposure across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-04",
@@ -135,32 +124,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "This control is relevant as the vulnerability involves network-based exploitation, and securing network services can help prevent unauthorized access and exploitation of the vulnerability."
-        }
-      ]
-    },
-    {
-      "control_id": "8.23",
-      "control_name": "Web filtering",
-      "domain": "Technological Controls",
-      "applicable": true,
-      "implementation_status": "In Progress",
-      "justification": "Web filtering can help prevent malicious traffic that may exploit the vulnerability.",
-      "related_risks": [
-        "CVE-2020-1350"
-      ],
-      "risk_ids": [
-        "R-003"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-02",
-          "role": "DNS Server",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "reason": "Web filtering can help prevent malicious traffic that may exploit the vulnerability."
+          "reason": "This control focuses on securing network services, which is essential for mitigating network-based exploitation risks identified in the query."
         }
       ]
     },
@@ -170,150 +134,58 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "Fallback from retrieval because LLM returned no valid controls.",
-      "related_risks": [
-        "CVE-2017-0144",
-        "CVE-2021-44228"
-      ],
-      "risk_ids": [
-        "R-007",
-        "R-009"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-03",
-          "role": "File Server",
-          "riskid": "R-007",
-          "risk": "High",
-          "vulnerability_name": "SMB Remote Code Execution",
-          "cve": "CVE-2017-0144",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
-        },
-        {
-          "hostname": "SRV-04",
-          "role": "Application Server",
-          "riskid": "R-009",
-          "risk": "High",
-          "vulnerability_name": "Web Application Remote Code Execution",
-          "cve": "CVE-2021-44228",
-          "reason": "The vulnerability arises from insecure coding practices in the application, which can be mitigated through secure coding standards and practices."
-        }
-      ]
-    },
-    {
-      "control_id": "8.7",
-      "control_name": "Protection against malware",
-      "domain": "Technological Controls",
-      "applicable": true,
-      "implementation_status": "Implemented",
-      "justification": "The control is needed due to unpatched systems, exposed services, and misconfigurations that increase the risk of malware attacks. These weaknesses allow unauthorized access and execution of malicious code, which can compromise system integrity and data confidentiality.",
+      "justification": "Control 8.28 (Secure coding) is recommended to address vulnerabilities such as Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected DNS Server, File Server assets and support the selected mitigation treatment.",
       "related_risks": [
         "CVE-2020-1350",
-        "CVE-2021-31166",
-        "CVE-2020-1472",
-        "CVE-2017-0144",
-        "CVE-2021-44228"
+        "CVE-2017-0144"
       ],
       "risk_ids": [
-        "R-002",
-        "R-008",
-        "R-001",
         "R-003",
-        "R-007",
-        "R-009",
-        "R-010"
+        "R-007"
       ],
       "source_records": [
         {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller (Active Directory)",
-          "CIA rating": "",
-          "riskid": "R-002",
-          "risk": "Critical",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
-        },
-        {
-          "hostname": "SRV-03",
-          "ip_address": "",
-          "role": "File Server",
-          "CIA rating": "",
-          "riskid": "R-008",
-          "risk": "High",
-          "vulnerability_name": "WinRM Remote Command Execution Exposure",
-          "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
-        },
-        {
-          "hostname": "SRV-01",
-          "ip_address": "",
-          "role": "Domain Controller (Active Directory)",
-          "CIA rating": "",
-          "riskid": "R-001",
-          "risk": "Critical",
-          "vulnerability_name": "Netlogon Elevation of Privilege",
-          "cve": "CVE-2020-1472",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
-        },
-        {
           "hostname": "SRV-02",
-          "ip_address": "",
           "role": "DNS Server",
-          "CIA rating": "",
           "riskid": "R-003",
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+          "reason": "Control 8.28 (Secure coding) is recommended to address vulnerabilities such as Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-03",
-          "ip_address": "",
           "role": "File Server",
-          "CIA rating": "",
           "riskid": "R-007",
           "risk": "High",
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
-        },
+          "reason": "Control 8.28 (Secure coding) is recommended to address vulnerabilities such as Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected DNS Server, File Server assets and support the selected mitigation treatment."
+        }
+      ]
+    },
+    {
+      "control_id": "8.29",
+      "control_name": "Security testing",
+      "domain": "Technological Controls",
+      "applicable": true,
+      "implementation_status": "In Progress",
+      "justification": "This control helps validate the security measures in place, ensuring that the vulnerability has been effectively addressed.",
+      "related_risks": [
+        "CVE-2020-1350"
+      ],
+      "risk_ids": [
+        "R-002"
+      ],
+      "source_records": [
         {
-          "hostname": "SRV-04",
-          "ip_address": "",
-          "role": "Application Server",
-          "CIA rating": "",
-          "riskid": "R-009",
-          "risk": "High",
-          "vulnerability_name": "Web Application Remote Code Execution",
-          "cve": "CVE-2021-44228",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
-        },
-        {
-          "hostname": "SRV-04",
-          "ip_address": "",
-          "role": "Application Server",
-          "CIA rating": "",
-          "riskid": "R-010",
-          "risk": "High",
-          "vulnerability_name": "WinRM Remote Command Execution Exposure",
-          "cve": "CVE-2021-31166",
-          "evaluation": "",
-          "treatment": "",
-          "reason": "Recommended from Annex A & SoA analysis for control 8.7."
+          "hostname": "SRV-01",
+          "role": "Domain Controller (Active Directory)",
+          "riskid": "R-002",
+          "risk": "Critical",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "This control helps validate the security measures in place, ensuring that the vulnerability has been effectively addressed."
         }
       ]
     },
@@ -323,7 +195,7 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "Fallback from retrieval because LLM returned no valid controls.",
+      "justification": "Control 8.8 (Technical vulnerability management) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege, Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment.",
       "related_risks": [
         "CVE-2020-1472",
         "CVE-2020-1350",
@@ -348,7 +220,7 @@
           "risk": "Critical",
           "vulnerability_name": "Netlogon Elevation of Privilege",
           "cve": "CVE-2020-1472",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege, Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-01",
@@ -357,7 +229,7 @@
           "risk": "Critical",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "This control is designed to manage vulnerabilities, which is directly relevant to addressing the critical vulnerability described in the query."
         },
         {
           "hostname": "SRV-02",
@@ -366,7 +238,7 @@
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "The vulnerability is a technical issue that requires management through vulnerability management processes."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege, Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-03",
@@ -375,7 +247,7 @@
           "risk": "High",
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege, Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-03",
@@ -384,7 +256,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "Fallback from retrieval because LLM returned no valid controls."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege, Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-04",
@@ -393,7 +265,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "The vulnerability is a known technical weakness that requires systematic identification, evaluation, and remediation."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended to address vulnerabilities such as Netlogon Elevation of Privilege, Windows DNS Server Remote Code Execution, SMB Remote Code Execution across affected Domain Controller (Active Directory), DNS Server, File Server assets and support the selected mitigation treatment."
         },
         {
           "hostname": "SRV-04",
@@ -402,7 +274,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "This control directly addresses the management of technical vulnerabilities, which is essential for mitigating the risks posed by the identified CVE-2021-31166 vulnerability."
+          "reason": "This control is designed to manage technical vulnerabilities, which directly addresses the critical technical vulnerability mentioned in the query."
         }
       ]
     },
@@ -412,7 +284,7 @@
       "domain": "Technological Controls",
       "applicable": true,
       "implementation_status": "In Progress",
-      "justification": "The vulnerability is related to misconfigurations in the application server's logging configuration, which can be addressed through secure configuration practices.",
+      "justification": "Control 8.9 (Configuration management) is recommended to address vulnerabilities such as Web Application Remote Code Execution across affected Application Server assets and support the selected mitigation treatment.",
       "related_risks": [
         "CVE-2021-44228"
       ],
@@ -427,7 +299,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "The vulnerability is related to misconfigurations in the application server's logging configuration, which can be addressed through secure configuration practices."
+          "reason": "Control 8.9 (Configuration management) is recommended to address vulnerabilities such as Web Application Remote Code Execution across affected Application Server assets and support the selected mitigation treatment."
         }
       ]
     }

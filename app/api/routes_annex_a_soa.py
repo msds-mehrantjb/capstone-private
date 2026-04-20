@@ -11,6 +11,12 @@ import pandas as pd
 import requests
 from pydantic import BaseModel
 
+from app.api.aiml_kpi_telemetry import (
+    ollama_total_tokens,
+    safe_increment_llm_counter,
+    safe_increment_rag_counter,
+)
+
 
 router = APIRouter(prefix="/api/annex-a-soa", tags=["annex-a-soa"])
 
@@ -78,6 +84,14 @@ def _work_dir(year: int) -> Path:
     return BASE_DIR / "data" / "work" / str(year)
 
 
+def _models_dir() -> Path:
+    return BASE_DIR / "data" / "models"
+
+
+def _knowledge_base_dir() -> Path:
+    return BASE_DIR / "data" / "knowledge_base"
+
+
 def _annex_a_soa_file(year: int) -> Path:
     return _work_dir(year) / "AnnexA_SoA.json"
 
@@ -99,11 +113,11 @@ def _system_status_file(year: int) -> Path:
 
 
 def _controls_csv_file(year: int) -> Path:
-    return _work_dir(year) / "iso27002_controls_2022.csv"
+    return _knowledge_base_dir() / "iso27002_controls_2022.csv"
 
 
 def _embed_cache_file(year: int) -> Path:
-    return _work_dir(year) / "iso27002_local_embeddings.pkl"
+    return _models_dir() / "iso27002_local_embeddings.pkl"
 
 
 # =========================================================
@@ -213,6 +227,98 @@ def _normalize_key(value: Any) -> str:
     return _normalize_text(value).lower()
 
 
+GENERIC_RETRIEVAL_FALLBACK_REASON = "Fallback from retrieval because LLM returned no valid controls."
+
+
+def _is_generic_retrieval_fallback_reason(value: Any) -> bool:
+    return _normalize_text(value).lower() == GENERIC_RETRIEVAL_FALLBACK_REASON.lower()
+
+
+def _unique_nonempty(values: list[Any], limit: int = 3) -> list[str]:
+    unique = []
+    seen = set()
+
+    for value in values:
+        text = _normalize_text(value)
+        key = text.lower()
+        if text == "" or key in seen:
+            continue
+        seen.add(key)
+        unique.append(text)
+        if len(unique) >= limit:
+            break
+
+    return unique
+
+
+def _source_record_context(source_records: Any) -> str:
+    if not isinstance(source_records, list):
+        return ""
+
+    records = [item for item in source_records if isinstance(item, dict)]
+    vulnerabilities = _unique_nonempty([item.get("vulnerability_name") for item in records])
+    risks = _unique_nonempty([item.get("risk") for item in records])
+    roles = _unique_nonempty([item.get("role") for item in records])
+
+    context_parts = []
+    if vulnerabilities:
+        context_parts.append(f"vulnerabilities such as {', '.join(vulnerabilities)}")
+    elif risks:
+        context_parts.append(f"risks such as {', '.join(risks)}")
+
+    if roles:
+        context_parts.append(f"affected {', '.join(roles)} assets")
+
+    return " across ".join(context_parts)
+
+
+def _build_contextual_control_justification(
+    control_id: str,
+    control_name: str,
+    source_records: Any = None,
+    purpose: str = "",
+    traits: Any = None,
+) -> str:
+    control_label = _normalize_text(control_id)
+    name = _normalize_text(control_name)
+    if name:
+        control_label = f"{control_label} ({name})" if control_label else name
+
+    source_context = _source_record_context(source_records)
+    trait_values = _unique_nonempty(traits if isinstance(traits, list) else [])
+    trait_context = ", ".join(trait_values)
+    purpose_text = _normalize_text(purpose).rstrip(".")
+
+    if source_context:
+        return (
+            f"Control {control_label} is recommended to address {source_context} "
+            "and support the selected mitigation treatment."
+        )
+
+    if trait_context and purpose_text:
+        return (
+            f"Control {control_label} is recommended because the risk context includes "
+            f"{trait_context}; its ISO 27002 purpose is {purpose_text}."
+        )
+
+    if trait_context:
+        return (
+            f"Control {control_label} is recommended because the risk context includes "
+            f"{trait_context}."
+        )
+
+    if purpose_text:
+        return (
+            f"Control {control_label} is recommended because its ISO 27002 purpose is "
+            f"{purpose_text}."
+        )
+
+    return (
+        f"Control {control_label} is recommended based on the retrieved ISO 27002 "
+        "match and the current risk evaluation context."
+    )
+
+
 def normalize_text(text: str) -> str:
     return re.sub(r"\s+", " ", str(text).lower()).strip()
 
@@ -237,7 +343,11 @@ def _safe_json_loads(value: str) -> Any:
         return None
 
 
-def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dict]) -> dict:
+def _normalize_llm_controls_payload(
+    raw_payload: Any,
+    allowed_controls: list[dict],
+    fallback_traits: Any = None,
+) -> dict:
     """
     Normalize LLM output into:
     {
@@ -270,6 +380,8 @@ def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dic
         allowed_map[_normalize_key(cid)] = {
             "control_id": cid,
             "control_name": _normalize_text(item.get("control_name")),
+            "section": _normalize_text(item.get("section")),
+            "purpose": _normalize_text(item.get("purpose")),
         }
 
     normalized = {
@@ -398,7 +510,12 @@ def _normalize_llm_controls_payload(raw_payload: Any, allowed_controls: list[dic
             normalized["controls"].append({
                 "control_id": fallback_id,
                 "control_name": fallback_name,
-                "reason": "Fallback from retrieval because LLM returned no valid controls.",
+                "reason": _build_contextual_control_justification(
+                    control_id=fallback_id,
+                    control_name=fallback_name,
+                    purpose=_normalize_text(item.get("purpose")),
+                    traits=fallback_traits,
+                ),
             })
 
     return normalized
@@ -1112,6 +1229,13 @@ def _build_action_plan_doc(year: int, annex_doc: dict) -> dict:
         if not isinstance(source_records, list):
             source_records = []
 
+        if _is_generic_retrieval_fallback_reason(justification):
+            justification = _build_contextual_control_justification(
+                control_id=control_id,
+                control_name=control_name,
+                source_records=source_records,
+            )
+
         hosts = []
         for record in source_records:
             if isinstance(record, dict):
@@ -1382,7 +1506,7 @@ def build_query_from_record(record: dict) -> str:
     return " ".join(str(x or "") for x in parts).strip()
 
 
-def retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K):
+def retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K, year: int = 2026):
     query_embedding = get_embedding(query_text)
     query_tokens = tokenize(query_text)
 
@@ -1431,9 +1555,11 @@ def retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K):
         })
 
     scored.sort(key=lambda x: x["final_score"], reverse=True)
-    return scored[:top_k]
+    retrieved = scored[:top_k]
+    safe_increment_rag_counter(year, success=bool(retrieved))
+    return retrieved
 
-def _generate_control_info_with_llama3(info_context: dict) -> dict:
+def _generate_control_info_with_llama3(info_context: dict, year: int = 2026) -> dict:
     control_id = _normalize_text(info_context.get("control_id"))
     control_name = _normalize_text(info_context.get("control_name"))
     domain = _normalize_text(info_context.get("domain"))
@@ -1515,7 +1641,9 @@ Output Requirements:
     )
     response.raise_for_status()
 
-    raw = response.json().get("response", "")
+    response_data = response.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(response_data))
+    raw = response_data.get("response", "")
     parsed = _safe_json_loads(raw)
 
     if not isinstance(parsed, dict):
@@ -1562,7 +1690,7 @@ def _apply_create_like_context_to_control(year: int, control: dict) -> dict:
         return control
 
     try:
-        llm_info = _generate_control_info_with_llama3(info_context)
+        llm_info = _generate_control_info_with_llama3(info_context, year=year)
     except Exception:
         llm_info = None
 
@@ -1593,7 +1721,7 @@ def _remove_cve_references(text: str) -> str:
     return re.sub(r"CVE-\d{4}-\d{4,7}", "", text, flags=re.IGNORECASE)
 
     
-def ask_llama3_for_controls(risk_id: str, query_text: str, traits, retrieved_controls):
+def ask_llama3_for_controls(risk_id: str, query_text: str, traits, retrieved_controls, year: int = 2026):
     allowed_controls = []
 
     for item in retrieved_controls:
@@ -1648,10 +1776,16 @@ Return valid JSON only.
     )
     response.raise_for_status()
 
-    raw = response.json().get("response", "")
+    response_data = response.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(response_data))
+    raw = response_data.get("response", "")
     parsed = _safe_json_loads(raw)
 
-    normalized = _normalize_llm_controls_payload(parsed, allowed_controls)
+    normalized = _normalize_llm_controls_payload(
+        parsed,
+        allowed_controls,
+        fallback_traits=traits,
+    )
     if normalized["risk"] == "":
         normalized["risk"] = risk_id
 
@@ -1665,7 +1799,7 @@ def _safe_fetch_cve_description(cve_id: str) -> tuple[str, str | None]:
         return "", None
 
 
-def map_record_to_controls(record: dict, embedded_records: list[dict]) -> dict:
+def map_record_to_controls(record: dict, embedded_records: list[dict], year: int = 2026) -> dict:
     cve_id = _normalize_text(record.get("cve"))
     risk_id = _normalize_text(record.get("riskid")) or cve_id or _normalize_text(record.get("risk"))
 
@@ -1682,13 +1816,14 @@ def map_record_to_controls(record: dict, embedded_records: list[dict]) -> dict:
 
     traits = extract_traits_from_text(query_text, severity)
 
-    retrieved = retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K)
+    retrieved = retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K, year=year)
 
     llm_answer = ask_llama3_for_controls(
         risk_id=risk_id,
         query_text=query_text,
         traits=traits,
         retrieved_controls=retrieved,
+        year=year,
     )
 
     controls = _extract_valid_controls_from_llm_answer(llm_answer)
@@ -1731,7 +1866,7 @@ def _build_annex_from_risk_eval(year: int) -> dict:
 
     for record in applicable_records:
         try:
-            result = map_record_to_controls(record, embedded_records)
+            result = map_record_to_controls(record, embedded_records, year=year)
             risk_id = result["risk_id"]
             cve_id = result["cve"]
 
@@ -1746,6 +1881,14 @@ def _build_annex_from_risk_eval(year: int) -> dict:
                 control_id = _normalize_text(control.get("control_id"))
                 control_name = _normalize_text(control.get("control_name"))
                 reason = _normalize_text(control.get("reason"))
+
+                if _is_generic_retrieval_fallback_reason(reason):
+                    reason = _build_contextual_control_justification(
+                        control_id=control_id,
+                        control_name=control_name,
+                        source_records=[record],
+                        traits=result.get("traits"),
+                    )
 
                 if not control_id:
                     continue
@@ -2032,7 +2175,7 @@ def _build_single_control_from_rag(year: int, target_control_id: str) -> dict | 
 
     for record in applicable_records:
         try:
-            result = map_record_to_controls(record, embedded_records)
+            result = map_record_to_controls(record, embedded_records, year=year)
             controls = result.get("llm_answer", {}).get("controls", [])
             
             if not isinstance(controls, list):
@@ -2612,7 +2755,7 @@ def get_recommended_control_info(payload: InfoRequest):
         }
 
     try:
-        llm_info = _generate_control_info_with_llama3(info_context)
+        llm_info = _generate_control_info_with_llama3(info_context, year=year)
     except Exception as e:
         return {
             "success": False,

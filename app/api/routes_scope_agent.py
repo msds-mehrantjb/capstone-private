@@ -320,8 +320,6 @@ HELP_TEXT = (
 
 COMMANDS_TEXT = (
     "Available commands:\n\n"
-    "/help — more information\n"
-    "/commands — available commands\n"
     "/fill — fill the scope document in conversation mode\n"
     "/autofill — load a specified version of the scope document (or samples)\n"
     "/load — load latest saved versions (non-v0) as buttons\n"
@@ -329,6 +327,8 @@ COMMANDS_TEXT = (
     "/cancel — discard unsaved changes and reload the latest saved version\n"
     "/reset — reset to the baseline template (v0)\n"
     "/exit — exit fill mode\n"
+    "/commands — available commands\n"
+    "/help — more information\n"
 )
 
 # -------------------------

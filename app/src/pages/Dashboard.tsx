@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
+type Tone = "emerald" | "sky" | "amber" | "rose" | "slate";
 
 type SystemStatusDTO = {
   meta: { name: string; version: string };
@@ -42,6 +43,12 @@ type DashboardRawDTO = {
     soa?: {
       status?: StepStatus;
       count?: number;
+      label?: string;
+      pending_approvals?: number;
+    };
+    high_risk_critical_impact?: {
+      high_risk_count?: number;
+      critical_impact_count?: number;
     };
   };
   scope_context_section2?: {
@@ -159,7 +166,7 @@ function Pill({
   tone,
   children,
 }: {
-  tone: "emerald" | "sky" | "amber" | "rose" | "slate";
+  tone: Tone;
   children: React.ReactNode;
 }) {
   const map: Record<typeof tone, string> = {
@@ -191,17 +198,17 @@ function KpiCard({
   value: React.ReactNode;
   subtitle: React.ReactNode;
   icon: React.ReactNode;
-  accent: "amber" | "emerald" | "rose" | "slate";
-  progressTone?: "amber" | "emerald" | "rose" | "slate";
+  accent: Tone;
+  progressTone?: Tone;
   progressPct?: number;
   showProgress?: boolean;
 }) {
   const badge =
     accent === "amber"
       ? "bg-amber-500/15 ring-1 ring-amber-500/25 text-amber-200"
-      : accent === "emerald"
+    : accent === "emerald"
       ? "bg-emerald-500/15 ring-1 ring-emerald-500/25 text-emerald-200"
-      : accent === "rose"
+    : accent === "rose"
       ? "bg-rose-500/15 ring-1 ring-rose-500/25 text-rose-200"
       : "bg-white/5 ring-1 ring-white/10 text-slate-200";
 
@@ -242,7 +249,7 @@ function KpiCard({
   );
 }
 
-const labelTone = (s: StepStatus): "emerald" | "sky" | "amber" | "rose" => {
+const labelTone = (s: StepStatus): Tone => {
   if (s === "Completed") return "emerald";
   if (s === "In Progress") return "amber";
   if (s === "Not Started") return "sky";
@@ -596,9 +603,7 @@ export default function Dashboard() {
                 {lifecycle.map((s) => (
                   <div
                     key={s.step}
-                    className={`flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10 ${
-                      s.step === 11 ? "md:col-span-2" : ""
-                    }`}
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-xs ring-1 ring-white/10">
@@ -867,9 +872,7 @@ export default function Dashboard() {
               {lifecycle.map((s) => (
                 <div
                   key={s.step}
-                  className={`flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10 ${
-                    s.step === 11 ? "md:col-span-2" : ""
-                  }`}
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-xs ring-1 ring-white/10">

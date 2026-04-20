@@ -328,7 +328,7 @@ export default function AnnexASoA() {
   const [scopeErr, setScopeErr] = useState<string | null>(null);
 
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupText, setPopupText] = useState("");
+  const [popupText] = useState("");
 
   const [pendingAssistantAction, setPendingAssistantAction] = useState<
     null | "recreate_annex" | "reset_annex" | "delete_annex_row" | "submit_annex"
@@ -346,8 +346,8 @@ export default function AnnexASoA() {
         "/add       → Add a control from the recommendation list\n" +
         "/info      → Show information about a control\n" +
         "/submit    → Finalize and lock the table\n" +
-        "/help      → Provide an overview of this section\n" +
-        "/commands  → Display available commands",
+        "/commands  → Display available commands\n" +
+        "/help      → Provide an overview of this section",
     },
   ]);
 
@@ -1152,8 +1152,8 @@ export default function AnnexASoA() {
             "/add: Add a control from the recommendation list\n" +
             "/info: Show information about a control\n" +
             "/submit: Finalize and lock the table\n" +
-            "/help: Provide an overview of this section\n" +
-            "/commands: Display available commands",
+            "/commands: Display available commands\n" +
+            "/help: Provide an overview of this section",
         },
       ]);
       scrollChatToBottom();
@@ -1224,7 +1224,7 @@ export default function AnnexASoA() {
           <div className="px-3 py-3">Control Name</div>
           <div className="px-3 py-3">Implementation Status</div>
           <div className="px-3 py-3">Justification</div>
-          <div className="px-3 py-3">Risks</div>
+          <div className="px-3 py-3">Vulnerabilities</div>
         </div>
 
         {controls.length === 0 ? (
@@ -1355,7 +1355,7 @@ export default function AnnexASoA() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /create /reset /delete /recommend /add /info /submit /help /commands
+          Command mode: /create /reset /delete /recommend /add /info /submit /commands /help
         </div>
       </div>
     </ShellCard>

@@ -280,13 +280,17 @@ function MarkdownPrintReady({ content }: { content: string }) {
             thead: ({ children }) => (
               <thead className="bg-slate-100">{children}</thead>
             ),
-            th: ({ children, ...props }) => {
+            th: ({ children, ...props }: any) => {
+              const { node, ref, ...cellProps } = props;
+              void node;
+              void ref;
+
               const isGroupedHeader =
-                props.colSpan && Number(props.colSpan) > 1;
+                cellProps.colSpan && Number(cellProps.colSpan) > 1;
 
               return (
                 <th
-                  {...props}
+                  {...cellProps}
                   className={`border border-slate-300 px-3 py-2 font-semibold text-black ${
                     isGroupedHeader ? "bg-slate-200 text-center" : "text-left"
                   }`}
@@ -295,7 +299,11 @@ function MarkdownPrintReady({ content }: { content: string }) {
                 </th>
               );
             },
-            td: ({ children, ...props }) => {
+            td: ({ children, ...props }: any) => {
+              const { node, ref, ...cellProps } = props;
+              void node;
+              void ref;
+
               const value = String(children ?? "").trim();
               const isConfidence =
                 value.match(/^\d+(\.\d+)?$/) ||
@@ -303,7 +311,7 @@ function MarkdownPrintReady({ content }: { content: string }) {
 
               return (
                 <td
-                  {...props}
+                  {...cellProps}
                   className={`border border-slate-300 px-3 py-2 align-top text-black ${
                     isConfidence ? "text-center" : "text-left"
                   }`}

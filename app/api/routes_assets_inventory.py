@@ -22,6 +22,12 @@ from app.api.routes_system_status import (
     _atomic_write_json,
     _system_status_file,
 )
+from app.api.aiml_kpi_telemetry import (
+    append_aiml_kpi_event,
+    append_aiml_kpi_events,
+    safe_increment_manual_correction_counter,
+    safe_increment_role_prediction_quality_counters,
+)
 from datetime import datetime
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
@@ -1790,7 +1796,7 @@ def _train_server_role_pipeline(server_df: pd.DataFrame) -> tuple[Pipeline, list
                     min_samples_leaf=1,
                     class_weight="balanced",
                     random_state=42,
-                    n_jobs=-1,
+                    n_jobs=1,
                 ),
             ),
         ]
@@ -1897,7 +1903,7 @@ def _build_training_pipeline(X: pd.DataFrame) -> Pipeline:
                     n_estimators=300,
                     max_depth=20,
                     random_state=42,
-                    n_jobs=-1,
+                    n_jobs=1,
                 ),
             ),
         ]
@@ -1939,6 +1945,97 @@ def _find_asset_by_hostname(inventory: dict, hostname: str) -> tuple[dict | None
                 return subnet, asset
 
     return None, None
+
+
+def _safe_append_aiml_kpi_event(year: int, bucket: str, event: dict) -> None:
+    try:
+        append_aiml_kpi_event(year, bucket, event)
+    except Exception as e:
+        print(f"[aiml-kpi] failed to append {bucket}: {e}")
+
+
+def _safe_append_aiml_kpi_events(year: int, bucket: str, events: list[dict]) -> None:
+    try:
+        append_aiml_kpi_events(year, bucket, events)
+    except Exception as e:
+        print(f"[aiml-kpi] failed to append {bucket}: {e}")
+
+
+def _first_text(value: Any) -> str:
+    if isinstance(value, list):
+        for item in value:
+            text = str(item or "").strip()
+            if text:
+                return text
+        return ""
+    return str(value or "").strip()
+
+
+def _asset_selected_role(asset: dict) -> str:
+    detail = _get_asset_detail(asset)
+    selected_block = detail.get("selected_role", {}) or {}
+    if isinstance(selected_block, dict):
+        selected_role = str(selected_block.get("role") or "").strip()
+        if selected_role:
+            return selected_role
+    return str(asset.get("role") or "").strip()
+
+
+def _asset_ml_role(asset: dict) -> str:
+    detail = _get_asset_detail(asset)
+    ml_block = detail.get("ml_role_prediction", {}) or {}
+    if not isinstance(ml_block, dict):
+        return ""
+    return _first_text(ml_block.get("predicted_roles") or ml_block.get("predicted_role"))
+
+
+def _asset_ml_confidence(asset: dict) -> float | None:
+    detail = _get_asset_detail(asset)
+    ml_block = detail.get("ml_role_prediction", {}) or {}
+    if not isinstance(ml_block, dict):
+        return None
+    try:
+        raw = str(ml_block.get("confidence") or "").strip()
+        return float(raw) if raw else None
+    except Exception:
+        return None
+
+
+def _build_role_prediction_telemetry_events(inventory: dict, source_endpoint: str) -> list[dict]:
+    events: list[dict] = []
+    for asset in _all_assets(inventory):
+        hostname = str(asset.get("hostname") or "").strip()
+        predicted_role = _asset_ml_role(asset)
+        final_role = _asset_selected_role(asset)
+        if not hostname or not predicted_role or not final_role:
+            continue
+
+        detail = _get_asset_detail(asset)
+        selected_block = detail.get("selected_role", {}) or {}
+        ml_block = detail.get("ml_role_prediction", {}) or {}
+
+        events.append({
+            "event_id": f"role_pred_{hostname}_{datetime.now().astimezone().strftime('%Y-%m-%d_%H-%M-%S')}",
+            "hostname": hostname,
+            "model_type": "role_prediction",
+            "asset_type": "server" if _is_server_asset(asset) else "workstation",
+            "predicted_role": predicted_role,
+            "final_role": final_role,
+            "confidence": _asset_ml_confidence(asset),
+            "is_correct": predicted_role.strip().lower() == final_role.strip().lower(),
+            "selected_method": (
+                str(selected_block.get("method") or "").strip()
+                if isinstance(selected_block, dict)
+                else ""
+            ),
+            "model_error": (
+                str(ml_block.get("error") or "").strip()
+                if isinstance(ml_block, dict)
+                else ""
+            ),
+            "source_endpoint": source_endpoint,
+        })
+    return events
 
 
 def _flatten_asset_for_training(asset: dict) -> dict:
@@ -3527,6 +3624,8 @@ def edit_role(payload: EditRoleRequest):
             "inventory": inventory
         }
 
+    old_role = _asset_selected_role(asset) or str(asset.get("role") or "").strip()
+
     asset["role"] = new_role
     detail = asset.setdefault("detail", _blank_detail())
 
@@ -3540,6 +3639,8 @@ def edit_role(payload: EditRoleRequest):
 
     _save_json(_asset_file(year), inventory)
     _sync_assets_cia_status(year, inventory)
+    if old_role != new_role:
+        safe_increment_manual_correction_counter(year, "role")
     
     return {
         "success": True,
@@ -3676,6 +3777,12 @@ def assign_roles(payload: dict):
         }
     _save_json(_asset_file(year), inventory)
     _sync_assets_cia_status(year, inventory)
+    role_prediction_events = _build_role_prediction_telemetry_events(
+        inventory,
+        source_endpoint="/api/assets/assignroles",
+    )
+    _safe_append_aiml_kpi_events(year, "role_prediction_events", role_prediction_events)
+    safe_increment_role_prediction_quality_counters(year, role_prediction_events)
     
     final_message = (
     "Indicator-based detection, ML role prediction, "
@@ -3699,6 +3806,7 @@ def assign_roles(payload: dict):
         "kb_status": kb_status,
         "kb_message": kb_message,
         "rows_embedded": rows_embedded,
+        "aiml_kpi_events_appended": len(role_prediction_events),
         "inventory": inventory,
         **update_result
     }
@@ -3886,14 +3994,15 @@ def assets_commands():
             "/delete",
             "/submit",
             "/reset",
-            "/help",
-            "/commands"
+            "/commands",
+            "/help"
         ]
     }
 
 
 @router.post("/train")
 def train_role_prediction_model(payload: TrainModelRequest):
+    year = int(payload.year or 2026)
     ml_dir = _ml_dir()
     model_dir = ml_dir / "models"
     model_dir.mkdir(parents=True, exist_ok=True)
@@ -3964,11 +4073,29 @@ def train_role_prediction_model(payload: TrainModelRequest):
                 if not results:
                     raise HTTPException(status_code=400, detail="No valid training datasets found")
 
-                return {
+                response = {
                     "success": True,
                     "message": "Server and workstation ML role prediction models are ready to use.",
                     **results
-    }
+                }
+                _safe_append_aiml_kpi_event(year or 2026, "role_model_training_runs", {
+                    "run_id": f"role_train_{datetime.now().astimezone().strftime('%Y-%m-%d_%H-%M-%S')}",
+                    "model_type": "role_prediction",
+                    "server_training_rows": results.get("server_training_rows"),
+                    "server_feature_count": results.get("server_feature_count"),
+                    "server_class_counts": results.get("server_class_counts"),
+                    "server_model_path": results.get("server_model_path"),
+                    "workstation_training_rows": results.get("workstation_training_rows"),
+                    "workstation_feature_count": results.get("workstation_feature_count"),
+                    "workstation_features_used": results.get("workstation_features_used"),
+                    "workstation_model_path": results.get("workstation_model_path"),
+                    "source_endpoint": "/api/assets/train",
+                    "notes": [
+                        "Role model training telemetry does not include accuracy/F1 unless the training route computes it.",
+                        "Role accuracy and F1 can still be computed from role_prediction_events after /assignroles runs.",
+                    ],
+                })
+                return response
 @router.get("/inventory")
 def get_asset_inventory(year: int):
     asset_file = _asset_file(year)

@@ -11,6 +11,12 @@ from typing import Any
 from datetime import datetime
 import requests
 
+from app.api.aiml_kpi_telemetry import (
+    ollama_total_tokens,
+    safe_increment_llm_counter,
+    safe_increment_rag_counter,
+)
+
 
 router = APIRouter(
     prefix="/api/monitoring-improvement",
@@ -150,16 +156,24 @@ def _work_dir(year: int) -> Path:
     return BASE_DIR / "data" / "work" / str(year)
 
 
+def _knowledge_base_dir() -> Path:
+    return BASE_DIR / "data" / "knowledge_base"
+
+
+def _ml_dir() -> Path:
+    return BASE_DIR / "data" / "ml"
+
+
 def _risk_evaluation_treatment_file(year: int) -> Path:
     return _work_dir(year) / "RiskEvaluationTreatment.json"
 
 
 def _iso_csv_path(year: int) -> Path:
-    return _work_dir(year) / "iso27002_controls_2022.csv"
+    return _knowledge_base_dir() / "iso27002_controls_2022.csv"
 
 
 def _iso_embedding_cache_path(year: int) -> Path:
-    return _work_dir(year) / "iso27002_local_embeddings.pkl"
+    return _ml_dir() / "iso27002_local_embeddings.pkl"
 
 
 def _action_plan_implementation_file(year: int) -> Path:
@@ -530,6 +544,7 @@ def _generate_user_behavior_monitoring_actions(hosts: list[dict]) -> str:
     return "\n".join(unique)
 
 def _generate_user_behavior_monitoring_action_with_llama3(
+    year: int,
     control_id: str,
     control_name: str,
     justification: str,
@@ -622,6 +637,7 @@ Relevant ISO 27001 / ISO 27002 References:
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     response_text = _normalize_text(data.get("response"))
 
@@ -691,6 +707,7 @@ def _build_host_lines_for_rag(hosts: list[dict]) -> list[str]:
 
 
 def _generate_evidence_desc_with_llama3(
+    year: int,
     control_id: str,
     control_name: str,
     justification: str,
@@ -753,6 +770,7 @@ Relevant ISO References:
         res = requests.post(OLLAMA_URL, json=payload, timeout=180)
         res.raise_for_status()
         data = res.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(data))
         text = _normalize_text(data.get("response"))
         if text:
             return text
@@ -1001,6 +1019,7 @@ def _get_nvd_cve_details(cve_id: str) -> dict:
 
 
 def _generate_monitoring_justification_with_llama3(
+    year: int,
     cve_id: str,
     vulnerability_name: str,
     nvd_record: dict,
@@ -1067,6 +1086,7 @@ Affected Hosts:
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     return _normalize_text(data.get("response"))
 
@@ -1234,7 +1254,9 @@ def _retrieve_relevant_iso_controls(
         _save_embedding_cache(year, cache)
 
     scored.sort(key=lambda x: x[0], reverse=True)
-    return [item[1] for item in scored[:top_k]]
+    retrieved = [item[1] for item in scored[:top_k]]
+    safe_increment_rag_counter(year, success=bool(retrieved))
+    return retrieved
 
 
 def _build_evidence_query_context(
@@ -1339,6 +1361,7 @@ def _fallback_evidence_recommendations(
 
 
 def _generate_monitoring_action_with_llama3(
+    year: int,
     control_id: str,
     control_name: str,
     justification: str,
@@ -1399,6 +1422,7 @@ ISO guidance:
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     response_text = _normalize_text(data.get("response"))
     
@@ -1569,6 +1593,7 @@ Relevant ISO Guidance:
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
     res.raise_for_status()
     data = res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     raw_text = _normalize_text(data.get("response"))
     if raw_text == "":
@@ -1695,6 +1720,7 @@ def create_monitoring_improvement(year: int = 2026):
 
         try:
             justification = _generate_monitoring_justification_with_llama3(
+                year=year,
                 cve_id=cve_id,
                 vulnerability_name=vulnerability_name,
                 nvd_record=nvd_record,
@@ -2012,6 +2038,7 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
         # SPECIAL CASE: USER ACTIVITY BEHAVIOR
         if control_id.startswith("UB-WS-"):
             generated_recommended_action = _generate_user_behavior_monitoring_action_with_llama3(
+                year=year,
                 control_id=control_id,
                 control_name=control_name,
                 justification=justification,
@@ -2020,6 +2047,7 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
             )
         else:
             generated_recommended_action = _generate_monitoring_action_with_llama3(
+                year=year,
                 control_id=control_id,
                 control_name=control_name,
                 justification=justification,
@@ -2127,6 +2155,7 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
     auto_responsible = _map_responsible_from_role(role)
     auto_resources = _build_resources_value(hostname, role)
     auto_desc = _generate_evidence_desc_with_llama3(
+        year=year,
         control_id=control_id,
         control_name=control_name,
         justification=justification,
@@ -2439,6 +2468,7 @@ def get_monitoring_evidence_defaults(payload: EvidenceDefaultsRequest):
         "date": "",
         "url": "",
         "desc": _generate_evidence_desc_with_llama3(
+            year=year,
             control_id=control_id,
             control_name=control_name,
             justification=justification,

@@ -257,9 +257,9 @@
         3389
       ],
       "ml_probability": 0.3,
-      "override": 0,
+      "override": 1,
       "likelihood": "Critical",
-      "risk": "Medium",
+      "risk": "High",
       "likelihood_score": 0.9373,
       "risk_score": 5.6238,
       "exposure": "Critical"
