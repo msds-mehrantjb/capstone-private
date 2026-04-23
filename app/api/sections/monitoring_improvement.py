@@ -1,7 +1,11 @@
-def build_monitoring_improvement_markdown(year: int) -> str:
+def build_monitoring_improvement_markdown(
+    year: int,
+    include_guide_column: bool = True,
+) -> str:
     from app.api.routes_final_deliverables import (
         _load_dashboard_context,
         _monitoring_improvement_file,
+        _monitoring_implementation_guides_file,
         _read_json,
     )
 
@@ -23,6 +27,81 @@ def build_monitoring_improvement_markdown(year: int) -> str:
     def _text_to_html(value):
         text = _safe(value, "-")
         return _esc(text).replace("\n", "<br>")
+
+    def _normalize_text(value) -> str:
+        if value is None:
+            return ""
+        return str(value).strip().lower()
+
+    def _extract_guide_records(guides_doc) -> list[dict]:
+        if isinstance(guides_doc, list):
+            return [g for g in guides_doc if isinstance(g, dict)]
+
+        if isinstance(guides_doc, dict):
+            for key in ["guides", "records", "items", "evidence_guides"]:
+                value = guides_doc.get(key)
+                if isinstance(value, list):
+                    return [g for g in value if isinstance(g, dict)]
+
+        return []
+
+    def _find_matching_guide(
+        guide_records: list[dict],
+        item_row: dict,
+        host: dict,
+        evidence: dict,
+    ) -> dict | None:
+        control_id = _normalize_text(item_row.get("CVE") or item_row.get("cve"))
+        hostname = _normalize_text(host.get("hostname"))
+        vulnerability_name = _normalize_text(host.get("vulnerability_name") or item_row.get("vulnerability"))
+        evidence_id = _normalize_text(evidence.get("evidence_id"))
+        evidence_desc = _normalize_text(evidence.get("desc"))
+
+        if evidence_id:
+            for guide in guide_records:
+                if _normalize_text(guide.get("evidence_id")) == evidence_id:
+                    return guide
+
+        for guide in guide_records:
+            guide_control = _normalize_text(guide.get("control_id"))
+            guide_host = _normalize_text(guide.get("hostname"))
+            guide_vuln = _normalize_text(guide.get("vulnerability_name"))
+            guide_desc = _normalize_text(guide.get("evidence_description"))
+
+            if (
+                guide_control == control_id
+                and guide_host == hostname
+                and guide_vuln == vulnerability_name
+                and (
+                    not evidence_desc
+                    or evidence_desc == guide_desc
+                    or evidence_desc in guide_desc
+                    or guide_desc in evidence_desc
+                )
+            ):
+                return guide
+
+        return None
+
+    def _guide_icon_html(guide: dict | None) -> str:
+        if not guide:
+            return "-"
+
+        guide_id = str(guide.get("guide_id", "")).strip()
+        if not guide_id:
+            return "-"
+
+        pdf_url = (
+            f"http://127.0.0.1:8000"
+            f"/api/final-deliveries/monitoring-improvement/guide/{_esc(guide_id)}/pdf"
+        )
+
+        return (
+            f'<a href="{pdf_url}" '
+            f'target="_blank" rel="noopener noreferrer" '
+            f'style="text-decoration: none; font-size: 16px;" '
+            f'title="Download Guide PDF">📄</a>'
+        )
 
     def _main_monitoring_table(item_row: dict) -> str:
         cve_id = _safe(item_row.get("CVE") or item_row.get("cve"))
@@ -63,12 +142,35 @@ def build_monitoring_improvement_markdown(year: int) -> str:
             '</table>',
         ])
 
-    def _hosts_evidence_table(item_row: dict) -> str:
+    def _hosts_evidence_table(item_row: dict, guide_records: list[dict]) -> str:
         hosts = item_row.get("hosts", [])
+
+        if (
+            (not isinstance(hosts, list) or not hosts)
+            and any(item_row.get(key) for key in ("hostname", "ip_address", "role", "evidence"))
+        ):
+            hosts = [item_row]
+
         if not isinstance(hosts, list) or not hosts:
             return "_No host evidence available._"
 
         tables = []
+        total_columns = 6 if include_guide_column else 5
+        trailing_header_span = total_columns - 2
+        colgroup = (
+            "<colgroup>"
+            "<col style=\"width: 18%;\">"
+            "<col style=\"width: 16%;\">"
+            "<col style=\"width: 10%;\">"
+            "<col style=\"width: 16%;\">"
+            + (
+                "<col style=\"width: 35%;\">"
+                "<col style=\"width: 5%;\">"
+                if include_guide_column
+                else "<col style=\"width: 40%;\">"
+            )
+            + "</colgroup>"
+        )
 
         for host in hosts:
             if not isinstance(host, dict):
@@ -83,26 +185,33 @@ def build_monitoring_improvement_markdown(year: int) -> str:
                 evidence_list = [{}]
 
             lines = [
-                '<table style="border-collapse: collapse; width: 100%; table-layout: fixed; margin-bottom: 20px;">'
+                '<table style="border-collapse: collapse; width: 100%; table-layout: fixed; margin-bottom: 20px;">',
+                f'  {colgroup}',
                 '  <thead>',
                 '    <tr>',
                 f'      <th style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Host: {_esc(hostname)}</th>',
                 f'      <th style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Role: {_esc(role)}</th>',
-                f'      <th colspan="3" style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">IP Address: {_esc(ip_address)}</th>',
+                f'      <th colspan="{trailing_header_span}" style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">IP Address: {_esc(ip_address)}</th>',
                 '    </tr>',
                 '    <tr>',
-                '      <th colspan="5" style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: center; font-weight: bold;">Evidence(s)</th>',
+                f'      <th colspan="{total_columns}" style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: center; font-weight: bold;">Evidence(s)</th>',
                 '    </tr>',
                 '    <tr>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Responsible</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Resources</th>',
-                '      <th style="width: 120px; white-space: nowrap; background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Date</th>',
+                '      <th style="white-space: nowrap; background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Date</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">URL/PATH</th>',
-                '      <th style="width: 30%; background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Desc</th>',
+                '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Desc</th>',
                 '    </tr>',
                 '  </thead>',
                 '  <tbody>',
             ]
+
+            if include_guide_column:
+                lines.insert(
+                    len(lines) - 3,
+                    '      <th style="background-color: #eef5fb; padding: 4px 6px; border: 1px solid #999; text-align: center; width: 1%; white-space: nowrap;">Guide</th>',
+                )
 
             for evidence in evidence_list:
                 if not isinstance(evidence, dict):
@@ -113,16 +222,29 @@ def build_monitoring_improvement_markdown(year: int) -> str:
                 date = _safe(evidence.get("date"))
                 url = _safe(evidence.get("url"))
                 desc = _safe(evidence.get("desc"))
-
-                lines.extend([
+                row_cells = [
                     '    <tr>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(responsible)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(resources)}</td>',
-                    f'      <td style="width: 120px; white-space: nowrap; padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(date)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(url)}</td>',
-                    f'      <td style="width: 30%; padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(desc)}</td>',
-                    '    </tr>',
-                ])
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(responsible)}</td>',
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(resources)}</td>',
+                    f'      <td style="white-space: nowrap; padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(date)}</td>',
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(url)}</td>',
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(desc)}</td>',
+                ]
+
+                if include_guide_column:
+                    matched_guide = _find_matching_guide(
+                        guide_records=guide_records,
+                        item_row=item_row,
+                        host=host,
+                        evidence=evidence,
+                    )
+                    guide_cell = _guide_icon_html(matched_guide)
+                    row_cells.append(
+                        f'      <td style="padding: 4px 6px; border: 1px solid #999; vertical-align: middle; text-align: center; width: 1%; white-space: nowrap;">{guide_cell}</td>'
+                    )
+
+                row_cells.append('    </tr>')
+                lines.extend(row_cells)
 
             lines.extend([
                 '  </tbody>',
@@ -135,7 +257,21 @@ def build_monitoring_improvement_markdown(year: int) -> str:
 
     ctx = _load_dashboard_context(year)
     doc = _read_json(_monitoring_improvement_file(year), {})
-    rows = doc.get("cves", [])
+    guides_doc = _read_json(_monitoring_implementation_guides_file(year), {})
+    guide_records = _extract_guide_records(guides_doc)
+    if isinstance(doc, list):
+        rows = [row for row in doc if isinstance(row, dict)]
+    elif isinstance(doc, dict):
+        rows = doc.get("cves", [])
+        if not isinstance(rows, list):
+            rows = doc.get("items", [])
+        if not isinstance(rows, list):
+            rows = doc.get("records", [])
+        if not isinstance(rows, list):
+            rows = doc.get("monitoring_items", [])
+        rows = [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+    else:
+        rows = []
 
     lines = [
         "# Monitoring Improvement",
@@ -203,7 +339,7 @@ Embedding models convert context into vectors and use cosine similarity to impro
 ---
 
 #### LLM-Based Action Generation
-A local LLM (Llama 3 via Ollama) generates structured monitoring actions:
+A local LLM served through Ollama generates structured monitoring actions:
 
 - Output starts with **"Recommended monitoring actions:"**
 - Bullet-point format only
@@ -242,7 +378,7 @@ The Recommended Action process combines AI reasoning, RAG, and ISO-aligned knowl
         lines.extend([
             _main_monitoring_table(row),
             "",
-            _hosts_evidence_table(row),
+            _hosts_evidence_table(row, guide_records),
             "",
         ])
 

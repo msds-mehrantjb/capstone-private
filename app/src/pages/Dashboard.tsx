@@ -548,7 +548,7 @@ export default function Dashboard() {
                   subtitle={
                     <>
                       {dashboardRaw.kpis.evidence_coverage?.have ?? 0}/
-                      {dashboardRaw.kpis.evidence_coverage?.total ?? 0} controls have evidence
+                      {dashboardRaw.kpis.evidence_coverage?.total ?? 0} hosts have evidence
                     </>
                   }
                   icon={<CheckCircle2 className="h-6 w-6" />}
@@ -799,7 +799,7 @@ export default function Dashboard() {
                 subtitle={
                   <>
                     {dashboardRaw.kpis.evidence_coverage?.have ?? 0}/
-                    {dashboardRaw.kpis.evidence_coverage?.total ?? 0} controls have evidence
+                    {dashboardRaw.kpis.evidence_coverage?.total ?? 0} hosts have evidence
                   </>
                 }
                 icon={<CheckCircle2 className="h-6 w-6" />}
@@ -809,7 +809,7 @@ export default function Dashboard() {
               />
 
               <KpiCard
-                title="High Risk / Critical Impact"
+                title="High Risk / Critical (or High) Impact"
                 value={
                   <>
                     {dashboardRaw?.kpis?.high_risk_critical_impact?.high_risk_count ?? 0}

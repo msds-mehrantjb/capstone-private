@@ -34,6 +34,8 @@
               636
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Active Directory Domain Services",
               "Kerberos Key Distribution Center",
               "LDAP",
@@ -80,6 +82,8 @@
               636
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Active Directory Domain Services",
               "Kerberos Key Distribution Center",
               "LDAP",
@@ -131,6 +135,8 @@
               445
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "DNS",
               "RPC Endpoint Mapper",
               "SMB"
@@ -152,7 +158,7 @@
     {
       "hostname": "WS-01",
       "ip_address": "10.0.0.10",
-      "role": "Standard Employee Workstation",
+      "role": "Finance Workstation",
       "CIA rating": "Medium",
       "vulnerabilities_threats": [
         {
@@ -178,15 +184,16 @@
               3389
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services"
             ],
             "installed_roles": [],
             "installed_software": [
               "Microsoft Office",
-              "Outlook",
               "Browser"
             ],
-            "os_version": "Windows 10"
+            "os_version": "Windows"
           }
         }
       ]
@@ -220,6 +227,8 @@
               3389
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services"
             ],
             "installed_roles": [],
@@ -261,6 +270,8 @@
               3389
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services"
             ],
             "installed_roles": [],
@@ -277,94 +288,9 @@
     {
       "hostname": "SRV-03",
       "ip_address": "10.0.0.18",
-      "role": "File Server",
+      "role": "File Transfer Server (SFTP/FTPS)",
       "CIA rating": "High",
-      "vulnerabilities_threats": [
-        {
-          "vulnerability_name": "SMB Remote Code Execution",
-          "public_exploit_name": "EternalBlue",
-          "category": "Remote Code Execution",
-          "affected_product": "Microsoft SMBv1",
-          "attack_surface": "Remote over network",
-          "required_service": "SMB exposed on TCP 445",
-          "severity": "Critical",
-          "cvss_score": 8.8,
-          "known_exploited": true,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Disable SMBv1 on affected systems",
-            "Apply Microsoft's security updates for SMB remote code execution vulnerabilities",
-            "Restrict SMB access with firewall rules and network segmentation",
-            "Enable SMB signing where operationally appropriate"
-          ],
-          "cve": "CVE-2017-0144",
-          "evidence": {
-            "open_ports": [
-              135,
-              139,
-              445,
-              5985
-            ],
-            "running_services": [
-              "SMB",
-              "WinRM"
-            ],
-            "installed_roles": [
-              "File Server",
-              "DFS Namespace",
-              "DFS Replication"
-            ],
-            "installed_software": [
-              "Windows File Services",
-              "Volume Shadow Copy Service",
-              "File Server Resource Manager"
-            ],
-            "os_version": "Windows Server 2016"
-          }
-        },
-        {
-          "vulnerability_name": "WinRM Remote Command Execution Exposure",
-          "public_exploit_name": "",
-          "category": "Lateral Movement",
-          "affected_product": "Windows Remote Management",
-          "attack_surface": "Internal network",
-          "required_service": "WinRM exposed",
-          "severity": "Medium",
-          "cvss_score": 6.5,
-          "known_exploited": true,
-          "exploit_available": true,
-          "recommended_mitigation": [
-            "Apply the relevant Microsoft security updates",
-            "Restrict remote management exposure to trusted administrative networks only",
-            "Use firewall rules to limit access to WinRM listeners",
-            "Monitor remote management logs for suspicious activity"
-          ],
-          "cve": "CVE-2021-31166",
-          "evidence": {
-            "open_ports": [
-              135,
-              139,
-              445,
-              5985
-            ],
-            "running_services": [
-              "SMB",
-              "WinRM"
-            ],
-            "installed_roles": [
-              "File Server",
-              "DFS Namespace",
-              "DFS Replication"
-            ],
-            "installed_software": [
-              "Windows File Services",
-              "Volume Shadow Copy Service",
-              "File Server Resource Manager"
-            ],
-            "os_version": "Windows Server 2016"
-          }
-        }
-      ]
+      "vulnerabilities_threats": []
     },
     {
       "hostname": "SRV-04",
@@ -481,6 +407,8 @@
               3389
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services"
             ],
             "installed_roles": [],
@@ -526,6 +454,8 @@
               3389
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services",
               "Docker Engine",
               "Node.js Runtime"
@@ -566,6 +496,8 @@
               3389
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services",
               "Docker Engine",
               "Node.js Runtime"
@@ -614,6 +546,8 @@
               8888
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services",
               "Jupyter Server",
               "TensorBoard"
@@ -654,6 +588,8 @@
               8888
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services",
               "Jupyter Server",
               "TensorBoard"
@@ -694,6 +630,8 @@
               8888
             ],
             "running_services": [
+              "HTTP",
+              "HTTPS",
               "Remote Desktop Services",
               "Jupyter Server",
               "TensorBoard"

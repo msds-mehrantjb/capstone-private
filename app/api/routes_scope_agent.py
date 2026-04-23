@@ -179,6 +179,25 @@ def ensure_v0_exists(year: int) -> Path:
         write_json(p, default_scope_template(year))
     return p
 
+def default_draft_filename(year: int) -> str:
+    return f"{year}-Scope-Draft-v0.json"
+
+def load_default_draft(year: int) -> Dict[str, Any]:
+    filename = default_draft_filename(year)
+    p = get_data_dir() / filename
+    if not p.exists():
+        draft = default_scope_template(year)
+        draft.setdefault("meta", {})
+        draft["meta"]["source_file"] = filename
+        write_json(p, draft)
+
+    draft = read_json(p)
+    draft.setdefault("meta", {})
+    draft["meta"]["year"] = year
+    draft["meta"]["version"] = "v0"
+    draft["meta"]["source_file"] = filename
+    return draft
+
 # -------------------------
 # Helpers
 # -------------------------
@@ -226,6 +245,18 @@ def _replace_everywhere(draft: Dict[str, Any], mapping: Dict[str, str]) -> None:
 
 def _replace_first_bracket_value(line: str, value: str) -> str:
     return re.sub(r"\[[^\]]+\]", value, line, count=1)
+
+def _draft_has_placeholders(draft: Dict[str, Any]) -> bool:
+    def has_placeholder(value: Any) -> bool:
+        if isinstance(value, str):
+            return PLACEHOLDER_RE.search(value) is not None
+        if isinstance(value, list):
+            return any(has_placeholder(item) for item in value)
+        if isinstance(value, dict):
+            return any(has_placeholder(item) for item in value.values())
+        return False
+
+    return has_placeholder(draft.get("sections", []))
 
 def _extract_audit_scope_value(draft: Dict[str, Any]) -> str:
     """
@@ -290,6 +321,24 @@ def _update_system_status_after_submit(year: int) -> None:
 
     write_system_status(year, obj)
 
+def _update_dashboard_after_scope_reset(year: int, draft: Dict[str, Any]) -> None:
+    dashboard = read_dashboard()
+    filename = default_draft_filename(year)
+
+    dashboard["scope_file_name"] = filename
+    dashboard.setdefault("scope", {})
+    dashboard["scope"]["name"] = "NA"
+    dashboard["scope"]["asset_count"] = 0
+    dashboard["scope"].pop("status", None)
+
+    dashboard["scope_context_section2"] = {
+        "title": "Scope & Context - Section 2 (Organizational Boundaries)",
+        "bullets": [],
+        "body": "",
+    }
+
+    write_dashboard(dashboard)
+
 # -------------------------
 # Fill state (in-memory)
 # -------------------------
@@ -312,10 +361,27 @@ def _fill_sections() -> List[tuple[str, str, str]]:
          "Captures customers, regulators, and third parties/vendors that create scope requirements and dependencies."),
     ]
 
+def _reset_fill_state(year: int) -> None:
+    _FILL_STATE[year] = {"in_fill": False, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
+
+def _current_dashboard_scope_file() -> str:
+    dashboard = read_dashboard()
+    return str(dashboard.get("scope_file_name") or "").strip()
+
+def _current_draft_scope_file(draft: Dict[str, Any]) -> str:
+    meta = draft.get("meta") if isinstance(draft, dict) else None
+    if not isinstance(meta, dict):
+        return ""
+    return str(meta.get("source_file") or "").strip()
+
 HELP_TEXT = (
-    "The ISO 27001 Scope Document is a foundational piece of the Information Security Management System (ISMS). "
-    "It is a formal, written statement that defines the exact boundaries of your information security program.\n\n"
-    "Essentially, it answers the question: \"What exactly are we protecting, and where does our responsibility end?\""
+    "Scope & Context\n\n"
+    "What this page is about:\n"
+    "This stage defines the boundaries of the ISMS for the audit year. It records what parts of the organization, business activities, systems, locations, and dependencies are in scope and which ones are excluded.\n\n"
+    "Why it is important:\n"
+    "ISO 27001 starts with context and scope. If the scope is unclear, every later stage becomes unreliable because the audit team will not know which assets, threats, risks, controls, and deliverables belong inside the ISMS boundary.\n\n"
+    "Its place in the ISO 27001 lifecycle:\n"
+    "This is the first stage of the workflow. It comes before asset discovery, threat identification, risk assessment, control selection, implementation, and monitoring. It establishes the audit boundary that all later stages inherit."
 )
 
 COMMANDS_TEXT = (
@@ -375,6 +441,19 @@ def _parse_scope_filename(year: int, filename: str) -> Optional[Tuple[str, int]]
 
     return None
 
+
+def _scope_display_name(obj: Dict[str, Any], fallback: str) -> str:
+    meta = obj.get("meta") if isinstance(obj, dict) else {}
+    if not isinstance(meta, dict):
+        meta = {}
+
+    for key in ("title", "template_name"):
+        value = str(meta.get(key) or "").strip()
+        if value:
+            return value
+
+    return fallback
+
 def discover_latest_non_v0_scope_files(year: int) -> List[LoadOption]:
     d = get_data_dir()
     best: Dict[str, Tuple[int, str]] = {}
@@ -396,7 +475,12 @@ def discover_latest_non_v0_scope_files(year: int) -> List[LoadOption]:
 
     opts: List[LoadOption] = []
     for _, (_, fname) in sorted(best.items(), key=sort_key):
-        opts.append(LoadOption(id=fname, label=fname))
+        try:
+            obj = load_by_filename_if_exists(year, fname)
+            label = _scope_display_name(obj, fname)
+        except FileNotFoundError:
+            label = fname
+        opts.append(LoadOption(id=fname, label=label))
 
     return opts
 
@@ -460,8 +544,16 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         return AgentResponse(message="No pending confirmation.", draft=draft)
 
     if cmd == "reset":
-        fresh = load_saved(year, 0)
-        _FILL_STATE[year] = {"in_fill": False, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
+        fresh = load_default_draft(year)
+        _reset_fill_state(year)
+        try:
+            _update_dashboard_after_scope_reset(year, fresh)
+        except FileNotFoundError:
+            return AgentResponse(
+                message="Returned to the baseline draft (v0), but dashboard.json was not found.",
+                draft=fresh,
+                saved_version="v0",
+            )
         return AgentResponse(message="Returned to baseline template (v0).", draft=fresh, saved_version="v0")
 
     if cmd == "cancel":
@@ -475,7 +567,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         except Exception:
             latest = load_saved(year, latest_saved_version(year))
 
-        _FILL_STATE[year] = {"in_fill": False, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
+        _reset_fill_state(year)
         return AgentResponse(
             message="Discarded unsaved changes and reloaded the latest saved version.",
             draft=latest,
@@ -501,7 +593,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             try:
                 loaded = load_by_filename_if_exists(year, answer_raw)
                 return AgentResponse(
-                    message=f"Loaded {loaded.get('meta', {}).get('source_file', answer_raw)}",
+                    message=f"Loaded {_scope_display_name(loaded, answer_raw)}",
                     draft=loaded,
                     saved_version=loaded.get("meta", {}).get("version"),
                 )
@@ -516,7 +608,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded = read_json(p)
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
-            return AgentResponse(message=f"Loaded {p.name}", draft=loaded, saved_version=loaded["meta"].get("version"))
+            return AgentResponse(
+                message=f"Loaded {_scope_display_name(loaded, p.name)}",
+                draft=loaded,
+                saved_version=loaded["meta"].get("version"),
+            )
 
         if a in ("sample_healthcare", "healthcare"):
             p = get_data_dir() / f"{year}-Scope-Healthcare-v0.json"
@@ -525,7 +621,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded = read_json(p)
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
-            return AgentResponse(message=f"Loaded {p.name}", draft=loaded, saved_version=loaded["meta"].get("version"))
+            return AgentResponse(
+                message=f"Loaded {_scope_display_name(loaded, p.name)}",
+                draft=loaded,
+                saved_version=loaded["meta"].get("version"),
+            )
 
         if a in ("sample_scope", "sample"):
             p = get_data_dir() / f"{year}-Scope-Sample-v0.json"
@@ -535,7 +635,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
             return AgentResponse(
-                message=f"Loaded {p.name}",
+                message=f"Loaded {_scope_display_name(loaded, p.name)}",
                 draft=loaded,
                 saved_version=loaded["meta"].get("version"),
             )
@@ -548,7 +648,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
             return AgentResponse(
-                message=f"Loaded {p.name}",
+                message=f"Loaded {_scope_display_name(loaded, p.name)}",
                 draft=loaded,
                 saved_version=loaded["meta"].get("version"),
             )
@@ -585,7 +685,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         try:
             loaded = load_by_filename_if_exists(year, answer_raw)
             return AgentResponse(
-                message=f"Loaded {loaded.get('meta', {}).get('source_file', answer_raw)}",
+                message=f"Loaded {_scope_display_name(loaded, answer_raw)}",
                 draft=loaded,
                 saved_version=loaded.get("meta", {}).get("version"),
             )
@@ -604,6 +704,13 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         out = copy.deepcopy(draft)
         out.setdefault("meta", {})
         out["meta"]["year"] = year
+
+        if _draft_has_placeholders(out):
+            _reset_fill_state(year)
+            return AgentResponse(
+                message="The draft Scope & Context document cannot be submitted. Fill all placeholder fields first.",
+                draft=draft,
+            )
 
         src = str((out.get("meta", {}) or {}).get("source_file", "")).strip()
 
@@ -639,15 +746,27 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             )
 
         return AgentResponse(
-            message=(
-                "Submitted successfully.\n"
-                f"Scope file: {filename}"
-            ),
+            message="Submitted successfully.",
             draft=out,
             saved_version=version,
         )
         
     if cmd == "fill":
+        baseline_scope_file = default_draft_filename(year)
+        active_scope_file = _current_draft_scope_file(draft)
+        try:
+            dashboard_scope_file = _current_dashboard_scope_file()
+        except FileNotFoundError:
+            dashboard_scope_file = ""
+
+        current_scope_files = [active_scope_file, dashboard_scope_file]
+        if any(scope_file and scope_file != baseline_scope_file for scope_file in current_scope_files):
+            _reset_fill_state(year)
+            return AgentResponse(
+                message="Reset the Scope & Context document first.",
+                draft=draft,
+            )
+
         state = _FILL_STATE.get(year) or {"in_fill": True, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
         state["in_fill"] = True
 
@@ -1049,7 +1168,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
 
             return AgentResponse(message="Choose the next section to work on:", draft=draft, load_options=remaining, next_question="__FILL__")
 
-        _FILL_STATE[year] = {"in_fill": False, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
+        _reset_fill_state(year)
         return AgentResponse(message="Exited fill mode. Back to command mode.", draft=draft)
 
     return AgentResponse(message="Unknown command.", draft=draft)

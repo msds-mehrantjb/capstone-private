@@ -92,6 +92,7 @@ type SystemStatusDTO = {
 };
 
 type DashboardRawDTO = {
+  scope_file_name?: string;
   scope?: {
     name?: string;
     asset_count?: number;
@@ -108,6 +109,7 @@ type SubmitResponse = {
   message?: string;
   inventory?: any;
   requires_confirmation?: boolean;
+  records_reinitialized?: number;
 };
 
 type FindingEditState = {
@@ -119,7 +121,7 @@ type FindingEditMap = Record<string, FindingEditState>;
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
-const FINALIZE_RISK_ANALYSIS_FIRST = "Finalize risk analysis first";
+const FINALIZE_RISK_ANALYSIS_FIRST = "You need to finalize the risk analysis first.";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
@@ -150,8 +152,8 @@ async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-async function apiReinitializeTreatment(year: number) {
-  return apiPostJSONBody<any>("/api/risk-evaluation-treatment/reinitialize", {
+async function apiReinitializeTreatment(year: number): Promise<SubmitResponse> {
+  return apiPostJSONBody<SubmitResponse>("/api/risk-evaluation-treatment/reinitialize", {
     year,
     confirm: true,
   });
@@ -431,10 +433,8 @@ function SimpleSelect({
 }
 
 function getDefaultEvaluation(finding: RiskFinding): EvaluationValue {
-  const cve = String(finding.cve ?? "").trim();
   const risk = finding.risk;
 
-  if (cve.startsWith("UB-WS-") && risk === "Low") return "Monitor";
   if (risk === "Low") return "Accept";
   if (risk === "Medium") return "Monitor";
   if (risk === "High" || risk === "Critical") return "Treat";
@@ -690,6 +690,8 @@ function RiskFindingsCard({
 
 export default function RiskEvaluationTreatment() {
   const YEAR = 2026;
+  const SCOPE_REQUIRED_MESSAGE =
+    "Submit the Scope & Context document first before starting Risk Evaluation & Treatment.";
   const [selectedStep, setSelectedStep] = useState<number>(6);
 
   const [pendingCommand, setPendingCommand] = useState<PendingCommand>(null);
@@ -745,6 +747,15 @@ export default function RiskEvaluationTreatment() {
 
   const handleNewRiskEvaluationTreatmentClick = async () => {
     try {
+      const latestDashboard = await apiGetDashboardRaw(YEAR);
+      setDashboardRaw(latestDashboard);
+
+      const scopeFileName = (latestDashboard?.scope_file_name ?? "").trim().toLowerCase();
+      if (!scopeFileName || /-v0\.json$/.test(scopeFileName)) {
+        showPopup(SCOPE_REQUIRED_MESSAGE);
+        return;
+      }
+
       const existsRes = await apiGetTreatmentExists(YEAR);
 
       if (!existsRes.exists) {
@@ -752,8 +763,15 @@ export default function RiskEvaluationTreatment() {
         return;
       }
 
+      const treatmentDoc = await apiGetTreatmentInventory(YEAR);
+      const treatmentHosts = Array.isArray(treatmentDoc?.hosts) ? treatmentDoc.hosts : [];
+      if (treatmentHosts.length === 0) {
+        showPopup(FINALIZE_RISK_ANALYSIS_FIRST);
+        return;
+      }
+
       openConfirm(
-        "Risk Evaluation and Treatment will initialized with original states, are you sure?",
+        "Risk Evaluation and Treatment will be re-initialized with the original default states. Are you sure?",
         "reinitialize-treatment"
       );
     } catch (e) {
@@ -925,6 +943,12 @@ export default function RiskEvaluationTreatment() {
       if (result?.success === false) {
         throw new Error(result.message || "Failed to update evaluation.");
       }
+
+      if (result?.inventory) {
+        const refreshedRows = flattenInventoryToRows(result.inventory);
+        setRows(refreshedRows);
+        setFindingEdits(buildInitialFindingEdits(refreshedRows));
+      }
     } catch (e) {
       setFindingEdits((prev) => ({
         ...prev,
@@ -976,6 +1000,21 @@ export default function RiskEvaluationTreatment() {
     }));
 
     try {
+      if (previousEvaluation === "Treat") {
+        const evaluationResult = await apiSetEvaluation({
+          year: YEAR,
+          hostname,
+          cve: finding.cve,
+          evaluation: previousEvaluation,
+        });
+
+        if (evaluationResult?.success === false) {
+          throw new Error(
+            evaluationResult.message || "Failed to update evaluation."
+          );
+        }
+      }
+
       const result = await apiSetTreatment({
         year: YEAR,
         hostname,
@@ -984,7 +1023,13 @@ export default function RiskEvaluationTreatment() {
       });
 
       if (result?.success === false) {
-      throw new Error(result.message || "Failed to update treatment.");
+        throw new Error(result.message || "Failed to update treatment.");
+      }
+
+      if (result?.inventory) {
+        const refreshedRows = flattenInventoryToRows(result.inventory);
+        setRows(refreshedRows);
+        setFindingEdits(buildInitialFindingEdits(refreshedRows));
       }
     } catch (e) {
       setFindingEdits((prev) => ({
@@ -1007,7 +1052,13 @@ export default function RiskEvaluationTreatment() {
     }
 
     try {
-      await apiReinitializeTreatment(YEAR);
+      const result = await apiReinitializeTreatment(YEAR);
+
+      if (result?.success === false) {
+        throw new Error(
+          result.message || "Risk Evaluation and Treatment could not be re-initialized."
+        );
+      }
 
       const refreshedInventory = await apiGetTreatmentInventory(YEAR);
       const refreshedRows = flattenInventoryToRows(refreshedInventory);
@@ -1023,7 +1074,9 @@ export default function RiskEvaluationTreatment() {
         ...prev,
         {
           role: "assistant",
-          content: "Risk Evaluation and Treatment has been re-initialized successfully.",
+          content:
+            result.message ||
+            "Risk Evaluation and Treatment has been re-initialized successfully.",
         },
       ]);
     } catch (e) {
@@ -1085,6 +1138,12 @@ export default function RiskEvaluationTreatment() {
           rows: payload,
         }
       );
+
+      if (data?.success === false) {
+        throw new Error(
+          data.message || "Risk evaluation and treatment could not be submitted."
+        );
+      }
 
       const doc = await loadTreatmentDataSafe(YEAR);
       const nextRows = flattenInventoryToRows(doc);
@@ -1169,22 +1228,13 @@ export default function RiskEvaluationTreatment() {
           {
             role: "assistant",
             content:
-              "Risk Evaluation & Treatment — Overview\n\n" +
-              "This section finalizes risk decisions and defines how risks will be handled.\n\n" +
-              "Risk Evaluation\n" +
-              "Purpose: Determine which risks are acceptable.\n\n" +
-              "Risk Matrix:\n" +
-              "Low (1–3) → Accept\n" +
-              "Medium (4–6) → Monitor\n" +
-              "High (7–9) → Treat\n\n" +
-              "Risk Treatment\n" +
-              "Purpose: Define actions to reduce risk.\n\n" +
-              "Treatment Options:\n" +
-              "Mitigate → Implement controls\n" +
-              "Transfer → Insurance or third parties\n" +
-              "Avoid → Remove the risk source\n" +
-              "Accept → Tolerate the risk\n\n" +
-              "Use this section to review findings, assign decisions, and submit final treatment actions.",
+              "Risk Evaluation & Treatment\n\n" +
+              "What this page is about:\n" +
+              "This stage turns analyzed risk into management decisions. It reviews each risk result and decides whether the organization will accept it, monitor it, or treat it, and if treatment is required, which response option will be used.\n\n" +
+              "Why it is important:\n" +
+              "ISO 27001 does not stop at scoring risk. The organization must evaluate risk against its criteria and define the response. This page is where the audit moves from technical analysis into governance and decision-making.\n\n" +
+              "Its place in the ISO 27001 lifecycle:\n" +
+              "This comes immediately after Risk Analysis and before Annex A & SoA. Risk Analysis tells us how serious each issue is. Risk Evaluation / Treatment tells us what the organization has decided to do about it.",
           },
         ]);
         return;

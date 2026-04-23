@@ -12,6 +12,7 @@ import {
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
 type DashboardDTO = {
+  scope_file_name?: string;
   environment?: string;
   scope?: {
     name?: string;
@@ -73,6 +74,7 @@ type CreateThreatAssessmentResponse = {
   created_file?: string;
   status?: StepStatus;
   message?: string;
+  cleared_items?: number;
 };
 
 type CveDetailDTO = {
@@ -172,6 +174,28 @@ async function apiCreateThreatAssessment(
       year,
       force_reset: forceReset,
     }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || `HTTP ${res.status}`);
+  }
+
+  return data as CreateThreatAssessmentResponse;
+}
+
+async function apiResetThreatAssessment(
+  year: number
+): Promise<CreateThreatAssessmentResponse> {
+  const res = await fetch(`${API_BASE}/api/threat-vulnerabilities/reset`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+    body: JSON.stringify({ year }),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -434,6 +458,8 @@ function AssistantMessages({
 
 export default function ThreatVulnerabilities() {
   const YEAR = 2026;
+  const SCOPE_REQUIRED_MESSAGE =
+    "Submit the Scope & Context document first before starting Threats & Vulnerabilities.";
 
   const [selectedStep, setSelectedStep] = useState<number>(3);
 
@@ -455,7 +481,10 @@ export default function ThreatVulnerabilities() {
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
 
   const [showResetPopup, setShowResetPopup] = useState(false);
+  const [showScopeRequiredPopup, setShowScopeRequiredPopup] = useState(false);
   const [resetPopupLoading, setResetPopupLoading] = useState(false);
+  const [pendingAssistantConfirmation, setPendingAssistantConfirmation] =
+    useState<"assess" | "reset" | null>(null);
   const creatingAssessment = resettingAssessment || resetPopupLoading;
     
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -503,6 +532,12 @@ export default function ThreatVulnerabilities() {
   const displayScopeName = dashboard?.scope?.name?.trim() || "NA";
 
   const assetCount = tvData?.kpis?.hosts ?? hosts.length ?? 0;
+  const threatAssessmentHasRecords = hosts.length > 0;
+
+  const isSubmittedScopeFile = (scopeFileName?: string | null) => {
+    const value = (scopeFileName ?? "").trim().toLowerCase();
+    return value.length > 0 && !/-v0\.json$/.test(value);
+  };
 
   const orgBoundaryItems = useMemo(() => {
     return Array.isArray(dashboard?.scope_context_section2?.bullets)
@@ -672,7 +707,25 @@ export default function ThreatVulnerabilities() {
     }
   };
 
+  const refreshDashboard = async () => {
+    try {
+      const latestDashboard = await apiGetDashboard("Production", { cacheBust: true });
+      setDashboard(latestDashboard);
+      return latestDashboard;
+    } catch (e) {
+      console.error("Failed to refresh dashboard summary:", e);
+      setDashboard(null);
+      return null;
+    }
+  };
+
+  const hasSubmittedScopeDocument = async () => {
+    const latestDashboard = await refreshDashboard();
+    return isSubmittedScopeFile(latestDashboard?.scope_file_name);
+  };
+
   const removePendingResetConfirmation = () => {
+    setPendingAssistantConfirmation(null);
     setMessages((prev) =>
       prev.filter(
         (m) => !("type" in m && m.role === "assistant" && m.type === "reset-confirmation")
@@ -680,12 +733,112 @@ export default function ThreatVulnerabilities() {
     );
   };
 
+  const startThreatAssessment = async (
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
+    closeResetPopup: boolean = false
+  ) => {
+    setLoading(true);
+    setTvErr(null);
+
+    try {
+      const result = await apiCreateThreatAssessment(YEAR, true);
+
+      setExpandedHostname(null);
+      if (closeResetPopup) {
+        setShowResetPopup(false);
+      }
+      await refreshThreatSection();
+
+      const progressText =
+        Array.isArray((result as any).progress_messages) &&
+        (result as any).progress_messages.length > 0
+          ? (result as any).progress_messages.join("\n")
+          : result.message ||
+            "Threat and Vulnerability Assessment started.";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: progressText,
+        },
+      ]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setTvErr(msg);
+      if (closeResetPopup) {
+        setShowResetPopup(false);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Failed to start assessment: ${msg}`,
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const clearThreatVulnerabilities = async () => {
+    setResettingAssessment(true);
+    setTvErr(null);
+
+    try {
+      const result = await apiResetThreatAssessment(YEAR);
+      setExpandedHostname(null);
+      await refreshThreatSection();
+
+      const clearedItems =
+        typeof result.cleared_items === "number"
+          ? ` Cleared ${result.cleared_items} vulnerability item(s).`
+          : "";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            (result.message || "Threat and vulnerability entries were cleared.") +
+            clearedItems,
+        },
+      ]);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setTvErr(msg);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Failed to reset assessment: ${msg}`,
+        },
+      ]);
+    } finally {
+      setResettingAssessment(false);
+    }
+  };
+
   const onNewThreatAssessment = async () => {
     if (creatingAssessment || resettingAssessment || resetPopupLoading) return;
+
+    if (!(await hasSubmittedScopeDocument())) {
+      setShowScopeRequiredPopup(true);
+      return;
+    }
+
+    if (!threatAssessmentHasRecords) {
+      await startThreatAssessment(setResetPopupLoading);
+      return;
+    }
+
     setShowResetPopup(true);
   };
-    
+
   const handleResetConfirm = async (confirmed: boolean) => {
+    const confirmationType = pendingAssistantConfirmation;
     removePendingResetConfirmation();
 
     if (!confirmed) {
@@ -701,43 +854,12 @@ export default function ThreatVulnerabilities() {
 
     if (resettingAssessment) return;
 
-    setResettingAssessment(true);
-    setTvErr(null);
-
-    try {
-      const result = await apiCreateThreatAssessment(YEAR, true);
-
-      setExpandedHostname(null);
-      await refreshThreatSection();
-
-      const progressText =
-        Array.isArray((result as any).progress_messages) &&
-        (result as any).progress_messages.length > 0
-          ? (result as any).progress_messages.join("\n")
-          : result.message ||
-            "Threat and Vulnerability Assessment restarted. vulnerabilities_threats was cleared.";
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: progressText,
-        },
-      ]);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setTvErr(msg);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `Failed to start assessment: ${msg}`,
-        },
-      ]);
-    } finally {
-      setResettingAssessment(false);
+    if (confirmationType === "reset") {
+      await clearThreatVulnerabilities();
+      return;
     }
+
+    await startThreatAssessment(setResettingAssessment);
   };
 
   const handlePopupCancel = () => {
@@ -748,45 +870,7 @@ export default function ThreatVulnerabilities() {
   const handlePopupConfirm = async () => {
     if (resetPopupLoading) return;
 
-    setResetPopupLoading(true);
-    setTvErr(null);
-
-    try {
-      const result = await apiCreateThreatAssessment(YEAR, true);
-
-      setExpandedHostname(null);
-      setShowResetPopup(false);
-      await refreshThreatSection();
-
-      const progressText =
-        Array.isArray((result as any).progress_messages) &&
-        (result as any).progress_messages.length > 0
-          ? (result as any).progress_messages.join("\n")
-          : result.message ||
-            "Threat and Vulnerability Assessment restarted. vulnerabilities_threats was cleared.";
-  
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: progressText,
-        },
-      ]);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setTvErr(msg);
-      setShowResetPopup(false);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `Failed to start assessment: ${msg}`,
-        },
-      ]);
-    } finally {
-      setResetPopupLoading(false);
-    }
+    await startThreatAssessment(setResetPopupLoading, true);
   };
     
   const onSend = async () => {
@@ -805,11 +889,12 @@ export default function ThreatVulnerabilities() {
             role: "assistant",
             content:
               "Threats & Vulnerabilities\n\n" +
-              "This section identifies the weaknesses and threat exposure of each asset in the audit scope.\n\n" +
-              "It builds on the Asset Inventory & CIA section by enriching each host with vulnerability and threat intelligence using sources such as the NVD (National Vulnerability Database) and the CISA Known Exploited Vulnerabilities catalog.\n\n" +
-              "The system analyzes each asset’s OS, software, services, ports, and role, and maps them to relevant CVEs, severity scores, and exploit information, including whether a vulnerability is actively exploited.\n\n" +
-              "By combining these sources, the system focuses on real-world attack exposure rather than theoretical weaknesses and creates realistic threat scenarios based on the asset’s context.\n\n" +
-              "This section acts as the bridge between asset identification and risk analysis, enabling the system to determine what can go wrong, how it can happen, and why each asset is at risk.",
+              "What this page is about:\n" +
+              "This stage identifies how in-scope assets could be compromised. It links each host to vulnerabilities, exploit information, threat exposure, and realistic attack scenarios using official intelligence such as NVD and CISA.\n\n" +
+              "Why it is important:\n" +
+              "ISO 27001 risk assessment needs a clear understanding of what can go wrong. This page turns the asset inventory into an attack-surface view, so the organization can see where weaknesses, threat capability, and business exposure meet.\n\n" +
+              "Its place in the ISO 27001 lifecycle:\n" +
+              "This comes after Asset Inventory & CIA and before Existing Controls / Risk Analysis. First we identify what we own, then we identify what threatens it, then we assess existing protections and calculate risk.",
           },
         ]);
         return;
@@ -877,7 +962,24 @@ export default function ThreatVulnerabilities() {
 
       if (text === "/assess") {
         removePendingResetConfirmation();
+
+        if (!(await hasSubmittedScopeDocument())) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: SCOPE_REQUIRED_MESSAGE,
+            },
+          ]);
+          return;
+        }
     
+        if (!threatAssessmentHasRecords) {
+          await startThreatAssessment(setResettingAssessment);
+          return;
+        }
+
+        setPendingAssistantConfirmation("assess");
         setMessages((prev) => [
           ...prev,
           {
@@ -893,12 +995,14 @@ export default function ThreatVulnerabilities() {
       if (text === "/reset") {
         removePendingResetConfirmation();
 
+        setPendingAssistantConfirmation("reset");
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
             type: "reset-confirmation",
-            content: "Restart in Threat and Vulnerability Assessment?",
+            content:
+              "Clear vulnerability entries from the Threat and Vulnerability Assessment?",
           },
         ]);
         return;
@@ -920,7 +1024,7 @@ export default function ThreatVulnerabilities() {
           ...prev,
           {
             role: "assistant",
-            content: "(Mock) Submit will be connected to backend next.",
+            content: "The Threats & Vulnerabilities have been finalized.",
           },
         ]);
         return;
@@ -1618,7 +1722,7 @@ export default function ThreatVulnerabilities() {
               </div>
 
               <div className="mt-3 shrink-0 text-xs text-slate-500">
-                Command mode: /details /submit /reset /exit /commands /help
+                Command mode: /details /assess /submit /reset /exit /commands /help
               </div>
             </div>
           </ShellCard>
@@ -1658,6 +1762,29 @@ export default function ThreatVulnerabilities() {
                 className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
               >
                 {resetPopupLoading ? "Resetting..." : "Yes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showScopeRequiredPopup ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm">
+          <div className="w-[460px] max-w-[92vw] rounded-2xl border border-white/10 bg-[#0B1120] p-6 shadow-2xl ring-1 ring-white/10">
+            <div className="text-[22px] font-semibold tracking-tight text-slate-100">
+              Scope &amp; Context Required
+            </div>
+
+            <div className="mt-4 text-[15px] leading-7 text-slate-300">
+              {SCOPE_REQUIRED_MESSAGE}
+            </div>
+
+            <div className="mt-8 flex items-center justify-end">
+              <button
+                onClick={() => setShowScopeRequiredPopup(false)}
+                className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              >
+                OK
               </button>
             </div>
           </div>

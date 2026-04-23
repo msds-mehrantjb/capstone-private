@@ -12,6 +12,7 @@ import {
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
 type DashboardDTO = {
+  scope_file_name?: string;
   environment?: string;
   scope?: {
     name?: string;
@@ -362,6 +363,8 @@ function getExistingControlRows(
 
 export default function ControlsPostures() {
   const YEAR = 2026;
+  const SCOPE_REQUIRED_MESSAGE =
+    "Submit the Scope & Context document first before starting Existing Controls & Postures.";
 
   const [selectedStep, setSelectedStep] = useState<number>(4);
 
@@ -382,6 +385,7 @@ export default function ControlsPostures() {
   const tableScrollRef = useRef<HTMLDivElement | null>(null);
 
   const [showResetPopup, setShowResetPopup] = useState(false);
+  const [showScopeRequiredPopup, setShowScopeRequiredPopup] = useState(false);
   const [resetPopupLoading, setResetPopupLoading] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -428,10 +432,16 @@ export default function ControlsPostures() {
 
   const displayScopeName = dashboard?.scope?.name?.trim() || "NA";
 
+  const isSubmittedScopeFile = (scopeFileName?: string | null) => {
+    const value = (scopeFileName ?? "").trim().toLowerCase();
+    return value.length > 0 && !/-v0\.json$/.test(value);
+  };
+
   const postureStatus: StepStatus =
     systemStatus?.sections?.existing_controls_postures?.status ?? "Not Started";
 
   const totalHosts = cpData?.kpis?.hosts ?? hosts.length ?? 0;
+  const controlPostureAssessmentHasRecords = hosts.length > 0;
 
   const orgBoundaryItems = useMemo(() => {
     return Array.isArray(dashboard?.scope_context_section2?.bullets)
@@ -606,6 +616,23 @@ export default function ControlsPostures() {
     }
   };
 
+  const refreshDashboard = async () => {
+    try {
+      const latestDashboard = await apiGetDashboard("Production", { cacheBust: true });
+      setDashboard(latestDashboard);
+      return latestDashboard;
+    } catch (e) {
+      console.error("Failed to refresh dashboard summary:", e);
+      setDashboard(null);
+      return null;
+    }
+  };
+
+  const hasSubmittedScopeDocument = async () => {
+    const latestDashboard = await refreshDashboard();
+    return isSubmittedScopeFile(latestDashboard?.scope_file_name);
+  };
+
   const removePendingResetConfirmation = () => {
     setMessages((prev) =>
       prev.filter(
@@ -621,6 +648,11 @@ export default function ControlsPostures() {
 
   const onNewAssessment = async () => {
     if (creatingAssessment || resettingAssessment || resetPopupLoading) return;
+
+    if (!(await hasSubmittedScopeDocument())) {
+      setShowScopeRequiredPopup(true);
+      return;
+    }
 
     setCreatingAssessment(true);
     setCpErr(null);
@@ -644,6 +676,24 @@ export default function ControlsPostures() {
       const msg = e?.message || String(e);
 
       if (msg.includes("FILE_ALREADY_EXISTS_CONFIRM_RESET")) {
+        if (!controlPostureAssessmentHasRecords) {
+          const result = await apiCreateControlPostureAssessment(YEAR, true);
+
+          setExpandedHostname(null);
+          await refreshControlPostureSection();
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content:
+                result.message ||
+                "Existing Controls and Postures Assessment started.",
+            },
+          ]);
+          return;
+        }
+
         setShowResetPopup(true);
         return;
       }
@@ -772,10 +822,12 @@ export default function ControlsPostures() {
             role: "assistant",
             content:
               "Existing Controls & Postures\n\n" +
-              "This section identifies the current security controls and implementation posture of each asset in the audit scope.\n\n" +
-              "It builds on the Asset Inventory and Threats & Vulnerabilities sections by documenting the safeguards, configurations, security technologies, and operational protections already in place.\n\n" +
-              "The system analyzes each host’s role, software, services, ports, and security configuration to determine which controls are implemented and how mature or effective the posture appears.\n\n" +
-              "This section acts as the foundation for risk analysis by showing what protections already exist before calculating residual risk.",
+              "What this page is about:\n" +
+              "This stage records the safeguards that already exist for the in-scope assets. It captures the current security posture of each host, including technical controls, configuration protections, and operational defenses that may reduce risk.\n\n" +
+              "Why it is important:\n" +
+              "ISO 27001 risk analysis should measure risk in the real environment, not in an empty environment. This page shows what controls are already operating, so the audit can distinguish raw exposure from residual exposure.\n\n" +
+              "Its place in the ISO 27001 lifecycle:\n" +
+              "This page sits between asset and threat identification and formal risk analysis. After we know what assets exist and what vulnerabilities affect them, we assess the current protection level before deciding how serious the remaining risk is.",
           },
         ]);
         return;
@@ -800,18 +852,47 @@ export default function ControlsPostures() {
       }
 
       if (text === "/assess") {
+        if (!(await hasSubmittedScopeDocument())) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: SCOPE_REQUIRED_MESSAGE,
+            },
+          ]);
+          return;
+        }
+
+        let createdForAssess = false;
+
         try {
+          let initializationMessage = "";
+
+          if (!controlPostureAssessmentHasRecords) {
+            createdForAssess = true;
+            setCreatingAssessment(true);
+
+            const createResult = await apiCreateControlPostureAssessment(YEAR, false);
+            initializationMessage =
+              createResult.message ||
+              "Existing Controls and Postures Assessment started.";
+          }
+
           const result = await apiAssessControlPostures(YEAR);
           setExpandedHostname(null);
           await refreshControlPostureSection();
+
+          const assessmentMessage =
+            result.message ||
+            "Existing Controls & Postures assessment completed successfully.";
     
           setMessages((prev) => [
             ...prev,
             {
               role: "assistant",
-              content:
-                result.message ||
-                "Existing Controls & Postures assessment completed succesfully.",
+              content: initializationMessage
+                ? `${initializationMessage}\n\n${assessmentMessage}`
+                : assessmentMessage,
             },
           ]);
         } catch (e) {
@@ -824,6 +905,10 @@ export default function ControlsPostures() {
               content: `Assessment failed: ${msg}`,
             },
           ]);
+        } finally {
+          if (createdForAssess) {
+            setCreatingAssessment(false);
+          }
         }
         return;
       }
@@ -858,7 +943,7 @@ export default function ControlsPostures() {
           ...prev,
           {
             role: "assistant",
-            content: "(Mock) Submit will be connected to backend next.",
+            content: "The Copntrol & Postures has been finalyzed",
           },
         ]);
         return;
@@ -1590,6 +1675,29 @@ export default function ControlsPostures() {
                 className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:opacity-60"
               >
                 {resetPopupLoading ? "Resetting..." : "Yes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showScopeRequiredPopup ? (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 backdrop-blur-sm">
+          <div className="w-[460px] max-w-[92vw] rounded-2xl border border-white/10 bg-[#0B1120] p-6 shadow-2xl ring-1 ring-white/10">
+            <div className="text-[22px] font-semibold tracking-tight text-slate-100">
+              Scope &amp; Context Required
+            </div>
+
+            <div className="mt-4 text-[15px] leading-7 text-slate-300">
+              {SCOPE_REQUIRED_MESSAGE}
+            </div>
+
+            <div className="mt-8 flex items-center justify-end">
+              <button
+                onClick={() => setShowScopeRequiredPopup(false)}
+                className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
+              >
+                OK
               </button>
             </div>
           </div>

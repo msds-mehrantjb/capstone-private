@@ -28,20 +28,6 @@
           "Server Room Access Control"
         ]
       }
-    },
-    {
-      "hostname": "WS-01",
-      "ip_address": "10.0.0.10",
-      "role": "Unknown",
-      "CIA rating": "Medium",
-      "existing_controls": {}
-    },
-    {
-      "hostname": "WS-02",
-      "ip_address": "10.0.0.11",
-      "role": "Unknown",
-      "CIA rating": "Medium",
-      "existing_controls": {}
     }
   ]
 }

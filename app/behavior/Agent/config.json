@@ -1,0 +1,12 @@
+{
+    "AgentRoot":  "C:\\ProgramData\\BehaviorAgent",
+    "LocalJsonPath":  "C:\\ProgramData\\BehaviorAgent\\UserBehaviorActivity.json",
+    "LogPath":  "C:\\ProgramData\\BehaviorAgent\\logs\\collect_behavior.log",
+    "RetentionDays":  30,
+    "SuccessfulLoginDailyCap":  20,
+    "SessionDurationCapMinutes":  480,
+    "TaskName":  "BehaviorAgent-DailyCollection",
+    "TaskTime":  "01:00",
+    "Domain":  "corp.local",
+    "OutputDateMode":  "PreviousDay"
+}

@@ -25,14 +25,14 @@ KPI_GROUPS = [
             ("role_prediction_accuracy_pct", "Role Prediction Accuracy (%)", "emerald"),
             ("cia_prediction_accuracy_pct", "CIA Prediction Accuracy (%)", "emerald"),
             ("f1_score_role_model", "F1 Score (Role Model)", "emerald"),
-            ("behavior_model_accuracy_pct", "Behavior Model Accuracy (%)", "emerald"),
+            ("model_accuracy_pct", "Model Accuracy (%)", "emerald"),
         ],
     },
     {
         "group": "ML-based UABV",
         "json_key": "ml_based_uabv",
         "metrics": [
-            ("average_behavior_risk_score", "Average Behavior Risk Score", "amber"),
+            ("behavior_model_accuracy_pct", "Behavior Model Accuracy (%)", "amber"),
             ("high_risk_user_percentage_pct", "High-Risk User Percentage (%)", "amber"),
             ("score_difference_ml_vs_rule", "Score Difference (ML vs Rule)", "amber"),
             ("top_contributing_feature_distribution_pct", "Top Contributing Feature Distribution (%)", "amber"),
@@ -110,6 +110,10 @@ def _feature_importance_file() -> Path:
     return BASE_DIR / "data" / "ml" / "models" / "feature_importance.csv"
 
 
+def _ml_dir() -> Path:
+    return BASE_DIR / "data" / "ml"
+
+
 def _rel(path: Path) -> str:
     try:
         return path.relative_to(BASE_DIR).as_posix()
@@ -157,7 +161,7 @@ def _blank_inputs_data(year: int) -> dict:
         "meta": {
             "year": year,
             "name": "AI_ML_KPI_Inputs",
-            "version": 1,
+            "version": 2,
         },
         "role_model_training_runs": [],
         "role_prediction_events": [],
@@ -198,6 +202,8 @@ def _load_dashboard_data(year: int) -> dict:
     data.setdefault("latest_snapshot_id", "")
     if not isinstance(data.get("snapshots"), list):
         data["snapshots"] = []
+    if _migrate_dashboard_structure(data):
+        _atomic_write_json(path, data)
     return data
 
 
@@ -243,6 +249,13 @@ def _load_or_create_inputs_data(year: int) -> dict:
     changed = False
     blank = _blank_inputs_data(year)
     data.setdefault("meta", blank["meta"])
+    if not isinstance(data.get("meta"), dict):
+        data["meta"] = deepcopy(blank["meta"])
+        changed = True
+    meta_version = _number(data["meta"].get("version")) or 0
+    if int(meta_version) < 2:
+        data["meta"]["version"] = 2
+        changed = True
     for key, value in blank.items():
         if key == "meta":
             continue
@@ -264,6 +277,29 @@ def _load_or_create_inputs_data(year: int) -> dict:
                     if data[key].get(nested_key) != clean_value:
                         data[key][nested_key] = clean_value
                         changed = True
+
+    latest_role_run = _latest_item(_events(data, "role_model_training_runs"))
+    if isinstance(latest_role_run, dict):
+        has_accuracy = any(
+            _number(latest_role_run.get(name)) is not None
+            for name in ("accuracy_pct", "accuracy_percent", "accuracy")
+        )
+        if not has_accuracy:
+            role_accuracy_proxy = _telemetry_role_accuracy(data, year)
+            if role_accuracy_proxy:
+                latest_role_run["accuracy_pct"] = role_accuracy_proxy.get("value")
+                latest_role_run["accuracy_source"] = "role_prediction_events_proxy"
+                notes = latest_role_run.get("notes")
+                if not isinstance(notes, list):
+                    notes = []
+                    latest_role_run["notes"] = notes
+                proxy_note = (
+                    "Role model accuracy was backfilled from current role prediction events "
+                    "because the original training run did not store accuracy_pct."
+                )
+                if proxy_note not in notes:
+                    notes.append(proxy_note)
+                changed = True
 
     if changed:
         _atomic_write_json(path, data)
@@ -410,6 +446,10 @@ KPI_MODAL_TEXT = {
         "meaning": "This measures how often the ML-predicted asset role matched the final selected role.",
         "formula": "Correct predictions / Total evaluated predictions * 100. A prediction is counted as correct when the ML-predicted role is the same as the final selected role.",
     },
+    "model_accuracy_pct": {
+        "meaning": "This shows the latest measured accuracy indicator for the role model used in asset role classification.",
+        "formula": "If role training telemetry stores accuracy_pct, the dashboard uses that latest model-accuracy value. Otherwise, it uses current evaluated role prediction accuracy as the role-model accuracy indicator.",
+    },
     "cia_prediction_accuracy_pct": {
         "meaning": "This measures how often CIA predictions were correct. If true CIA telemetry is missing, the dashboard may use CIA coverage as an estimate.",
         "formula": "Correct CIA predictions / Total CIA predictions * 100. If CIA prediction telemetry is unavailable, the fallback checks how many assets have a usable CIA rating.",
@@ -421,10 +461,6 @@ KPI_MODAL_TEXT = {
     "behavior_model_accuracy_pct": {
         "meaning": "This shows the latest measured accuracy of the user behavior risk model during training or evaluation.",
         "formula": "The user behavior dataset is split into stratified training and test sets. Numeric behavior features are median-imputed, labels are encoded, and a Random Forest classifier predicts the held-out test rows. Accuracy = correct test predictions / total test predictions * 100.",
-    },
-    "average_behavior_risk_score": {
-        "meaning": "This is the average behavior risk score across user behavior records. Higher values mean more risky behavior patterns overall.",
-        "formula": "Sum of behavior risk scores / Total behavior predictions.",
     },
     "high_risk_user_percentage_pct": {
         "meaning": "This shows the percentage of user behavior records classified as high risk.",
@@ -484,6 +520,9 @@ INPUT_LABELS = {
     "macro_f1": "Macro F1 score",
     "run_id": "Training run",
     "accuracy_pct": "Model accuracy",
+    "accuracy_source": "Accuracy source",
+    "server_accuracy_pct": "Server model accuracy",
+    "workstation_accuracy_pct": "Workstation model accuracy",
     "total_behavior_predictions": "Total behavior predictions",
     "total_user_behavior_records": "Total user behavior records",
     "high_risk_users": "High-risk user behavior records",
@@ -526,6 +565,10 @@ RATIO_INPUTS = {
         ["correct_predictions", "matching_predictions"],
         ["total_predictions", "evaluated_assets"],
     ),
+    "model_accuracy_pct": (
+        ["correct_predictions", "matching_predictions"],
+        ["total_predictions", "evaluated_assets"],
+    ),
     "cia_prediction_accuracy_pct": (
         ["correct_predictions", "assets_with_cia_rating"],
         ["total_predictions", "total_assets"],
@@ -551,8 +594,6 @@ RATIO_INPUTS = {
         ["predictions_with_confidence"],
     ),
 }
-
-
 COUNT_INPUTS = {
     "rag_query_count": ["rag_query_count", "rag_events"],
     "reasoning_calls": ["llm_reasoning_calls", "llm_events"],
@@ -563,9 +604,51 @@ COUNT_INPUTS = {
 
 
 def _readable_input_label(key: str) -> str:
-    if key in INPUT_LABELS:
-        return INPUT_LABELS[key]
-    return str(key).replace("_", " ").strip().title()
+    text = str(key or "").strip()
+    if text in INPUT_LABELS:
+        return INPUT_LABELS[text]
+
+    normalized = "".join(ch for ch in text.lower() if ch.isalnum())
+    if normalized:
+        for raw_key, label in INPUT_LABELS.items():
+            raw_normalized = "".join(ch for ch in str(raw_key).lower() if ch.isalnum())
+            label_normalized = "".join(ch for ch in str(label).lower() if ch.isalnum())
+            if normalized == raw_normalized or normalized == label_normalized:
+                return label
+
+    words = []
+    current = ""
+    for ch in text.replace("-", " ").replace("_", " "):
+        if ch.isupper() and current and not current[-1].isupper():
+            words.append(current)
+            current = ch
+        else:
+            current += ch
+    if current:
+        words.append(current)
+    rebuilt = " ".join(part.strip() for part in words if part.strip())
+    return rebuilt.title() if rebuilt else text
+
+
+def _readable_source_value(value: Any) -> Any:
+    text = str(value or "").strip()
+    if not text:
+        return value
+
+    mapping = {
+        "telemetry": "Current telemetry",
+        "previous_snapshot": "Previous snapshot history",
+        "table_fallback": "Current table fallback",
+        "not_available": "Not available",
+        "reset_audit": "Reset audit snapshot",
+        "role_prediction_events_proxy": "Current role prediction events proxy",
+        "current_role_prediction_events_proxy": "Current role prediction events proxy",
+    }
+
+    normalized = text.lower()
+    if normalized in mapping:
+        return mapping[normalized]
+    return text.replace("_", " ").strip().title()
 
 
 def _format_modal_value(value: Any, metric_key: str | None = None) -> str:
@@ -735,6 +818,26 @@ def _modal_meaning(metric_key: str, metric: dict) -> str:
             f"{carried_context}{displayed} role prediction accuracy means the role model matched the final selected asset role at that rate. "
             f"{activity} The goal is to make asset role assignment reliable enough to support CIA rating, risk analysis, "
             f"and downstream ISO workflow decisions with less manual correction. {_percent_quality(value)}"
+        )
+    if metric_key == "model_accuracy_pct":
+        if "accuracy_pct" in inputs and "run_id" in inputs:
+            accuracy_source = _readable_source_value(inputs.get("accuracy_source")) if inputs.get("accuracy_source") else ""
+            source_text = f" The accuracy source was {accuracy_source}." if accuracy_source else ""
+            return (
+                f"{carried_context}{displayed} model accuracy means the latest role-model evaluation ran at that accuracy level for asset role classification. "
+                f"{_input_count_text(inputs, ['run_id'])}. {_input_count_text(inputs, ['accuracy_pct'])}.{source_text} "
+                "The goal is to show whether the trained role model itself is learning role classes well enough before we trust it in live assignment workflows. "
+                f"{_percent_quality(value)}"
+            )
+        activity = _ratio_activity_text(
+            inputs,
+            ["correct_predictions", "matching_predictions"],
+            ["total_predictions", "evaluated_assets"],
+        )
+        return (
+            f"{carried_context}{displayed} model accuracy is currently being estimated from evaluated role prediction outcomes because stored role-training accuracy was not available. "
+            f"{activity} The goal is to keep a usable model-quality signal available for the role model even when dedicated training telemetry is missing. "
+            f"{_percent_quality(value)}"
         )
     if metric_key == "cia_prediction_accuracy_pct":
         activity = _ratio_activity_text(
@@ -919,6 +1022,15 @@ def _modal_how_computed(metric_key: str, metric: dict) -> str:
             "Recall = true positives / actual positives. Per-role F1 = 2 * precision * recall / (precision + recall). "
             "The displayed Macro F1 score is the average of the per-role F1 values, so smaller role classes still affect the result."
         )
+    if metric_key == "model_accuracy_pct":
+        if "run_id" in inputs and "accuracy_pct" in inputs:
+            return carried_prefix + (
+                "The dashboard reads the latest role model training run from AIMLKPIInputs.json and uses its stored Model accuracy value. "
+                "When available, this is the direct role-model accuracy metric captured for that run."
+            )
+        return carried_prefix + (
+            "Stored role model training accuracy was not available, so the dashboard used Correct predictions / Total evaluated predictions * 100 from current role prediction telemetry as the role-model accuracy indicator."
+        )
     if metric_key == "behavior_model_accuracy_pct":
         return carried_prefix + (
             "Model accuracy is calculated on the held-out Test split. The behavior training pipeline median-imputes numeric behavior features, encodes the risk label, "
@@ -977,11 +1089,14 @@ def _data_used_items(metric: dict, metric_key: str) -> list[dict]:
                 items.append({"label": "Latest available snapshot date", "value": previous_generated_at})
             source = inputs.get("latest_available_source") or calculation.get("previous_source")
             if source:
-                items.append({"label": "Latest available data source", "value": source})
+                items.append({"label": "Latest available data source", "value": _readable_source_value(source)})
             return items
 
         items = [
-            {"label": _readable_input_label(str(key)), "value": value}
+            {
+                "label": _readable_input_label(str(key)),
+                "value": _readable_source_value(value) if str(key) == "latest_available_source" else value,
+            }
             for key, value in inputs.items()
             if key not in {"previous_source", "previous_method"}
         ]
@@ -1018,10 +1133,23 @@ def _data_used_items(metric: dict, metric_key: str) -> list[dict]:
         return items
 
     items = [
-        {"label": _readable_input_label(str(key)), "value": value}
+        {
+            "label": _readable_input_label(str(key)),
+            "value": _readable_source_value(value) if str(key) == "latest_available_source" else value,
+        }
         for key, value in inputs.items()
         if key not in {"previous_source", "previous_method"}
     ]
+    if metric_key == "model_accuracy_pct" and "accuracy_source" in inputs:
+        items = [
+            {
+                "label": item["label"],
+                "value": _readable_source_value(item["value"])
+                if item["label"] == "Accuracy Source"
+                else item["value"],
+            }
+            for item in items
+        ]
     if metric_key == "behavior_model_accuracy_pct" and "accuracy_pct" in inputs:
         items.append({"label": "Model algorithm", "value": "Random Forest classifier"})
         items.append({"label": "Test split", "value": "20% stratified hold-out"})
@@ -1049,6 +1177,8 @@ def _actual_calculation(metric: dict, metric_key: str) -> str:
                 f"{_format_modal_value(numerator)} / {_format_modal_value(denominator)} * 100 = "
                 f"{_format_modal_value(value, metric_key)}"
             )
+        if numerator_key and metric_key == "model_accuracy_pct":
+            return f"Latest stored role model accuracy = {_format_modal_value(value, metric_key)}"
         if numerator_key and metric_key == "behavior_model_accuracy_pct":
             return f"Latest stored behavior model accuracy = {_format_modal_value(value, metric_key)}"
 
@@ -1267,6 +1397,60 @@ def _not_available_metric() -> dict:
     )
 
 
+def _migrate_dashboard_structure(data: dict) -> bool:
+    if not isinstance(data, dict):
+        return False
+
+    snapshots = data.get("snapshots")
+    if not isinstance(snapshots, list):
+        return False
+
+    changed = False
+    for snapshot in snapshots:
+        if not isinstance(snapshot, dict):
+            continue
+        kpis = snapshot.get("kpis")
+        if not isinstance(kpis, dict):
+            continue
+
+        core_ml = kpis.get("core_ml")
+        if not isinstance(core_ml, dict):
+            core_ml = {}
+            kpis["core_ml"] = core_ml
+            changed = True
+
+        ml_uabv = kpis.get("ml_based_uabv")
+        if not isinstance(ml_uabv, dict):
+            ml_uabv = {}
+            kpis["ml_based_uabv"] = ml_uabv
+            changed = True
+
+        old_behavior_metric = core_ml.get("behavior_model_accuracy_pct")
+        if "behavior_model_accuracy_pct" not in ml_uabv and isinstance(old_behavior_metric, dict):
+            ml_uabv["behavior_model_accuracy_pct"] = deepcopy(old_behavior_metric)
+            changed = True
+
+        if "average_behavior_risk_score" in ml_uabv:
+            ml_uabv.pop("average_behavior_risk_score", None)
+            changed = True
+
+        if "model_accuracy_pct" not in core_ml:
+            source_metric = core_ml.get("role_prediction_accuracy_pct")
+            if isinstance(source_metric, dict):
+                core_ml["model_accuracy_pct"] = deepcopy(source_metric)
+            elif isinstance(old_behavior_metric, dict):
+                core_ml["model_accuracy_pct"] = deepcopy(old_behavior_metric)
+            else:
+                core_ml["model_accuracy_pct"] = _not_available_metric()
+            changed = True
+
+        if "behavior_model_accuracy_pct" in core_ml:
+            core_ml.pop("behavior_model_accuracy_pct", None)
+            changed = True
+
+    return changed
+
+
 def resolve_kpi_value(
     *,
     year: int,
@@ -1284,7 +1468,16 @@ def resolve_kpi_value(
 
     previous, previous_snapshot = _previous_metric(dashboard_data, year, group_key, metric_key)
     if previous is not None and previous_snapshot is not None:
-        return _carried_forward_metric(previous, previous_snapshot, _aiml_dashboard_file(year))
+        previous_source = ""
+        if isinstance(previous, dict):
+            previous_source = str(previous.get("source") or "").strip().lower()
+
+        if not (
+            group_key == "core_ml"
+            and metric_key == "cia_prediction_accuracy_pct"
+            and previous_source == "reset_audit"
+        ):
+            return _carried_forward_metric(previous, previous_snapshot, _aiml_dashboard_file(year))
 
     if table_fallback_calculator:
         metric = table_fallback_calculator(inputs, year)
@@ -1325,10 +1518,10 @@ def _macro_f1(pairs: list[tuple[str, str]]) -> float | None:
     return sum(values) / len(values)
 
 
-def _telemetry_role_accuracy(inputs: dict, year: int) -> dict | None:
+def _role_accuracy_counts(inputs: dict) -> tuple[int, int]:
     events = _events(inputs, "role_prediction_events")
     if not events:
-        return None
+        return 0, 0
 
     evaluated = 0
     correct = 0
@@ -1343,6 +1536,11 @@ def _telemetry_role_accuracy(inputs: dict, year: int) -> dict | None:
             evaluated += 1
             correct += 1 if _norm(pair[0]) == _norm(pair[1]) else 0
 
+    return correct, evaluated
+
+
+def _telemetry_role_accuracy(inputs: dict, year: int) -> dict | None:
+    correct, evaluated = _role_accuracy_counts(inputs)
     if evaluated == 0:
         return None
 
@@ -1355,6 +1553,63 @@ def _telemetry_role_accuracy(inputs: dict, year: int) -> dict | None:
         source_files=[_rel(_aiml_inputs_file(year))],
         inputs={"correct_predictions": correct, "total_predictions": evaluated},
         notes=["Computed from current role prediction events."],
+    )
+
+
+def _telemetry_role_model_accuracy(inputs: dict, year: int) -> dict | None:
+    latest = _latest_item(_events(inputs, "role_model_training_runs"))
+    if latest:
+        value = (
+            _number(latest.get("accuracy_pct"))
+            or _number(latest.get("accuracy_percent"))
+            or _number(latest.get("accuracy"))
+        )
+        if value is not None:
+            if value <= 1:
+                value *= 100
+            metric_inputs = {
+                "run_id": latest.get("run_id", ""),
+                "accuracy_pct": _rounded(value),
+            }
+            for key in ("server_accuracy_pct", "workstation_accuracy_pct"):
+                extra_value = _number(latest.get(key))
+                if extra_value is not None:
+                    metric_inputs[key] = _rounded(extra_value)
+            accuracy_source = str(latest.get("accuracy_source") or "").strip()
+            if accuracy_source:
+                metric_inputs["accuracy_source"] = accuracy_source
+            return _metric(
+                _rounded(value),
+                computed=True,
+                source="telemetry",
+                method="current_telemetry",
+                formula="latest role model evaluation accuracy",
+                source_files=[_rel(_aiml_inputs_file(year))],
+                inputs=metric_inputs,
+                notes=["Used the latest role model training run in AIMLKPIInputs.json."],
+            )
+
+    correct, evaluated = _role_accuracy_counts(inputs)
+    if evaluated == 0:
+        return None
+
+    accuracy = _rounded((correct / evaluated) * 100)
+    return _metric(
+        accuracy,
+        computed=True,
+        source="telemetry",
+        method="current_telemetry",
+        formula="correct_predictions / total_predictions * 100",
+        source_files=[_rel(_aiml_inputs_file(year))],
+        inputs={
+            "accuracy_pct": accuracy,
+            "accuracy_source": "current_role_prediction_events_proxy",
+            "correct_predictions": correct,
+            "total_predictions": evaluated,
+        },
+        notes=[
+            "No stored role model training accuracy was available, so the dashboard used current evaluated role predictions as the role-model accuracy indicator."
+        ],
     )
 
 
@@ -2246,12 +2501,12 @@ def _table_low_confidence_pct(inputs: dict, year: int) -> dict | None:
 TELEMETRY_CALCULATORS: dict[str, dict[str, MetricCalculator]] = {
     "core_ml": {
         "role_prediction_accuracy_pct": _telemetry_role_accuracy,
+        "model_accuracy_pct": _telemetry_role_model_accuracy,
         "cia_prediction_accuracy_pct": _telemetry_cia_accuracy,
         "f1_score_role_model": _telemetry_role_f1,
-        "behavior_model_accuracy_pct": _telemetry_behavior_accuracy,
     },
     "ml_based_uabv": {
-        "average_behavior_risk_score": _telemetry_average_behavior_score,
+        "behavior_model_accuracy_pct": _telemetry_behavior_accuracy,
         "high_risk_user_percentage_pct": _telemetry_high_risk_user_pct,
         "score_difference_ml_vs_rule": _telemetry_ml_rule_difference,
         "top_contributing_feature_distribution_pct": _telemetry_top_feature_distribution,
@@ -2278,11 +2533,11 @@ TELEMETRY_CALCULATORS: dict[str, dict[str, MetricCalculator]] = {
 TABLE_FALLBACK_CALCULATORS: dict[str, dict[str, MetricCalculator]] = {
     "core_ml": {
         "role_prediction_accuracy_pct": _table_role_accuracy,
+        "model_accuracy_pct": _table_role_accuracy,
         "cia_prediction_accuracy_pct": _table_cia_accuracy,
         "f1_score_role_model": _table_role_f1,
     },
     "ml_based_uabv": {
-        "average_behavior_risk_score": _table_average_behavior_score,
         "high_risk_user_percentage_pct": _table_high_risk_user_pct,
         "score_difference_ml_vs_rule": _table_ml_rule_difference,
         "top_contributing_feature_distribution_pct": _table_feature_distribution,
@@ -2306,10 +2561,139 @@ def _latest_previous_snapshot(data: dict, year: int) -> dict:
 def _llm_display_info(raw: Any = None) -> dict:
     data = raw if isinstance(raw, dict) else {}
     return {
-        "model": "Qwen 33",
-        "version": "Qwen 33",
+        "model": "Qwen 3",
+        "version": "Qwen 3",
         "parameters": "14B",
         "deployment_style": "Local LLM - Llama",
+    }
+
+
+def _dataset_source_bucket(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    if text in {"real", "actual", "live", "production"}:
+        return "real"
+    if text in {"synthetic", "simulated", "generated", "sample"}:
+        return "synthetic"
+    if text in {"true", "1", "yes"}:
+        return "synthetic"
+    if text in {"false", "0", "no"}:
+        return "real"
+    return "unknown"
+
+
+def _empty_dataset_record(path: Path | None = None, note: str = "") -> dict:
+    record = {
+        "total_records": 0,
+        "synthetic_records": 0,
+        "real_records": 0,
+        "unknown_records": 0,
+        "source_file": _rel(path) if path else "",
+        "last_modified": "",
+        "notes": [],
+    }
+    if path and path.exists():
+        record["last_modified"] = datetime.fromtimestamp(path.stat().st_mtime).isoformat(timespec="seconds")
+    if note:
+        record["notes"].append(note)
+    return record
+
+
+def _count_dataset_file(path: Path, default_source: str = "unknown") -> dict:
+    if not path.exists():
+        return _empty_dataset_record(path, f"Dataset file was not found: {_rel(path)}")
+
+    record = _empty_dataset_record(path)
+    source_counts = {"synthetic": 0, "real": 0, "unknown": 0}
+
+    try:
+        if path.suffix.lower() == ".parquet":
+            import pandas as pd
+
+            df = pd.read_parquet(path)
+            total = int(len(df))
+            source_column = next(
+                (name for name in ("data_source", "record_source", "source", "is_synthetic") if name in df.columns),
+                "",
+            )
+            if source_column:
+                for value in df[source_column].tolist():
+                    source_counts[_dataset_source_bucket(value)] += 1
+            else:
+                source_counts[_dataset_source_bucket(default_source)] = total
+                record["notes"].append(
+                    f"No source column was found; counted records as {default_source}."
+                )
+        else:
+            with path.open("r", encoding="utf-8", newline="") as f:
+                reader = csv.DictReader(f)
+                fieldnames = reader.fieldnames or []
+                source_column = next(
+                    (name for name in ("data_source", "record_source", "source", "is_synthetic") if name in fieldnames),
+                    "",
+                )
+                total = 0
+                for row in reader:
+                    total += 1
+                    bucket = _dataset_source_bucket(row.get(source_column)) if source_column else _dataset_source_bucket(default_source)
+                    source_counts[bucket] += 1
+                if not source_column:
+                    record["notes"].append(
+                        f"No source column was found; counted records as {default_source}."
+                    )
+
+        record.update({
+            "total_records": total,
+            "synthetic_records": source_counts["synthetic"],
+            "real_records": source_counts["real"],
+            "unknown_records": source_counts["unknown"],
+        })
+        return record
+    except Exception as e:
+        return _empty_dataset_record(path, f"Failed to count dataset rows: {e}")
+
+
+def _first_existing_dataset_file(*names: str) -> Path:
+    for name in names:
+        path = _ml_dir() / name
+        if path.exists():
+            return path
+    return _ml_dir() / names[0]
+
+
+def _build_dataset_provenance() -> dict:
+    datasets = {
+        "server_role_training_dataset": _count_dataset_file(
+            _first_existing_dataset_file(
+                "server_role_training_dataset.parquet",
+                "server_role_training_dataset.csv",
+            ),
+            default_source="synthetic",
+        ),
+        "workstation_role_training_dataset": _count_dataset_file(
+            _first_existing_dataset_file(
+                "workstation_role_training_dataset.parquet",
+                "workstation_role_training_dataset.csv",
+            ),
+            default_source="synthetic",
+        ),
+        "user_behavior_training_dataset": _count_dataset_file(
+            _first_existing_dataset_file("user_behavior_training_dataset.parquet"),
+            default_source="synthetic",
+        ),
+    }
+
+    summary = {
+        "total_records_all_datasets": sum(int(item.get("total_records", 0) or 0) for item in datasets.values()),
+        "synthetic_records_all_datasets": sum(int(item.get("synthetic_records", 0) or 0) for item in datasets.values()),
+        "real_records_all_datasets": sum(int(item.get("real_records", 0) or 0) for item in datasets.values()),
+        "unknown_records_all_datasets": sum(int(item.get("unknown_records", 0) or 0) for item in datasets.values()),
+    }
+
+    return {
+        "summary": summary,
+        "datasets": datasets,
+        "computed_at": _now_local().isoformat(timespec="seconds"),
+        "source": "current_dataset_files",
     }
 
 
@@ -2365,7 +2749,7 @@ def _build_snapshot(year: int, inputs: dict, dashboard_data: dict, now: datetime
         "year": year,
         "scope": scope,
         "kpis": _build_kpis(year, inputs, dashboard_data),
-        "dataset_provenance": previous.get("dataset_provenance", {}),
+        "dataset_provenance": _build_dataset_provenance(),
         "rag": previous.get("rag", {
             "vector_database": "ChromaDB",
             "text_embedding_model": "nomic-embed-text:latest",

@@ -31,6 +31,14 @@ type TrainResponse = {
   accuracy?: number;
 };
 
+type CollectUabResponse = {
+  success?: boolean;
+  message?: string;
+  total_records?: number;
+  collected_hosts?: number;
+  populated_hosts?: number;
+};
+
 type RiskFinding = {
   cve: string;
   vulnerability: string;
@@ -98,6 +106,7 @@ type SystemStatusDTO = {
 };
 
 type DashboardRawDTO = {
+  scope_file_name?: string;
   scope?: {
     name?: string;
     asset_count?: number;
@@ -147,6 +156,12 @@ async function apiTrainBehaviorModel(year: number): Promise<TrainResponse> {
     year,
     dataset_path: "data/ml/user_behavior_training_dataset.parquet",
     model_dir: "data/ml/models",
+  });
+}
+
+async function apiCollectUserActivityBehavior(year: number): Promise<CollectUabResponse> {
+  return apiPostJSONBody<CollectUabResponse>("/api/risk-analysis/collect-uab", {
+    year,
   });
 }
 
@@ -671,6 +686,8 @@ function RiskFindingsCard({
 
 export default function RiskAnalysis() {
   const YEAR = 2026;
+  const SCOPE_REQUIRED_MESSAGE =
+    "Submit the Scope & Context document first before starting Risk Analysis.";
   const [selectedStep, setSelectedStep] = useState<number>(5);
 
   const [pendingCommand, setPendingCommand] = useState<
@@ -698,16 +715,17 @@ export default function RiskAnalysis() {
   const [confirmText, setConfirmText] = useState("");
 
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content:
-        "Risk Analysis — Command Mode\n\n" +
-        "Available commands:\n" +
-        "/analysis   → Run risk analysis\n" +
-        "/train      → Train user behavior ML model\n" +
-        "/setrisk    → Set risk for the highlighted subtable row\n" +
-        "/details    → Show detailed risk information for the highlighted subtable row.\n" +
-        "/delete     → Remove highlighted row from the table\n" +
+        {
+          role: "assistant",
+          content:
+            "Risk Analysis — Command Mode\n\n" +
+            "Available commands:\n" +
+            "/collect-uab → Collect user activity behavior data\n" +
+            "/analysis   → Run risk analysis\n" +
+            "/train      → Train user behavior ML model\n" +
+            "/setrisk    → Set risk for the highlighted subtable row\n" +
+            "/details    → Show detailed risk information for the highlighted subtable row.\n" +
+            "/delete     → Remove highlighted row from the table\n" +
         "/submit     → Finalize risk analysis results\n" +
         "/reset      → Clear the table\n" +
         "/exit       → Exit the current command mode\n" +
@@ -748,6 +766,11 @@ export default function RiskAnalysis() {
 
   const displayScopeName = dashboardRaw?.scope?.name ?? "NA";
   const rowCount = rows.length;
+
+  const isSubmittedScopeFile = (scopeFileName?: string | null) => {
+    const value = (scopeFileName ?? "").trim().toLowerCase();
+    return value.length > 0 && !/-v0\.json$/.test(value);
+  };
 
   const selectedFindingContext = useMemo(() => {
     if (!selectedFinding) return null;
@@ -937,13 +960,25 @@ export default function RiskAnalysis() {
     try {
       const raw = await apiGetDashboardRaw(YEAR);
       setDashboardRaw(raw);
+      return raw;
     } catch {
       setDashboardRaw(null);
+      return null;
     }
+  };
+
+  const hasSubmittedScopeDocument = async () => {
+    const latestDashboard = await refreshDashboardRaw();
+    return isSubmittedScopeFile(latestDashboard?.scope_file_name);
   };
 
   const handleCreateNewRiskAnalysis = async () => {
     try {
+      if (!(await hasSubmittedScopeDocument())) {
+        showPopup(SCOPE_REQUIRED_MESSAGE);
+        return;
+      }
+
       await apiCreateBlankRiskInventory(YEAR, true);
 
       const doc = await apiGetRiskInventory(YEAR);
@@ -971,6 +1006,11 @@ export default function RiskAnalysis() {
 
   const handleNewRiskAnalysisClick = async () => {
     try {
+      if (!(await hasSubmittedScopeDocument())) {
+        showPopup(SCOPE_REQUIRED_MESSAGE);
+        return;
+      }
+
       if (riskAnalysisStatus === "Blocked") {
         await apiUnblockRiskAnalysis(YEAR);
 
@@ -1058,6 +1098,14 @@ export default function RiskAnalysis() {
     
   const runAnalysis = async () => {
     setSending(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Checking whether the user behavior ML model is ready, training it first if needed, then running the risk analysis...",
+      },
+    ]);
 
     try {
       const data = await apiPostJSONBody<AnalysisResponse>("/api/risk-analysis/analysis", {
@@ -1092,6 +1140,67 @@ export default function RiskAnalysis() {
         {
           role: "assistant",
           content: data.message || "Risk analysis completed successfully.",
+        },
+      ]);
+    } catch (e) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: e instanceof Error ? e.message : String(e),
+        },
+      ]);
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
+    }
+  };
+
+  const runCollectUserActivityBehavior = async () => {
+    setSending(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Please wait, while the system collects user activity behavior data from the lab hosts and populates unavailable workstation records from AssetDetails.",
+      },
+    ]);
+
+    try {
+      const data = await apiCollectUserActivityBehavior(YEAR);
+
+      if (!data.success) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data.message || "User activity behavior data collection failed.",
+          },
+        ]);
+        return;
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            data.message ||
+            [
+              "User activity behavior data collection completed.",
+              data.collected_hosts !== undefined
+                ? `Live workstation hosts collected: ${data.collected_hosts}`
+                : null,
+              data.populated_hosts !== undefined
+                ? `Workstation hosts populated from AssetDetails: ${data.populated_hosts}`
+                : null,
+              data.total_records !== undefined
+                ? `Total UserBehaviorActivity records: ${data.total_records}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join("\n"),
         },
       ]);
     } catch (e) {
@@ -1251,6 +1360,14 @@ export default function RiskAnalysis() {
 
   const handleSubmitConfirmYes = async () => {
     setSending(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Please wait, while the system retrains the user behavior ML model and finalizes the risk analysis results.",
+      },
+    ]);
 
     try {
       const data = await apiPostJSONBody<SubmitResponse>("/api/risk-analysis/submit", {
@@ -1327,9 +1444,25 @@ export default function RiskAnalysis() {
         await runTraining();
         return;
       }
+
+      if (text.toLowerCase() === "/collect-uab") {
+        await runCollectUserActivityBehavior();
+        return;
+      }
         
       if (text.toLowerCase() === "/analysis") {
         try {
+          if (!(await hasSubmittedScopeDocument())) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content: SCOPE_REQUIRED_MESSAGE,
+              },
+            ]);
+            return;
+          }
+
           const doc = await apiGetRiskInventory(YEAR);
           const hostCount = Array.isArray((doc as any)?.hosts) ? (doc as any).hosts.length : 0;
 
@@ -1389,9 +1522,13 @@ export default function RiskAnalysis() {
           {
             role: "assistant",
             content:
-              "This page analyzes vulnerabilities across your assets and computes their risk level to support ISO 27001 risk management and prioritization. Risk is calculated using the formula Risk = CIA_weight × Likelihood × (1 + ML_probability), where CIA weights reflect asset importance (Critical=9, High=8, Medium=6, Low=3). Based on the final score, risks are classified as Low (0–<6), Medium (6–<10), High (10–<15), or Critical (15–18).\n\n" +
-              "Likelihood represents how likely a vulnerability is to be exploited and is computed from multiple factors including CVSS severity, exploit availability, patch status, network exposure, asset role, and CIA impact. These factors are combined into a weighted score and then adjusted using ML_probability to reflect real-world conditions.\n\n" +
-              "ML_probability introduces behavioral intelligence into the model by estimating the likelihood of attack based on observed system activity. It is predicted using an XGBoost machine learning model supported by agent-based data collection, using signals such as failed login attempts, access frequency, login consistency, and incident reports. This allows the system to move beyond static scoring and prioritize risks based on actual attacker behavior.",
+              "Risk Analysis\n\n" +
+              "What this page is about:\n" +
+              "This stage calculates and prioritizes risk for the identified findings. It combines asset criticality, threat exposure, vulnerability severity, and supporting signals to estimate how serious each risk is for the organization.\n\n" +
+              "Why it is important:\n" +
+              "ISO 27001 requires the organization to assess information security risk in a structured and repeatable way. This page provides that prioritization logic so the audit can separate low-impact findings from issues that require formal treatment.\n\n" +
+              "Its place in the ISO 27001 lifecycle:\n" +
+              "This is the core risk assessment stage. It comes after assets, vulnerabilities, and existing controls are known, and before Risk Evaluation / Treatment. First we identify exposure, then we analyze its significance, then management decides how to respond.",
           },
         ]);
         return;
@@ -1404,6 +1541,7 @@ export default function RiskAnalysis() {
             role: "assistant",
             content:
               "Available commands:\n\n" +
+              "/collect-uab → Collect user activity behavior data\n" +
               "/analysis   → Run risk analysis\n" +
               "/train      → Train user behavior ML model\n" +
               "/setrisk    → Set risk for the highlighted subtable row\n" +
@@ -1867,7 +2005,7 @@ export default function RiskAnalysis() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-            Command mode: /analysis /train /setrisk /details /delete /submit /reset /exit /commands /help
+            Command mode: /collect-uab /analysis /train /setrisk /details /delete /submit /reset /exit /commands /help
         </div>
       </div>
     </ShellCard>

@@ -2,6 +2,7 @@
   "records": [
     {
       "hostname": "WS-01",
+      "ip_address": "10.0.0.10",
       "date": "2026-04-13",
       "user": "CORP\\Administrator",
       "dailyBehaviorSummary": {
@@ -12,53 +13,22 @@
         "loginConsistency": 0.7669,
         "sessionDuration": 0.0063
       },
-      "observations": [],
-      "ip_address": "10.0.0.10"
-    },
-    {
-      "hostname": "WS-01",
-      "date": "2026-04-14",
-      "user": "CORP.LOCAL\\WS-01$",
-      "dailyBehaviorSummary": {
-        "accessFrequency": 1,
-        "failedLoginAttempts": 1,
-        "successfulLoginCount": 67,
-        "passwordResets": 0,
-        "loginConsistency": 0.8013,
-        "sessionDuration": 0.0012
-      },
-      "observations": [],
-      "ip_address": "10.0.0.10"
+      "observations": []
     },
     {
       "hostname": "WS-02",
+      "ip_address": "10.0.0.11",
       "date": "2026-04-13",
       "user": "CORP\\Administrator",
       "dailyBehaviorSummary": {
         "accessFrequency": 1,
-        "failedLoginAttempts": 8,
-        "successfulLoginCount": 86,
-        "passwordResets": 4,
-        "loginConsistency": 0.8788,
-        "sessionDuration": 0.0038
-      },
-      "observations": [],
-      "ip_address": "10.0.0.11"
-    },
-    {
-      "hostname": "WS-02",
-      "date": "2026-04-14",
-      "user": "CORP\\Administrator",
-      "dailyBehaviorSummary": {
-        "accessFrequency": 1,
         "failedLoginAttempts": 1,
-        "successfulLoginCount": 50,
+        "successfulLoginCount": 120,
         "passwordResets": 0,
-        "loginConsistency": 0.9269,
-        "sessionDuration": 0.0015
+        "loginConsistency": 0.7669,
+        "sessionDuration": 0.0063
       },
-      "observations": [],
-      "ip_address": "10.0.0.11"
+      "observations": []
     },
     {
       "hostname": "WS-03",
@@ -96,12 +66,12 @@
       "date": "2026-04-13",
       "user": "CORP\\Administrator",
       "dailyBehaviorSummary": {
-        "accessFrequency": 1,
-        "failedLoginAttempts": 1,
-        "successfulLoginCount": 120,
-        "passwordResets": 0,
-        "loginConsistency": 0.7669,
-        "sessionDuration": 0.0063
+        "accessFrequency": 17,
+        "failedLoginAttempts": 8,
+        "successfulLoginCount": 146,
+        "passwordResets": 3,
+        "loginConsistency": 0.91,
+        "sessionDuration": 10.2
       },
       "observations": []
     },
@@ -111,12 +81,12 @@
       "date": "2026-04-13",
       "user": "CORP\\Administrator",
       "dailyBehaviorSummary": {
-        "accessFrequency": 1,
-        "failedLoginAttempts": 1,
-        "successfulLoginCount": 120,
-        "passwordResets": 0,
-        "loginConsistency": 0.7669,
-        "sessionDuration": 0.0063
+        "accessFrequency": 18,
+        "failedLoginAttempts": 9,
+        "successfulLoginCount": 158,
+        "passwordResets": 4,
+        "loginConsistency": 0.94,
+        "sessionDuration": 11.1
       },
       "observations": []
     }

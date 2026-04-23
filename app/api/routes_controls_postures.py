@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any
 import json
+import re
 import subprocess
 import sys
 from fastapi import APIRouter, HTTPException, Query
@@ -57,6 +58,27 @@ def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "systemstatus.json"
 
 
+def _dashboard_file() -> Path:
+    return BASE_DIR / "data" / "raw" / "dashboard.json"
+
+
+def _has_submitted_scope_document() -> bool:
+    path = _dashboard_file()
+    if not path.exists():
+        return False
+
+    try:
+        dashboard = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+
+    if not isinstance(dashboard, dict):
+        return False
+
+    scope_file_name = str(dashboard.get("scope_file_name") or "").strip().lower()
+    return bool(scope_file_name) and not re.search(r"-v0\.json$", scope_file_name)
+
+
 def _targets_file() -> Path:
     return BASE_DIR / "lab-scanner" / "config" / "targets.json"
 
@@ -94,6 +116,15 @@ def _normalize_hosts(data: Any) -> list[dict]:
     if isinstance(data, list):
         return [x for x in data if isinstance(x, dict)]
     return []
+
+
+def _controls_file_has_records(path: Path) -> bool:
+    if not path.exists():
+        return False
+
+    data = _read_json(path, {})
+    hosts = _normalize_hosts(data)
+    return len(hosts) > 0
 
 
 def _get_cia_rating(host: dict) -> str:
@@ -385,13 +416,19 @@ def _run_vm_controls_scanner(year: int) -> dict[str, dict]:
 
 @router.post("/new")
 def create_new_controls_postures(req: CreateControlsPosturesRequest):
+    if not _has_submitted_scope_document():
+        raise HTTPException(
+            status_code=400,
+            detail="Submit the Scope & Context document first before starting Existing Controls & Postures.",
+        )
+
     inventory_path = _asset_inventory_file(req.year)
     controls_path = _controls_file(req.year)
 
     if not inventory_path.exists():
         raise HTTPException(status_code=404, detail=f"Inventory file not found: {inventory_path}")
 
-    existed_before = controls_path.exists()
+    existed_before = _controls_file_has_records(controls_path)
 
     if existed_before and not req.force_reset:
         raise HTTPException(status_code=409, detail="FILE_ALREADY_EXISTS_CONFIRM_RESET")
@@ -420,6 +457,11 @@ def create_new_controls_postures(req: CreateControlsPosturesRequest):
 
 @router.post("/assess")
 def assess_controls_postures(req: AssessControlsPosturesRequest):
+    if not _has_submitted_scope_document():
+        raise HTTPException(
+            status_code=400,
+            detail="Submit the Scope & Context document first before starting Existing Controls & Postures.",
+        )
 
     fallback_vm_hosts: list[str] = []
 

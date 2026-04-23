@@ -1,4 +1,7 @@
-def build_action_plan_implementation_markdown(year: int) -> str:
+def build_action_plan_implementation_markdown(
+    year: int,
+    include_guide_column: bool = True,
+) -> str:
     from app.api.routes_final_deliverables import (
         _action_plan_implementation_file,
         _action_plan_implementation_guides_file,
@@ -150,6 +153,22 @@ def build_action_plan_implementation_markdown(year: int) -> str:
             return "_No host evidence available._"
 
         tables = []
+        total_columns = 6 if include_guide_column else 5
+        trailing_header_span = total_columns - 2
+        colgroup = (
+            "<colgroup>"
+            "<col style=\"width: 16%;\">"
+            "<col style=\"width: 16%;\">"
+            "<col style=\"width: 10%;\">"
+            "<col style=\"width: 16%;\">"
+            + (
+                "<col style=\"width: 37%;\">"
+                "<col style=\"width: 5%;\">"
+                if include_guide_column
+                else "<col style=\"width: 42%;\">"
+            )
+            + "</colgroup>"
+        )
 
         for host in hosts:
             if not isinstance(host, dict):
@@ -164,27 +183,33 @@ def build_action_plan_implementation_markdown(year: int) -> str:
                 evidence_list = [{}]
 
             lines = [
-                '<table style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">',
+                '<table style="border-collapse: collapse; width: 100%; table-layout: fixed; margin-bottom: 20px;">',
+                f'  {colgroup}',
                 '  <thead>',
                 '    <tr>',
                 f'      <th style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Host: {_esc(hostname)}</th>',
                 f'      <th style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Role: {_esc(role)}</th>',
-                f'      <th colspan="4" style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Vulnerability: {_esc(vulnerability)}</th>',
+                f'      <th colspan="{trailing_header_span}" style="background-color: #e8f1e8; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">Vulnerability: {_esc(vulnerability)}</th>',
                 '    </tr>',
                 '    <tr>',
-                '      <th colspan="6" style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: center; font-weight: bold;">Evidence(s)</th>',
+                f'      <th colspan="{total_columns}" style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: center; font-weight: bold;">Evidence(s)</th>',
                 '    </tr>',
                 '    <tr>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Responsible</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Resources</th>',
-                '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Date</th>',
+                '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left; white-space: nowrap;">Date</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">URL/PATH</th>',
                 '      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">Desc</th>',
-                '      <th style="background-color: #eef5fb; padding: 4px 6px; border: 1px solid #999; text-align: center; width: 1%; white-space: nowrap;">Guide</th>',
                 '    </tr>',
                 '  </thead>',
                 '  <tbody>',
             ]
+
+            if include_guide_column:
+                lines.insert(
+                    len(lines) - 3,
+                    '      <th style="background-color: #eef5fb; padding: 4px 6px; border: 1px solid #999; text-align: center; width: 1%; white-space: nowrap;">Guide</th>',
+                )
 
             for evidence_index, evidence in enumerate(evidence_list):
                 if not isinstance(evidence, dict):
@@ -196,26 +221,30 @@ def build_action_plan_implementation_markdown(year: int) -> str:
                 url = _safe(evidence.get("url"))
                 desc = _safe(evidence.get("desc"))
 
-                matched_guide = _find_matching_guide(
-                    guide_records=guide_records,
-                    control_row=control_row,
-                    host=host,
-                    evidence=evidence,
-                    evidence_index=evidence_index,
-                )
-
-                guide_cell = _guide_icon_html(matched_guide)
-
-                lines.extend([
+                row_cells = [
                     '    <tr>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(responsible)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(resources)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(date)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(url)}</td>',
-                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top;">{_text_to_html(desc)}</td>',
-                    f'      <td style="padding: 4px 6px; border: 1px solid #999; vertical-align: middle; text-align: center; width: 1%; white-space: nowrap;">{guide_cell}</td>',
-                    '    </tr>',
-                ])
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(responsible)}</td>',
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(resources)}</td>',
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; white-space: nowrap;">{_text_to_html(date)}</td>',
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(url)}</td>',
+                    f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; overflow-wrap: anywhere; word-break: break-word;">{_text_to_html(desc)}</td>',
+                ]
+
+                if include_guide_column:
+                    matched_guide = _find_matching_guide(
+                        guide_records=guide_records,
+                        control_row=control_row,
+                        host=host,
+                        evidence=evidence,
+                        evidence_index=evidence_index,
+                    )
+                    guide_cell = _guide_icon_html(matched_guide)
+                    row_cells.append(
+                        f'      <td style="padding: 4px 6px; border: 1px solid #999; vertical-align: middle; text-align: center; width: 1%; white-space: nowrap;">{guide_cell}</td>'
+                    )
+
+                row_cells.append('    </tr>')
+                lines.extend(row_cells)
 
             lines.extend([
                 '  </tbody>',
@@ -289,7 +318,7 @@ Embedding models are used to:
 ---
 
 #### LLM-Based Treatment Generation
-A local Large Language Model (Llama 3 via Ollama) is used to generate treatment actions.
+A local Large Language Model served through Ollama is used to generate treatment actions.
 
 The model:
 - Receives structured context  

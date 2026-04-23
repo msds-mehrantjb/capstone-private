@@ -133,6 +133,11 @@ class EvidenceDefaultsResponse(BaseModel):
     message: str = ""
     evidence: AddEvidenceItem
     inventory: dict | None = None
+
+
+class EvidenceAllRequest(BaseModel):
+    year: int | None = 2026
+
 # =========================================================
 # PROJECT PATHS
 # =========================================================
@@ -184,12 +189,20 @@ def _monitoring_improvement_file(year: int) -> Path:
     return _work_dir(year) / "MonitoringImprovement.json"
 
 
+def _monitoring_implementation_guides_file(year: int) -> Path:
+    return _work_dir(year) / "MonitoringImplementationGuides.json"
+
+
 def _legacy_monitoring_improvement_file(year: int) -> Path:
     return _work_dir(year) / "MonitoringAndImprovement.json"
 
 
 def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "SystemStatus.json"
+
+
+def _asset_inventory_file(year: int) -> Path:
+    return _work_dir(year) / "AssetInventory.json"
 
 
 # =========================================================
@@ -204,10 +217,24 @@ def _blank_monitoring_improvement_doc() -> dict:
     return {"cves": []}
 
 
+def _blank_monitoring_implementation_guides_doc(year: int) -> dict:
+    return {"guides": []}
+
+
 def _save_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+
+def _load_json_or_default(path: Path, default: Any) -> Any:
+    if not path.exists():
+        return default
+    try:
+        data = _load_json(path)
+        return data if isinstance(data, type(default)) else default
+    except Exception:
+        return default
 
 
 def _normalize_text(value: Any) -> str:
@@ -220,6 +247,124 @@ def _normalize_key(value: Any) -> str:
 
 def _safe_join_lines(items: list[str]) -> str:
     return "\n".join(x for x in items if _normalize_text(x) != "")
+
+
+def _load_monitoring_implementation_guides_doc_or_blank(year: int) -> dict:
+    path = _monitoring_implementation_guides_file(year)
+    default_doc = _blank_monitoring_implementation_guides_doc(year)
+    doc = _load_json_or_default(path, default_doc)
+    if not isinstance(doc, dict):
+        return default_doc
+    if not isinstance(doc.get("guides"), list):
+        doc["guides"] = []
+    return doc
+
+
+def _save_monitoring_implementation_guides_doc(year: int, doc: dict) -> None:
+    _save_json(_monitoring_implementation_guides_file(year), doc)
+
+
+def _all_guides(doc: dict) -> list[dict]:
+    guides = doc.get("guides", [])
+    if not isinstance(guides, list):
+        return []
+    return [g for g in guides if isinstance(g, dict)]
+
+
+def _next_monitoring_guide_id(year: int, guides_doc: dict) -> str:
+    max_n = 0
+    for guide in _all_guides(guides_doc):
+        value = _normalize_text(guide.get("guide_id"))
+        match = re.match(rf"^MIG-{int(year)}-(\d+)$", value)
+        if match:
+            max_n = max(max_n, int(match.group(1)))
+    return f"MIG-{int(year)}-{max_n + 1:04d}"
+
+
+def _next_monitoring_evidence_id(year: int, monitoring_doc: dict) -> str:
+    max_n = 0
+    for control in monitoring_doc.get("cves", []):
+        if not isinstance(control, dict):
+            continue
+        hosts = control.get("hosts", [])
+        if not isinstance(hosts, list):
+            continue
+        for host in hosts:
+            if not isinstance(host, dict):
+                continue
+            evidence_list = host.get("evidence", [])
+            if not isinstance(evidence_list, list):
+                continue
+            for evidence in evidence_list:
+                if not isinstance(evidence, dict):
+                    continue
+                value = _normalize_text(evidence.get("evidence_id"))
+                match = re.match(rf"^MEVID-{int(year)}-(\d+)$", value)
+                if match:
+                    max_n = max(max_n, int(match.group(1)))
+    return f"MEVID-{int(year)}-{max_n + 1:04d}"
+
+
+def _remove_monitoring_guide_by_key(year: int, evidence_id: str) -> bool:
+    doc = _load_monitoring_implementation_guides_doc_or_blank(year)
+    original = len(_all_guides(doc))
+    doc["guides"] = [
+        guide
+        for guide in _all_guides(doc)
+        if _normalize_key(guide.get("evidence_id")) != _normalize_key(evidence_id)
+    ]
+    changed = len(doc["guides"]) != original
+    if changed:
+        _save_monitoring_implementation_guides_doc(year, doc)
+    return changed
+
+
+def _reset_monitoring_implementation_guides(year: int) -> None:
+    _save_monitoring_implementation_guides_doc(year, _blank_monitoring_implementation_guides_doc(year))
+
+
+def _load_asset_inventory_or_blank(year: int) -> dict:
+    return _load_json_or_default(_asset_inventory_file(year), {})
+
+
+def _find_asset_inventory_host(year: int, hostname: str) -> dict:
+    doc = _load_asset_inventory_or_blank(year)
+    for subnet in doc.get("subnets", []):
+        if not isinstance(subnet, dict):
+            continue
+        for asset in subnet.get("assets", []):
+            if isinstance(asset, dict) and _normalize_key(asset.get("hostname")) == _normalize_key(hostname):
+                return asset
+    for network in doc.get("networks", []):
+        if not isinstance(network, dict):
+            continue
+        for subnet in network.get("subnets", []):
+            if not isinstance(subnet, dict):
+                continue
+            for host in subnet.get("hosts", []):
+                if isinstance(host, dict) and _normalize_key(host.get("hostname")) == _normalize_key(hostname):
+                    return host
+    return {}
+
+
+def _safe_department_from_asset(asset: dict) -> str:
+    detail = asset.get("detail", {}) if isinstance(asset, dict) else {}
+    business_context = detail.get("business_context", {}) if isinstance(detail, dict) else {}
+    return _normalize_text(business_context.get("department"))
+
+
+def _safe_os_version_from_asset(asset: dict) -> str:
+    if not isinstance(asset, dict):
+        return ""
+    value = _normalize_text(asset.get("operating_system"))
+    if value:
+        return value
+    detail = asset.get("detail", {})
+    if isinstance(detail, dict):
+        profile = detail.get("device_profile", {})
+        if isinstance(profile, dict):
+            return _normalize_text(profile.get("os_version"))
+    return ""
 
 
 # =========================================================
@@ -686,6 +831,591 @@ def _build_resources_value(hostname: str, role: str) -> str:
     host_value = _normalize_text(hostname) or "Unknown Host"
     role_value = _normalize_text(role) or "Unknown Role"
     return f"{host_value} / {role_value}"
+
+
+def _evidence_has_meaningful_content(evidence: Any) -> bool:
+    if not isinstance(evidence, dict):
+        return False
+    return any(
+        _normalize_text(evidence.get(field)) != ""
+        for field in ["responsible", "resources", "date", "url", "desc"]
+    )
+
+
+def _ensure_monitoring_evidence_ids_for_host(year: int, monitoring_doc: dict, host: dict) -> bool:
+    changed = False
+    evidence_list = host.get("evidence", [])
+    if not isinstance(evidence_list, list):
+        evidence_list = []
+
+    new_list = []
+    for evidence in evidence_list:
+        if not isinstance(evidence, dict):
+            continue
+        item = dict(evidence)
+        if _normalize_text(item.get("evidence_id")) == "":
+            item["evidence_id"] = _next_monitoring_evidence_id(year, monitoring_doc)
+            changed = True
+        new_list.append(item)
+
+    if changed:
+        host["evidence"] = new_list
+    return changed
+
+
+def _clean_evidence_list(year: int, monitoring_doc: dict, evidence_list: Any) -> list[dict]:
+    if not isinstance(evidence_list, list):
+        return []
+
+    cleaned: list[dict] = []
+    for item in evidence_list:
+        if not isinstance(item, dict):
+            continue
+
+        normalized_item = {
+            "evidence_id": _normalize_text(item.get("evidence_id")) or _next_monitoring_evidence_id(year, monitoring_doc),
+            "responsible": _normalize_text(item.get("responsible")),
+            "resources": _normalize_text(item.get("resources")),
+            "date": _normalize_text(item.get("date")),
+            "url": _normalize_text(item.get("url")),
+            "desc": _normalize_text(item.get("desc")),
+        }
+
+        if _evidence_has_meaningful_content(normalized_item):
+            cleaned.append(normalized_item)
+
+    return cleaned
+
+
+def _derive_evidence_name_from_item(evidence: dict) -> str:
+    desc = _normalize_text(evidence.get("desc"))
+    resources = _normalize_text(evidence.get("resources"))
+    url = _normalize_text(evidence.get("url"))
+
+    text = desc or resources or url
+    if not text:
+        return "Monitoring evidence"
+
+    short = text.split("\n", 1)[0].strip()
+    if len(short) > 80:
+        short = short[:77].rstrip() + "..."
+    return short
+
+
+def _build_minimal_guide_references(cve_id: str) -> list[dict]:
+    cve_id = _normalize_text(cve_id)
+    vuln_source = (
+        f"Vulnerability intelligence: NVD {cve_id} Technical Details"
+        f" | https://nvd.nist.gov/vuln/detail/{cve_id}"
+        f" | Microsoft Security Update {cve_id}"
+        f" | CISA Known Exploited Vulnerabilities Catalog"
+        if cve_id.upper().startswith("CVE-")
+        else (
+            f"Vulnerability source: no public CVE reference was available for {vulnerability_name or control_id or 'this record'} | "
+            f"guide context was derived from {_monitoring_improvement_file(year)} and {_asset_inventory_file(year)}"
+        )
+    )
+
+    return [
+        {
+            "ref_id": "MS-01",
+            "source": f"Microsoft Security Update {cve_id}" if cve_id else "Microsoft Security Update",
+        },
+        {
+            "ref_id": "CISA-01",
+            "source": "CISA Known Exploited Vulnerabilities Catalog",
+        },
+        {
+            "ref_id": "NVD-01",
+            "source": f"NVD {cve_id} Technical Details" if cve_id else "NVD Technical Details",
+        },
+        {
+            "ref_id": "MS-Baseline",
+            "source": "Microsoft Security Compliance Toolkit",
+        },
+    ]
+
+
+def _reference_detail_text(value: Any) -> str:
+    return _normalize_text(value).replace("\r", " ").replace("\n", " | ")
+
+
+def _build_monitoring_guide_references(
+    year: int,
+    control: dict,
+    host: dict,
+    evidence: dict,
+    asset_host: dict,
+    generation_hints: str,
+    method_label: str = "LLM-generated monitoring guide",
+) -> list[dict]:
+    control_id = _normalize_text(control.get("CVE"))
+    control_name = _normalize_text(control.get("vulnerability"))
+    cve_id = _normalize_text(host.get("cve") or control.get("CVE"))
+    vulnerability_name = _normalize_text(host.get("vulnerability_name") or control_name)
+    refs = [
+        {
+            "ref_id": "ISO-27002",
+            "source": f"ISO/IEC 27002:2022 monitoring and logging guidance for {control_id or 'the mapped control context'}",
+        },
+        {
+            "ref_id": "MS-Baseline",
+            "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation",
+        },
+        {
+            "ref_id": "CISA-01",
+            "source": "CISA Known Exploited Vulnerabilities Catalog",
+        },
+    ]
+
+    if cve_id.upper().startswith("CVE-"):
+        refs.insert(
+            1,
+            {
+                "ref_id": "NVD-01",
+                "source": f"NVD {cve_id} Technical Details | https://nvd.nist.gov/vuln/detail/{cve_id}",
+            },
+        )
+        refs.insert(
+            2,
+            {
+                "ref_id": "MSRC-01",
+                "source": f"Microsoft Security Response Center guidance for {cve_id}",
+            },
+        )
+    else:
+        refs.insert(
+            1,
+            {
+                "ref_id": "MS-Docs",
+                "source": (
+                    "Microsoft Learn security monitoring, Defender, and Windows event logging documentation "
+                    f"relevant to {vulnerability_name or control_id or 'the monitored behavior'}"
+                ),
+            },
+        )
+        refs.insert(
+            2,
+            {
+                "ref_id": "NIST-Guide",
+                "source": "NIST continuous monitoring, incident detection, and audit logging guidance",
+            },
+        )
+
+    return refs
+
+
+def _build_vulnerability_generation_hints(cve_id: str, vulnerability_name: str, role: str) -> str:
+    cve_id_l = _normalize_text(cve_id).lower()
+    vuln_l = _normalize_text(vulnerability_name).lower()
+    role_l = _normalize_text(role).lower()
+
+    hints = []
+
+    if "dns" in vuln_l or "cve-2020-1350" in cve_id_l:
+        hints.extend([
+            "Affected service is likely Windows DNS Server.",
+            "Relevant commands may include Get-Service DNS, Restart-Service DNS, Resolve-DnsName.",
+            "Monitoring evidence may include DNS logs, firewall rules, and patch validation output.",
+        ])
+
+    if "smb" in vuln_l or "445" in vuln_l:
+        hints.extend([
+            "Relevant commands may include Get-SmbServerConfiguration and firewall rules for TCP 445.",
+            "Monitoring evidence may include SMB configuration output and exposure validation.",
+        ])
+
+    if "winrm" in vuln_l or "wsman" in vuln_l or "5985" in vuln_l or "5986" in vuln_l:
+        hints.extend([
+            "Relevant commands may include Get-ChildItem WSMan:\\localhost\\Service and firewall checks for WinRM.",
+            "Monitoring evidence may include WSMan configuration output, firewall rules, and PowerShell operational logs.",
+        ])
+
+    if "rdp" in vuln_l or "3389" in vuln_l:
+        hints.extend([
+            "Relevant commands may include firewall restrictions for TCP 3389 and validation for RDP hardening.",
+            "Monitoring evidence may include firewall rules, event logs, and session monitoring screenshots.",
+        ])
+
+    if "web" in vuln_l or "http" in vuln_l or "https" in vuln_l or "apache" in vuln_l or "nginx" in vuln_l:
+        hints.extend([
+            "Relevant actions may include service validation, TLS hardening, application firewall rules, and log review.",
+            "Monitoring evidence may include web server logs, WAF alerts, and configuration exports.",
+        ])
+
+    if "patch" in vuln_l or "update" in vuln_l or cve_id_l.startswith("cve-"):
+        hints.extend([
+            "If patching is relevant, use Get-HotFix or installed update validation where applicable.",
+            "Monitoring evidence may include installed hotfix output, vulnerability scan results, and change tickets.",
+        ])
+
+    if "monitor" in vuln_l or "logging" in vuln_l or "detect" in vuln_l or "audit" in vuln_l:
+        hints.extend([
+            "Relevant commands may include event log export, Defender detection review, and service-specific diagnostic logging.",
+            "Monitoring evidence may include EVTX export, SIEM screenshots, and detection output.",
+        ])
+
+    if "malware" in vuln_l or "defender" in vuln_l or "antivirus" in vuln_l:
+        hints.extend([
+            "Relevant commands may include Get-MpComputerStatus and Get-MpThreatDetection.",
+            "Monitoring evidence may include Defender alerts, detection history, and quarantine output.",
+        ])
+
+    if "domain controller" in role_l or "active directory" in role_l:
+        hints.extend([
+            "Preserve domain services availability during monitoring actions.",
+            "Prefer validation commands that are safe for a domain controller.",
+        ])
+
+    if not hints:
+        hints.extend([
+            "Generate concrete Windows monitoring and validation steps based on the recommended monitoring action, host role, and vulnerability context.",
+            "Prefer technical commands, validation commands, and concrete evidence collection instructions.",
+        ])
+
+    return "\n".join(hints)
+
+
+def _generate_real_monitoring_steps_with_llm(year: int, context: dict) -> list[dict]:
+    prompt = f"""
+You are a senior Windows security engineer and enterprise monitoring specialist.
+
+Generate a REAL technical monitoring guide for a Windows enterprise host.
+
+STRICT RULES:
+- Output ONLY valid JSON
+- No markdown
+- No explanations
+- Use the EXACT JSON schema provided below
+- Do NOT change the schema
+- Every step must be technical and monitoring-oriented
+- Break work into specific technical actions
+- Prefer 4 to 8 steps
+- Each step must contain:
+  - title
+  - description
+  - commands
+  - expected_result
+  - output_type
+  - evidence_capture
+- commands must be a JSON array of strings
+- Use real Windows / PowerShell / CMD commands where applicable
+- If a task is manual, keep commands as an empty array and explain the action in description
+- expected_result must be concrete and technical
+- evidence_capture must say exactly what proof to capture
+- Make the guide specific to the vulnerability, host role, CVE, and recommended monitoring action
+- Include technical verification, logging, detection, exposure validation, and evidence collection
+
+Context:
+Host: {context.get("hostname", "")}
+Role: {context.get("role", "")}
+OS: {context.get("os_version", "")}
+Control: {context.get("control_id", "")} - {context.get("control_name", "")}
+Vulnerability: {context.get("vulnerability_name", "")}
+CVE: {context.get("cve_id", "")}
+Severity: {context.get("severity", "")}
+Recommended Monitoring Action: {context.get("recommended_action", "")}
+
+Technical Hints:
+{context.get("generation_hints", "")}
+
+Return JSON in this exact format:
+[
+  {{
+    "step_no": 1,
+    "title": "Short technical step title",
+    "description": "Concrete technical instruction for this step.",
+    "commands": [
+      "command 1",
+      "command 2"
+    ],
+    "expected_result": "Concrete technical expected result.",
+    "output_type": "Command output / screenshot / log export / firewall rule list / service status / patch list / PDF / report",
+    "evidence_capture": "Exactly what evidence to capture for this step."
+  }}
+]
+
+Generate only the JSON array.
+""".strip()
+
+    cleaned = ""
+
+    try:
+        payload = {
+            "model": OLLAMA_MODEL,
+            "prompt": prompt,
+            "stream": False,
+        }
+
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(data))
+
+        response = _normalize_text(data.get("response"))
+        if not isinstance(response, str):
+            raise ValueError("LLM response is not a string.")
+
+        cleaned = response.strip().replace("\\u2013", "-").replace("\\u2014", "-")
+        if cleaned.startswith("```"):
+            cleaned = re.sub(r"^```(?:json)?", "", cleaned).strip()
+            cleaned = re.sub(r"```$", "", cleaned).strip()
+
+        match = re.search(r"\[\s*{.*}\s*\]", cleaned, re.DOTALL)
+        if match:
+            cleaned = match.group(0)
+
+        steps = json.loads(cleaned)
+        if not isinstance(steps, list):
+            raise ValueError("LLM response is not a JSON list.")
+
+        normalized_steps = []
+        for i, step in enumerate(steps, start=1):
+            if not isinstance(step, dict):
+                continue
+            commands = step.get("commands", [])
+            if not isinstance(commands, list):
+                commands = []
+            normalized_steps.append({
+                "step_no": int(step.get("step_no", i)),
+                "title": str(step.get("title", "")).strip() or f"Step {i}",
+                "description": str(step.get("description", "")).strip(),
+                "commands": [str(cmd).strip() for cmd in commands if str(cmd).strip()],
+                "expected_result": str(step.get("expected_result", "")).strip(),
+                "output_type": str(step.get("output_type", "")).strip(),
+                "evidence_capture": str(step.get("evidence_capture", "")).strip(),
+            })
+
+        if not normalized_steps:
+            raise ValueError("No usable steps returned by LLM.")
+        return normalized_steps
+    except Exception:
+        print("MONITORING GUIDE GENERATION FAILED")
+        print(cleaned)
+        raise
+
+
+def _generate_flat_monitoring_implementation_guide(year: int, control: dict, host: dict, evidence: dict) -> dict:
+    guides_doc = _load_monitoring_implementation_guides_doc_or_blank(year)
+
+    evidence_id = _normalize_text(evidence.get("evidence_id"))
+    if evidence_id == "":
+        raise ValueError("Evidence item is missing evidence_id.")
+
+    asset_host = _find_asset_inventory_host(year, _normalize_text(host.get("hostname")))
+
+    hostname = _normalize_text(host.get("hostname"))
+    role = _normalize_text(host.get("role")) or _normalize_text(asset_host.get("role"))
+    department = _safe_department_from_asset(asset_host)
+    os_version = _safe_os_version_from_asset(asset_host)
+
+    control_id = _normalize_text(control.get("CVE"))
+    control_name = _normalize_text(control.get("vulnerability"))
+    cve_id = _normalize_text(host.get("cve") or control.get("CVE"))
+    vulnerability_name = _normalize_text(host.get("vulnerability_name") or control_name)
+    severity = _normalize_text(host.get("risk"))
+    recommended_action = _normalize_text(control.get("recommended_action"))
+
+    evidence_name = _derive_evidence_name_from_item(evidence)
+    evidence_description = _normalize_text(evidence.get("desc")) or evidence_name
+    evidence_format = "PDF + Logs + Monitoring Export"
+    generation_hints = _build_vulnerability_generation_hints(cve_id, vulnerability_name, role)
+    references = _build_monitoring_guide_references(
+        year=year,
+        control=control,
+        host=host,
+        evidence=evidence,
+        asset_host=asset_host,
+        generation_hints=generation_hints,
+        method_label="LLM-generated monitoring guide",
+    )
+
+    implementation_steps = _generate_real_monitoring_steps_with_llm(year, {
+        "hostname": hostname,
+        "role": role,
+        "os_version": os_version,
+        "control_id": control_id,
+        "control_name": control_name,
+        "vulnerability_name": vulnerability_name,
+        "cve_id": cve_id,
+        "severity": severity,
+        "recommended_action": recommended_action,
+        "generation_hints": generation_hints,
+    })
+
+    return {
+        "guide_id": _next_monitoring_guide_id(year, guides_doc),
+        "evidence_id": evidence_id,
+        "hostname": hostname,
+        "role": role,
+        "department": department,
+        "os_version": os_version,
+        "control_id": control_id,
+        "control_name": control_name,
+        "cve_id": cve_id,
+        "vulnerability_name": vulnerability_name,
+        "severity": severity,
+        "recommended_action": recommended_action,
+        "evidence_name": evidence_name,
+        "evidence_description": evidence_description,
+        "evidence_format": evidence_format,
+        "references": references,
+        "implementation_steps": implementation_steps,
+    }
+
+
+def _fallback_monitoring_implementation_steps(context: dict) -> list[dict]:
+    hostname = _normalize_text(context.get("hostname")) or "the target host"
+    role = _normalize_text(context.get("role")) or "target system"
+    control_id = _normalize_text(context.get("control_id")) or "the selected control"
+    control_name = _normalize_text(context.get("control_name")) or "selected monitoring record"
+    vulnerability_name = _normalize_text(context.get("vulnerability_name")) or "the identified vulnerability"
+    cve_id = _normalize_text(context.get("cve_id"))
+    recommended_action = _normalize_text(context.get("recommended_action")) or (
+        f"Perform the approved monitoring activity for {control_id} ({control_name})."
+    )
+    cve_suffix = f" ({cve_id})" if cve_id else ""
+
+    return [
+        {
+            "step_no": 1,
+            "title": "Capture Current Host Monitoring Baseline",
+            "description": (
+                f"Collect a current technical baseline for {hostname} to confirm the host state, "
+                f"active services, and network exposure relevant to {vulnerability_name}{cve_suffix} "
+                f"on the {role} role."
+            ),
+            "commands": [
+                "hostname",
+                'Get-Service | Where-Object {$_.Status -eq "Running"}',
+                "Get-NetTCPConnection | Select-Object LocalAddress,LocalPort,RemoteAddress,State,OwningProcess",
+            ],
+            "expected_result": (
+                f"A current baseline is captured for {hostname}, including running services and network "
+                f"connections that are relevant to {vulnerability_name}."
+            ),
+            "output_type": "Command output / service status / network connection list",
+            "evidence_capture": (
+                f"Capture the service and network output for {hostname} as the baseline monitoring evidence."
+            ),
+        },
+        {
+            "step_no": 2,
+            "title": "Review Security Events And Alerts",
+            "description": (
+                f"Review recent Windows security activity on {hostname} and collect monitoring output that "
+                f"supports the approved action: {recommended_action}"
+            ),
+            "commands": [
+                "Get-WinEvent -LogName Security -MaxEvents 50",
+                "Get-WinEvent -LogName System -MaxEvents 50",
+            ],
+            "expected_result": (
+                f"Recent security and system events are available for analyst review and can be correlated "
+                f"with monitoring activity for {vulnerability_name}."
+            ),
+            "output_type": "Log export / event log excerpt",
+            "evidence_capture": (
+                f"Export or screenshot the relevant Security and System log entries for {hostname}."
+            ),
+        },
+        {
+            "step_no": 3,
+            "title": "Validate Exposure And Remediation Status",
+            "description": (
+                f"Check patch state, configuration state, or exposure indicators on {hostname} to confirm "
+                f"whether {vulnerability_name}{cve_suffix} remains exposed while monitoring continues."
+            ),
+            "commands": [
+                "Get-HotFix",
+                "Get-NetFirewallRule | Select-Object DisplayName,Enabled,Direction,Action",
+            ],
+            "expected_result": (
+                f"Patch and configuration evidence shows the current remediation state for {hostname} "
+                f"and supports ongoing monitoring decisions."
+            ),
+            "output_type": "Patch list / firewall rule list / command output",
+            "evidence_capture": (
+                f"Capture patch validation output, firewall or configuration output, and any related scan result "
+                f"used to confirm the current state on {hostname}."
+            ),
+        },
+    ]
+
+
+def _replace_monitoring_guide_for_evidence(year: int, control: dict, host: dict, evidence: dict) -> dict:
+    evidence_id = _normalize_text(evidence.get("evidence_id"))
+    if evidence_id == "":
+        raise ValueError("Evidence item is missing evidence_id.")
+
+    doc = _load_monitoring_implementation_guides_doc_or_blank(year)
+    doc["guides"] = [
+        guide for guide in _all_guides(doc)
+        if _normalize_key(guide.get("evidence_id")) != _normalize_key(evidence_id)
+    ]
+
+    try:
+        guide = _generate_flat_monitoring_implementation_guide(year, control, host, evidence)
+    except Exception:
+        asset_host = _find_asset_inventory_host(year, _normalize_text(host.get("hostname")))
+        hostname = _normalize_text(host.get("hostname"))
+        role = _normalize_text(host.get("role")) or _normalize_text(asset_host.get("role"))
+        department = _safe_department_from_asset(asset_host)
+        os_version = _safe_os_version_from_asset(asset_host)
+        control_id = _normalize_text(control.get("CVE"))
+        control_name = _normalize_text(control.get("vulnerability"))
+        cve_id = _normalize_text(host.get("cve") or control.get("CVE"))
+        vulnerability_name = _normalize_text(host.get("vulnerability_name") or control_name)
+        severity = _normalize_text(host.get("risk"))
+        recommended_action = _normalize_text(control.get("recommended_action"))
+        evidence_name = _derive_evidence_name_from_item(evidence)
+        evidence_description = _normalize_text(evidence.get("desc")) or evidence_name
+
+        guide = {
+            "guide_id": _next_monitoring_guide_id(year, doc),
+            "evidence_id": evidence_id,
+            "hostname": hostname,
+            "role": role,
+            "department": department,
+            "os_version": os_version,
+            "control_id": control_id,
+            "control_name": control_name,
+            "cve_id": cve_id,
+            "vulnerability_name": vulnerability_name,
+            "severity": severity,
+            "recommended_action": recommended_action,
+            "evidence_name": evidence_name,
+            "evidence_description": evidence_description,
+            "evidence_format": "PDF + Logs + Monitoring Export",
+            "references": _build_monitoring_guide_references(
+                year=year,
+                control=control,
+                host=host,
+                evidence=evidence,
+                asset_host=asset_host,
+                generation_hints="Deterministic fallback monitoring guide steps generated from control, host, vulnerability, and monitoring context.",
+                method_label="Deterministic fallback monitoring guide",
+            ),
+            "implementation_steps": _fallback_monitoring_implementation_steps(
+                {
+                    "hostname": hostname,
+                    "role": role,
+                    "control_id": control_id,
+                    "control_name": control_name,
+                    "vulnerability_name": vulnerability_name,
+                    "cve_id": cve_id,
+                    "recommended_action": recommended_action,
+                }
+            ),
+        }
+
+    steps = guide.get("implementation_steps")
+    if not isinstance(steps, list) or len(steps) == 0:
+        raise ValueError("Guide generation failed: no implementation steps returned.")
+
+    doc["guides"].append(guide)
+    _save_monitoring_implementation_guides_doc(year, doc)
+    return guide
 
 
 def _build_host_lines_for_rag(hosts: list[dict]) -> list[str]:
@@ -1740,6 +2470,7 @@ def create_monitoring_improvement(year: int = 2026):
     new_doc["cves"] = enriched_cves
 
     _save_json(_monitoring_improvement_file(int(year)), new_doc)
+    _reset_monitoring_implementation_guides(int(year))
     _set_section_status(int(year), "monitoring_improvement", "In Progress")
 
     return {
@@ -1987,6 +2718,54 @@ def submit_monitoring_improvement(payload: SubmitRequest):
     }
 
 
+def _generate_recommended_action_for_control(year: int, control: dict) -> str:
+    control_id = _normalize_text(control.get("CVE"))
+    control_name = _normalize_text(control.get("vulnerability"))
+    justification = _normalize_text(control.get("justification"))
+
+    hosts = control.get("hosts", [])
+    if not isinstance(hosts, list):
+        hosts = []
+
+    host_lines = []
+    for host in hosts:
+        if isinstance(host, dict):
+            host_lines.append(
+                f"Host={_normalize_text(host.get('hostname'))}, "
+                f"Role={_normalize_text(host.get('role'))}, "
+                f"CIA={_normalize_text(host.get('CIA rating'))}, "
+                f"CVE={control_id}"
+            )
+
+    retrieved_controls = _retrieve_relevant_iso_controls(
+        year=year,
+        control_id=control_id,
+        control_name=control_name,
+        justification=justification,
+        host_lines=host_lines,
+        top_k=5,
+    )
+
+    if control_id.startswith("UB-WS-"):
+        return _generate_user_behavior_monitoring_action_with_llama3(
+            year=year,
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification,
+            hosts=hosts,
+            retrieved_controls=retrieved_controls,
+        )
+
+    return _generate_monitoring_action_with_llama3(
+        year=year,
+        control_id=control_id,
+        control_name=control_name,
+        justification=justification,
+        host_lines=host_lines,
+        retrieved_controls=retrieved_controls,
+    )
+
+
 @router.post("/recommend")
 def recommend_monitoring_action(payload: RecommendTreatmentRequest):
     year = int(payload.year or 2026)
@@ -2007,54 +2786,8 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
             "inventory": doc,
         }
 
-    control_id = _normalize_text(control.get("CVE"))
-    control_name = _normalize_text(control.get("vulnerability"))
-    justification = _normalize_text(control.get("justification"))
-
-    hosts = control.get("hosts", [])
-    if not isinstance(hosts, list):
-        hosts = []
-
-    host_lines = []
-    for host in hosts:
-        if isinstance(host, dict):
-            host_lines.append(
-                f"Host={_normalize_text(host.get('hostname'))}, "
-                f"Role={_normalize_text(host.get('role'))}, "
-                f"CIA={_normalize_text(host.get('CIA rating'))}, "
-                f"CVE={control_id}"
-            )
-
     try:
-        retrieved_controls = _retrieve_relevant_iso_controls(
-            year=year,
-            control_id=control_id,
-            control_name=control_name,
-            justification=justification,
-            host_lines=host_lines,
-            top_k=5,
-        )
-
-        # SPECIAL CASE: USER ACTIVITY BEHAVIOR
-        if control_id.startswith("UB-WS-"):
-            generated_recommended_action = _generate_user_behavior_monitoring_action_with_llama3(
-                year=year,
-                control_id=control_id,
-                control_name=control_name,
-                justification=justification,
-                hosts=hosts,
-                retrieved_controls=retrieved_controls,
-            )
-        else:
-            generated_recommended_action = _generate_monitoring_action_with_llama3(
-                year=year,
-                control_id=control_id,
-                control_name=control_name,
-                justification=justification,
-                host_lines=host_lines,
-                retrieved_controls=retrieved_controls,
-            )
-
+        generated_recommended_action = _generate_recommended_action_for_control(year, control)
     except Exception as e:
         return {
             "success": False,
@@ -2062,6 +2795,7 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
             "inventory": doc,
         }
 
+    control_id = _normalize_text(control.get("CVE"))
     control["recommended_action"] = generated_recommended_action
 
     cves = doc.get("cves", [])
@@ -2123,9 +2857,8 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
         }
 
     host = hosts[target_host_index]
-    existing_evidence = host.get("evidence", [])
-    if not isinstance(existing_evidence, list):
-        existing_evidence = []
+    _ensure_monitoring_evidence_ids_for_host(year, doc, host)
+    existing_evidence = _clean_evidence_list(year, doc, host.get("evidence", []))
 
     control_id = _normalize_text(control.get("CVE"))
     control_name = _normalize_text(control.get("vulnerability"))
@@ -2167,6 +2900,7 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
     )
 
     new_evidence = {
+        "evidence_id": _next_monitoring_evidence_id(year, doc),
         "responsible": _normalize_text(payload.evidence.responsible) or auto_responsible,
         "resources": _normalize_text(payload.evidence.resources) or auto_resources,
         "date": _normalize_text(payload.evidence.date),
@@ -2192,11 +2926,24 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
         doc["cves"] = cves
 
     _save_json(_monitoring_improvement_file(year), doc)
+
+    guide = None
+    try:
+        guide = _replace_monitoring_guide_for_evidence(year, control, host, new_evidence)
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Evidence was added but guide generation failed: {str(e)}",
+            "inventory": doc,
+        }
+
     _sync_monitoring_improvement_status(year, doc)
 
     return {
         "success": True,
-        "message": f"Evidence added for host {payload.hostname} under CVE {payload.control_id}.",
+        "message": f"Evidence added for host {payload.hostname} under CVE {payload.control_id}. Guide generated successfully.",
+        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
+        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,
     }
 
@@ -2262,6 +3009,7 @@ def delete_monitoring_evidence(payload: DeleteEvidenceRequest):
         }
 
     host = hosts[target_host_index]
+    _ensure_monitoring_evidence_ids_for_host(year, doc, host)
     evidence = host.get("evidence", [])
     if not isinstance(evidence, list):
         evidence = []
@@ -2273,7 +3021,8 @@ def delete_monitoring_evidence(payload: DeleteEvidenceRequest):
             "inventory": doc,
         }
 
-    evidence.pop(payload.evidence_index)
+    removed_item = evidence.pop(payload.evidence_index) if isinstance(evidence[payload.evidence_index], dict) else {}
+    removed_evidence_id = _normalize_text(removed_item.get("evidence_id"))
     host["evidence"] = evidence
     hosts[target_host_index] = host
     control["hosts"] = hosts
@@ -2284,11 +3033,13 @@ def delete_monitoring_evidence(payload: DeleteEvidenceRequest):
         doc["cves"] = cves
 
     _save_json(_monitoring_improvement_file(year), doc)
+    guide_deleted = _remove_monitoring_guide_by_key(year, removed_evidence_id) if removed_evidence_id else False
     _sync_monitoring_improvement_status(year, doc)
 
     return {
         "success": True,
-        "message": "Selected evidence was deleted successfully.",
+        "message": "Selected evidence and its linked monitoring guide were deleted successfully.",
+        "guide_deleted": guide_deleted,
         "inventory": doc,
     }
 
@@ -2341,6 +3092,7 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest):
         }
 
     host = hosts[target_host_index]
+    _ensure_monitoring_evidence_ids_for_host(year, doc, host)
     evidence_list = host.get("evidence", [])
     if not isinstance(evidence_list, list):
         evidence_list = []
@@ -2353,7 +3105,11 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest):
             "inventory": doc,
         }
 
+    old_item = evidence_list[evidence_index] if isinstance(evidence_list[evidence_index], dict) else {}
+    evidence_id = _normalize_text(old_item.get("evidence_id")) or _next_monitoring_evidence_id(year, doc)
+
     updated_evidence = {
+        "evidence_id": evidence_id,
         "responsible": _normalize_text(payload.evidence.responsible),
         "resources": _normalize_text(payload.evidence.resources),
         "date": _normalize_text(payload.evidence.date),
@@ -2361,7 +3117,7 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest):
         "desc": _normalize_text(payload.evidence.desc),
     }
 
-    if not any(updated_evidence.values()):
+    if not any(v for k, v in updated_evidence.items() if k != "evidence_id"):
         return {
             "success": False,
             "message": "Please fill at least one evidence field.",
@@ -2379,11 +3135,24 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest):
         doc["cves"] = cves
 
     _save_json(_monitoring_improvement_file(year), doc)
+
+    guide = None
+    try:
+        guide = _replace_monitoring_guide_for_evidence(year, control, host, updated_evidence)
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Evidence was updated but guide regeneration failed: {str(e)}",
+            "inventory": doc,
+        }
+
     _sync_monitoring_improvement_status(year, doc)
 
     return {
         "success": True,
-        "message": f"Evidence updated for host '{payload.hostname}'.",
+        "message": f"Evidence updated for host '{payload.hostname}'. Guide regenerated successfully.",
+        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
+        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,
     }
 
@@ -2484,6 +3253,184 @@ def get_monitoring_evidence_defaults(payload: EvidenceDefaultsRequest):
         "success": True,
         "message": f"Evidence defaults generated for host {hostname} under {control_id}.",
         "evidence": evidence,
+        "inventory": doc,
+    }
+
+
+@router.post("/add-evidence-all")
+def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
+    year = int(payload.year or 2026)
+    doc = _load_monitoring_improvement_doc_or_blank(year)
+
+    if _monitoring_improvement_section_is_read_only(year):
+        return {
+            "success": False,
+            "message": "Monitoring and Improvement has already been submitted and is now read-only.",
+            "inventory": doc,
+        }
+
+    cves = doc.get("cves", [])
+    if not isinstance(cves, list) or len(cves) == 0:
+        return {
+            "success": False,
+            "message": "No Monitoring and Improvement rows are available.",
+            "inventory": doc,
+        }
+
+    candidate_count = 0
+    for control in cves:
+        if not isinstance(control, dict):
+            continue
+        hosts = control.get("hosts", [])
+        if not isinstance(hosts, list):
+            continue
+        for host in hosts:
+            if isinstance(host, dict) and _normalize_text(host.get("hostname")) != "":
+                candidate_count += 1
+
+    if candidate_count == 0:
+        return {
+            "success": False,
+            "message": "No valid host rows are available for evidence generation.",
+            "inventory": doc,
+        }
+
+    added_count = 0
+    recommended_created_count = 0
+    skipped_count = 0
+    failed_count = 0
+    failed_items: list[str] = []
+    _load_monitoring_implementation_guides_doc_or_blank(year)
+
+    for control_idx, control in enumerate(cves):
+        if not isinstance(control, dict):
+            continue
+
+        control_id = _normalize_text(control.get("CVE"))
+        control_name = _normalize_text(control.get("vulnerability"))
+        justification = _normalize_text(control.get("justification"))
+        recommended_action = _normalize_text(control.get("recommended_action"))
+        hosts = control.get("hosts", [])
+
+        if control_id == "" or not isinstance(hosts, list):
+            continue
+
+        if recommended_action == "":
+            try:
+                recommended_action = _generate_recommended_action_for_control(year, control)
+                control["recommended_action"] = recommended_action
+                cves[control_idx] = control
+                doc["cves"] = cves
+                recommended_created_count += 1
+            except Exception:
+                failed_count += len(
+                    [
+                        host for host in hosts
+                        if isinstance(host, dict)
+                        and _normalize_text(host.get("hostname")) != ""
+                        and len(_clean_evidence_list(year, doc, host.get("evidence", []))) == 0
+                    ]
+                )
+                failed_items.append(f"{control_id} / recommended action")
+                continue
+
+        host_lines = _build_host_lines_for_rag(hosts)
+        try:
+            retrieved_controls = _retrieve_relevant_iso_controls(
+                year=year,
+                control_id=control_id,
+                control_name=control_name,
+                justification=justification,
+                host_lines=host_lines,
+                top_k=5,
+            )
+        except Exception:
+            retrieved_controls = []
+
+        for host_idx, host in enumerate(hosts):
+            if not isinstance(host, dict):
+                continue
+
+            hostname = _normalize_text(host.get("hostname"))
+            if hostname == "":
+                continue
+
+            _ensure_monitoring_evidence_ids_for_host(year, doc, host)
+            existing_evidence = _clean_evidence_list(year, doc, host.get("evidence", []))
+            host["evidence"] = existing_evidence
+
+            if len(existing_evidence) > 0:
+                skipped_count += 1
+                hosts[host_idx] = host
+                continue
+
+            role = _normalize_text(host.get("role"))
+            vulnerability_name = _normalize_text(
+                host.get("vulnerability_name") or control_name
+            )
+
+            new_evidence = {
+                "evidence_id": _next_monitoring_evidence_id(year, doc),
+                "responsible": _map_responsible_from_role(role),
+                "resources": _build_resources_value(hostname, role),
+                "date": "",
+                "url": "",
+                "desc": _generate_evidence_desc_with_llama3(
+                    year=year,
+                    control_id=control_id,
+                    control_name=control_name,
+                    justification=justification,
+                    hostname=hostname,
+                    role=role,
+                    vulnerability_name=vulnerability_name,
+                    recommended_action=recommended_action,
+                    retrieved_controls=retrieved_controls,
+                ),
+            }
+
+            if not any(new_evidence.values()):
+                failed_count += 1
+                failed_items.append(f"{control_id} / {hostname}")
+                continue
+
+            host["evidence"] = [new_evidence]
+            hosts[host_idx] = host
+            added_count += 1
+
+            try:
+                _replace_monitoring_guide_for_evidence(year, control, host, new_evidence)
+            except Exception:
+                host["evidence"] = []
+                hosts[host_idx] = host
+                added_count -= 1
+                failed_count += 1
+                failed_items.append(f"{control_id} / {hostname}")
+
+        control["hosts"] = hosts
+        cves[control_idx] = control
+
+    doc["cves"] = cves
+    _save_json(_monitoring_improvement_file(year), doc)
+    _sync_monitoring_improvement_status(year, doc)
+
+    message = (
+        f"Evidence generation completed. Generated {recommended_created_count} recommended action(s), "
+        f"added {added_count} evidence item(s) and linked monitoring guide(s), "
+        f"Skipped {skipped_count} host row(s) that already had evidence."
+    )
+    if failed_count > 0:
+        preview = ", ".join(failed_items[:5])
+        if len(failed_items) > 5:
+            preview += ", ..."
+        message += f" {failed_count} host row(s) failed: {preview}"
+
+    return {
+        "success": failed_count == 0,
+        "message": message,
+        "recommended_created_count": recommended_created_count,
+        "added_count": added_count,
+        "skipped_count": skipped_count,
+        "failed_count": failed_count,
         "inventory": doc,
     }
 

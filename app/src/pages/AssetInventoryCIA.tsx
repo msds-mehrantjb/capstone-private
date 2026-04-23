@@ -71,6 +71,7 @@ type SystemStatusDTO = {
 };
 
 type DashboardRawDTO = {
+  scope_file_name?: string;
   scope?: {
     name?: string;
     asset_count?: number;
@@ -174,6 +175,10 @@ type AssignRolesResponse = {
   message?: string;
   kb_status?: "created" | "updated" | "up_to_date" | "error";
   rows_embedded?: number;
+  auto_train_result?: {
+    message?: string;
+  } | null;
+  auto_train_error?: string;
   inventory?: AssetInventoryWorkDTO;
   processed_hosts?: number;
   updated_hosts?: number;
@@ -416,6 +421,8 @@ function StatusCell({ value }: { value: AssetRow["status"] }) {
 
 export default function AssetInventoryCIA() {
   const YEAR = 2026;
+  const SCOPE_REQUIRED_MESSAGE =
+    "Submit the Scope & Context document first before starting Asset Inventory & CIA.";
   const [selectedStep, setSelectedStep] = useState<number>(2);
 
   const [pendingCommand, setPendingCommand] = useState<
@@ -506,6 +513,10 @@ export default function AssetInventoryCIA() {
     
   const displayScopeName = dashboardRaw?.scope?.name ?? "NA";
   const assetCount = rows.length;
+  const isSubmittedScopeFile = (scopeFileName?: string | null) => {
+    const value = (scopeFileName ?? "").trim().toLowerCase();
+    return value.length > 0 && !/-v0\.json$/.test(value);
+  };
 
   const totalServers = useMemo(() => rows.filter((r) => r.hostType === "server").length, [rows]);
 
@@ -634,6 +645,15 @@ export default function AssetInventoryCIA() {
 
   const executeSubmitInventory = async () => {
     setSending(true);
+    setPendingCommand(null);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Please wait, while submitting the Asset Inventory & CIA results, updating the training datasets, and retraining the ML role prediction model...",
+      },
+    ]);
 
     try {
       const data = await apiPostJSONBody<SubmitResponse>("/api/assets/submit", {
@@ -691,8 +711,49 @@ export default function AssetInventoryCIA() {
     try {
       const raw = await apiGetDashboardRaw(YEAR);
       setDashboardRaw(raw);
+      return raw;
     } catch {
       setDashboardRaw(null);
+      return null;
+    }
+  };
+
+  const hasSubmittedScopeDocument = async () => {
+    const latestDashboard = await refreshDashboardRaw();
+    return isSubmittedScopeFile(latestDashboard?.scope_file_name);
+  };
+
+  const handleNewInventoryAssessmentClick = async () => {
+    if (!(await hasSubmittedScopeDocument())) {
+      showPopup(SCOPE_REQUIRED_MESSAGE);
+      return;
+    }
+
+    if (assetsCiaStatus === "In Progress") {
+      openConfirm(
+        "You are in the middle of assess inventory operation.\n\nSelect Yes to start a new one.\nSelect No to return.",
+        "new-inventory"
+      );
+      return;
+    }
+
+    try {
+      if (assetsCiaStatus === "Not Started" || assetsCiaStatus === "Blocked") {
+        openConfirm(
+          "A new inventory assessment will be started.\n\nDo you want to continue?",
+          "new-inventory"
+        );
+        return;
+      }
+
+      const doc = await apiGetAssetInventory(YEAR);
+      setRows(flattenInventoryToRows(doc));
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Existing inventory assessment loaded." },
+      ]);
+    } catch (e) {
+      showPopup(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -1256,8 +1317,12 @@ export default function AssetInventoryCIA() {
             role: "assistant",
             content:
               "Asset Inventory & CIA\n\n" +
-              "This section discovers network hosts, identifies their roles, and assigns CIA criticality ratings to build the organization's asset inventory.\n\n" +
-              "Use /commands to see available operations.",
+              "What this page is about:\n" +
+              "This stage builds the asset inventory for the audit scope. It identifies hosts, confirms their role in the environment, and assigns CIA ratings so the ISMS can distinguish which systems are most important to confidentiality, integrity, and availability.\n\n" +
+              "Why it is important:\n" +
+              "ISO 27001 risk work depends on knowing what assets exist and how important they are to the organization. If the inventory is weak, later threat analysis, risk scoring, control selection, and treatment planning will also be weak.\n\n" +
+              "Its place in the ISO 27001 lifecycle:\n" +
+              "This is an early scoping and asset-identification stage. It comes after Scope & Context and before Threats & Vulnerabilities. Its job is to turn the approved audit scope into a concrete list of in-scope assets and business-critical systems.",
           },
         ]);
         return;
@@ -1288,6 +1353,15 @@ export default function AssetInventoryCIA() {
       }
 
       if (text.toLowerCase() === "/explore") {
+        if (!(await hasSubmittedScopeDocument())) {
+          setPendingCommand(null);
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: SCOPE_REQUIRED_MESSAGE },
+          ]);
+          return;
+        }
+
         setPendingCommand("explore");
         setMessages((prev) => [
           ...prev,
@@ -1384,12 +1458,17 @@ export default function AssetInventoryCIA() {
           return;
         }
 
+        setPendingCommand(null);
+        setConfirmSubnetId(null);
+        setPendingHostname(null);
+        setSelectedDetailRow(null);
+
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
             content:
-              "Checking knowledge base, detecting roles from indicators, running ML role prediction, and updating inventory table...",
+              "Checking whether the ML role prediction model is ready, training it first if needed, then checking the knowledge base, detecting roles from indicators, running ML role prediction, and updating the inventory table...",
           },
         ]);
 
@@ -1397,6 +1476,19 @@ export default function AssetInventoryCIA() {
           const data = await apiPostJSONBody<AssignRolesResponse>("/api/assets/assignroles", {
             year: YEAR,
           });
+
+          if (data.success === false) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: "assistant",
+                content:
+                  data.message ||
+                  "Role assignment could not continue because the ML role prediction model was not ready.",
+              },
+            ]);
+            return;
+          }
 
           if (data.inventory) {
             setRows(flattenInventoryToRows(data.inventory));
@@ -1575,39 +1667,7 @@ export default function AssetInventoryCIA() {
             <div className="flex justify-end">
               <button
                 className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
-                onClick={async () => {
-                  if (assetsCiaStatus === "Blocked") {
-                    showPopup("You should submit Scope & Context document first");
-                    return;
-                  }
-
-                  if (assetsCiaStatus === "In Progress") {
-                    openConfirm(
-                      "You are in the middle of assess inventory operation.\n\nSelect Yes to start a new one.\nSelect No to return.",
-                      "new-inventory"
-                    );
-                    return;
-                  }
-
-                  try {
-                    if (assetsCiaStatus === "Not Started") {
-                      openConfirm(
-                        "A new Asset Inventory file will be created.\n\nDo you want to continue?",
-                        "new-inventory"
-                      );
-                      return;
-                    }
-
-                    const doc = await apiGetAssetInventory(YEAR);
-                    setRows(flattenInventoryToRows(doc));
-                    setMessages((prev) => [
-                      ...prev,
-                      { role: "assistant", content: "(Loaded) AssetInventory.json" },
-                    ]);
-                  } catch (e) {
-                    showPopup(e instanceof Error ? e.message : String(e));
-                  }
-                }}
+                onClick={() => void handleNewInventoryAssessmentClick()}
               >
                 <Plus className="h-14 w-4" />
                 New Inventory Assessment
@@ -2114,39 +2174,7 @@ export default function AssetInventoryCIA() {
           <div className="flex min-h-[71px] items-center justify-end">
             <button
               className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
-              onClick={async () => {
-                if (assetsCiaStatus === "Blocked") {
-                  showPopup("You should submit Scope & Context document first");
-                  return;
-                }
-
-                if (assetsCiaStatus === "In Progress") {
-                  openConfirm(
-                    "You are in the middle of assess inventory operation.\n\nSelect Yes to start a new one.\nSelect No to return.",
-                    "new-inventory"
-                  );
-                  return;
-                }
-
-                try {
-                  if (assetsCiaStatus === "Not Started") {
-                    openConfirm(
-                      "A new Asset Inventory file will be created.\n\nDo you want to continue?",
-                      "new-inventory"
-                    );
-                    return;
-                  }
-
-                  const doc = await apiGetAssetInventory(YEAR);
-                  setRows(flattenInventoryToRows(doc));
-                  setMessages((prev) => [
-                    ...prev,
-                    { role: "assistant", content: "(Loaded) AssetInventory.json" },
-                  ]);
-                } catch (e) {
-                  showPopup(e instanceof Error ? e.message : String(e));
-                }
-              }}
+              onClick={() => void handleNewInventoryAssessmentClick()}
             >
               <Plus className="h-14 w-4" />
               New Inventory Assessment
@@ -2625,7 +2653,11 @@ export default function AssetInventoryCIA() {
 
                       setMessages((prev) => [
                         ...prev,
-                        { role: "assistant", content: `(Created) data/work/${YEAR}/AssetInventory.json` },
+                        {
+                          role: "assistant",
+                          content:
+                            "New inventory assessment started. You can now run /explore to discover organizational subnets.",
+                        },
                       ]);
                     } else if (confirmAction === "reset-inventory") {
                       await apiCreateBlankAssetInventory(YEAR, true);

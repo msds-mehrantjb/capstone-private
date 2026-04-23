@@ -22,6 +22,14 @@ router = APIRouter(prefix="/api/annex-a-soa", tags=["annex-a-soa"])
 
 
 VALID_STEP_STATUSES = {"Blocked", "Not Started", "In Progress", "Completed"}
+ANNEX_PREREQUISITE_SECTIONS = (
+    "scope_context",
+    "assets_cia",
+    "threats_vulns",
+    "existing_controls_postures",
+    "risk_analysis",
+    "risk_evaluation_treatment",
+)
 VALID_IMPLEMENTATION_STATUSES = {
     "",
     "Not Implemented",
@@ -102,6 +110,10 @@ def _risk_eval_treatment_file(year: int) -> Path:
 
 def _action_plan_implementation_file(year: int) -> Path:
     return _work_dir(year) / "ActionPlanImplementation.json"
+
+
+def _action_implementation_guides_file(year: int) -> Path:
+    return _work_dir(year) / "ActionImplementationGuides.json"
 
 
 def _legacy_action_plan_implementation_file(year: int) -> Path:
@@ -1010,6 +1022,8 @@ def _load_system_status_or_default(year: int) -> dict:
             "sections": {
                 "scope_context": {"status": "Not Started"},
                 "assets_cia": {"status": "Not Started"},
+                "threats_vulns": {"status": "Not Started"},
+                "existing_controls_postures": {"status": "Not Started"},
                 "risk_analysis": {"status": "Not Started"},
                 "risk_evaluation_treatment": {"status": "Not Started"},
                 "annex_a_soa": {"status": "Blocked"},
@@ -1033,6 +1047,8 @@ def _load_system_status_or_default(year: int) -> dict:
     defaults = {
         "scope_context": {"status": "Not Started"},
         "assets_cia": {"status": "Not Started"},
+        "threats_vulns": {"status": "Not Started"},
+        "existing_controls_postures": {"status": "Not Started"},
         "risk_analysis": {"status": "Not Started"},
         "risk_evaluation_treatment": {"status": "Not Started"},
         "annex_a_soa": {"status": "Blocked"},
@@ -1044,6 +1060,31 @@ def _load_system_status_or_default(year: int) -> dict:
             data["sections"][section_name] = default_value
 
     return data
+
+
+def _mark_annex_prerequisites_completed(status_doc: dict) -> dict:
+    if not isinstance(status_doc, dict):
+        status_doc = {}
+
+    sections = status_doc.get("sections")
+    if not isinstance(sections, dict):
+        sections = {}
+        status_doc["sections"] = sections
+
+    for section_name in ANNEX_PREREQUISITE_SECTIONS:
+        section = sections.get(section_name)
+        if not isinstance(section, dict):
+            section = {}
+            sections[section_name] = section
+        section["status"] = "Completed"
+
+    annex_section = sections.get("annex_a_soa")
+    if not isinstance(annex_section, dict):
+        annex_section = {}
+        sections["annex_a_soa"] = annex_section
+    annex_section["status"] = "Completed"
+
+    return status_doc
 
 
 def _set_section_status(year: int, section_name: str, new_status: str) -> None:
@@ -1108,7 +1149,8 @@ def _derive_annex_status_from_doc(doc: dict) -> str:
 
 def _sync_annex_status(year: int, doc: dict | None = None) -> str:
     if _annex_section_is_read_only(year):
-        _set_section_status(year, "annex_a_soa", "Completed")
+        status_doc = _mark_annex_prerequisites_completed(_load_system_status_or_default(year))
+        _save_json(_system_status_file(year), status_doc)
         return "Completed"
 
     if doc is None:
@@ -2519,6 +2561,7 @@ def submit_annex_a_soa(payload: SubmitRequest):
             annex_doc=doc,
             force=True,
         )
+        _save_json(_action_implementation_guides_file(year), {"guides": []})
     except FileNotFoundError as e:
         return {
             "success": False,
@@ -2533,7 +2576,7 @@ def submit_annex_a_soa(payload: SubmitRequest):
         }
 
     status_doc = _load_system_status_or_default(year)
-    status_doc["sections"]["annex_a_soa"]["status"] = "Completed"
+    status_doc = _mark_annex_prerequisites_completed(status_doc)
 
     if status_doc["sections"].get("action_plan_implementation", {}).get("status") != "Completed":
         status_doc["sections"]["action_plan_implementation"]["status"] = "In Progress"
@@ -2590,7 +2633,15 @@ def recommend_controls(payload: RecommendRequest):
     year = int(payload.year or 2026)
 
     try:
-        recommendations = _recommend_controls_from_annex(year)
+        doc = _load_annex_doc_or_blank(year)
+        existing_ids = {
+            _normalize_key(c.get("control_id"))
+            for c in _all_controls(doc)
+        }
+        recommendations = [
+            rec for rec in _recommend_controls_from_annex(year)
+            if _normalize_key(rec.get("control_id")) not in existing_ids
+        ]
 
         return {
             "success": True,
@@ -2648,6 +2699,10 @@ def add_control_to_annex(payload: AddRequest):
     # Validate against recommend list
     try:
         recommendations = _recommend_controls_from_annex(year)
+        recommendations = [
+            r for r in recommendations
+            if _normalize_key(r.get("control_id")) not in existing_ids
+        ]
         allowed_ids = {_normalize_key(r["control_id"]) for r in recommendations}
 
         recommendation_map = {

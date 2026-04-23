@@ -5,19 +5,20 @@
   },
   "sections": {
     "scope_context": {
-      "status": "Completed"
+      "status": "Completed",
+      "scope_file_name": "2026-Scope-Draft-v0.json"
     },
     "assets_cia": {
-      "status": "In Progress"
+      "status": "Completed"
     },
     "threats_vulns": {
       "status": "In Progress"
     },
     "existing_controls_postures": {
-      "status": "In Progress"
+      "status": "Completed"
     },
     "risk_analysis": {
-      "status": "In Progress"
+      "status": "Completed"
     },
     "risk_evaluation_treatment": {
       "status": "In Progress"
@@ -32,7 +33,9 @@
       "status": "In Progress"
     },
     "controls_posture": {
-      "status": "In Progress"
+      "status": "Not Started"
     }
-  }
+  },
+  "year": 2026,
+  "updated_at": "2026-04-23T15:08:07.276808Z"
 }

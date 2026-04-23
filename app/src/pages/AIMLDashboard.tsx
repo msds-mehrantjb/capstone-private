@@ -144,13 +144,13 @@ const fallbackKpiData: AimlGroupDTO[] = [
       { title: "Role Prediction Accuracy (%)", value: 92, accent: "emerald" },
       { title: "CIA Prediction Accuracy (%)", value: 89, accent: "emerald" },
       { title: "F1 Score (Role Model)", value: 0.91, accent: "emerald" },
-      { title: "Behavior Model Accuracy (%)", value: 87, accent: "emerald" },
+      { title: "Model Accuracy (%)", value: 87, accent: "emerald" },
     ],
   },
   {
     group: "ML-based UABV",
     metrics: [
-      { title: "Average Behavior Risk Score", value: 3.7, accent: "amber" },
+      { title: "Behavior Model Accuracy (%)", value: 87, accent: "amber" },
       { title: "High-Risk User Percentage (%)", value: 12, accent: "amber" },
       { title: "Score Difference (ML vs Rule)", value: 1.5, accent: "amber" },
       { title: "Top Contributing Feature Distribution (%)", value: 45, accent: "amber" },
@@ -353,11 +353,7 @@ function renderGroup(
             value={metric.value}
             icon={getGroupIcon(group.group)}
             accent={metric.accent}
-            onClick={
-              cardsAreClickable && metric.calculation
-                ? () => onMetricClick?.(metric)
-                : undefined
-            }
+            onClick={cardsAreClickable ? () => onMetricClick?.(metric) : undefined}
           />
         ))}
       </div>
@@ -389,6 +385,9 @@ function readableInputLabel(key: string) {
     macro_f1: "Macro F1 score",
     run_id: "Training run",
     accuracy_pct: "Model accuracy",
+    accuracy_source: "Accuracy source",
+    server_accuracy_pct: "Server model accuracy",
+    workstation_accuracy_pct: "Workstation model accuracy",
     total_behavior_predictions: "Total behavior predictions",
     total_user_behavior_records: "Total user behavior records",
     high_risk_users: "High-risk user behavior records",
@@ -419,19 +418,67 @@ function readableInputLabel(key: string) {
     latest_available_snapshot_date: "Latest available snapshot date",
     latest_available_source: "Latest available data source",
   };
-  return labels[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+  if (labels[key]) return labels[key];
+
+  const normalized = String(key || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+  if (normalized) {
+    for (const [rawKey, label] of Object.entries(labels)) {
+      const rawNormalized = rawKey.toLowerCase().replace(/[^a-z0-9]/g, "");
+      const labelNormalized = label.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (normalized === rawNormalized || normalized === labelNormalized) {
+        return label;
+      }
+    }
+  }
+
+  const withSpaces = String(key || "")
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+  return withSpaces.replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function readableSourceValue(value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return value;
+
+  const mapping: Record<string, string> = {
+    telemetry: "Current telemetry",
+    previous_snapshot: "Previous snapshot history",
+    table_fallback: "Current table fallback",
+    not_available: "Not available",
+    reset_audit: "Reset audit snapshot",
+    role_prediction_events_proxy: "Current role prediction events proxy",
+    current_role_prediction_events_proxy: "Current role prediction events proxy",
+  };
+
+  return (
+    mapping[text.toLowerCase()] ??
+    text.replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
 }
 
 function dataUsedItems(calculation: KpiCalculationDTO) {
   if (Array.isArray(calculation.data_used) && calculation.data_used.length > 0) {
     return calculation.data_used.map((item) => ({
-      label:
-        item.label === "Previous KPI value"
-          ? "Latest available KPI value"
-          : item.label === "Previous snapshot date"
-          ? "Latest available snapshot date"
-          : item.label || "Value",
-      value: item.value,
+      label: (() => {
+        const normalizedLabel =
+          item.label === "Previous KPI value"
+            ? "latest_available_kpi_value"
+            : item.label === "Previous snapshot date"
+            ? "latest_available_snapshot_date"
+            : item.label || "Value";
+        return readableInputLabel(normalizedLabel);
+      })(),
+      value:
+        readableInputLabel(item.label || "") === "Latest Available Data Source" ||
+        String(item.label || "").toLowerCase() === "latest available data source" ||
+        readableInputLabel(item.label || "") === "Accuracy Source"
+          ? readableSourceValue(item.value)
+          : item.value,
     }));
   }
 
@@ -440,7 +487,7 @@ function dataUsedItems(calculation: KpiCalculationDTO) {
     .filter(([key]) => !["previous_source", "previous_method"].includes(key))
     .map(([key, value]) => ({
       label: readableInputLabel(key),
-      value,
+      value: key === "latest_available_source" ? readableSourceValue(value) : value,
     }));
 }
 
@@ -448,10 +495,10 @@ type DataUsedItem = ReturnType<typeof dataUsedItems>[number];
 
 const metricKeyByTitle: Record<string, string> = {
   "Role Prediction Accuracy (%)": "role_prediction_accuracy_pct",
+  "Model Accuracy (%)": "model_accuracy_pct",
   "CIA Prediction Accuracy (%)": "cia_prediction_accuracy_pct",
   "F1 Score (Role Model)": "f1_score_role_model",
   "Behavior Model Accuracy (%)": "behavior_model_accuracy_pct",
-  "Average Behavior Risk Score": "average_behavior_risk_score",
   "High-Risk User Percentage (%)": "high_risk_user_percentage_pct",
   "Score Difference (ML vs Rule)": "score_difference_ml_vs_rule",
   "Top Contributing Feature Distribution (%)": "top_contributing_feature_distribution_pct",
@@ -554,14 +601,17 @@ function inferredHowComputed(metric: AimlMetricDTO) {
   switch (metricKey(metric)) {
     case "role_prediction_accuracy_pct":
       return `${prefix}Correct predictions / Total evaluated predictions * 100. Correct predictions counts records where the ML-predicted role matched the final selected role. Total evaluated predictions counts records where both the model prediction and final selected role were available.`;
+    case "model_accuracy_pct":
+      if (metric.calculation?.inputs?.run_id && metric.calculation?.inputs?.accuracy_pct !== undefined) {
+        return `${prefix}The dashboard reads the latest role model training run from AIMLKPIInputs.json and uses its stored Model accuracy value. When available, this is the direct role-model accuracy metric captured for that run.`;
+      }
+      return `${prefix}Stored role model training accuracy was not available, so the dashboard used Correct predictions / Total evaluated predictions * 100 from current role prediction telemetry as the role-model accuracy indicator.`;
     case "cia_prediction_accuracy_pct":
       return `${prefix}Correct CIA predictions / Total CIA predictions * 100. If direct CIA prediction telemetry is not available, Assets with CIA rating / Total assets * 100 is used as a fallback coverage estimate.`;
     case "f1_score_role_model":
       return `${prefix}Macro F1 score is calculated from role-class precision and recall. For each role class, the system compares ML-predicted role with final selected role, then builds true positives, false positives, and false negatives. Precision = true positives / predicted positives. Recall = true positives / actual positives. Per-role F1 = 2 * precision * recall / (precision + recall). The displayed Macro F1 score is the average of the per-role F1 values, so smaller role classes still affect the result.`;
     case "behavior_model_accuracy_pct":
       return `${prefix}Model accuracy is calculated on the held-out Test split. The behavior training pipeline median-imputes numeric behavior features, encodes the risk label, trains the Model algorithm, then predicts the held-out test rows. Model accuracy = correctly predicted test rows / total test rows * 100.`;
-    case "average_behavior_risk_score":
-      return `${prefix}The dashboard averages the behavior risk scores across Total behavior predictions. This produces one workload-level signal for whether user behavior activity is trending normal or risky.`;
     case "high_risk_user_percentage_pct":
       return `${prefix}High-risk user behavior records / Total user behavior records * 100. High-risk user behavior records counts behavior rows assigned to the highest risk band.`;
     case "score_difference_ml_vs_rule":
@@ -606,14 +656,17 @@ function inferredMeaning(metric: AimlMetricDTO, dataUsed: DataUsedItem[]) {
   switch (key) {
     case "role_prediction_accuracy_pct":
       return `${latestContext}${displayed}% role prediction accuracy means the role model matched the final selected asset role at that rate. ${dataActivityText(dataUsed, "Correct predictions", "Total evaluated predictions")} The goal is to make asset role assignment reliable enough to support CIA rating, risk analysis, and downstream ISO workflow decisions with less manual correction. ${qualityText(value)}`;
+    case "model_accuracy_pct":
+      if (dataValue(dataUsed, "Training run") !== undefined && dataValue(dataUsed, "Model accuracy") !== undefined) {
+        return `${latestContext}${displayed}% model accuracy means the latest role-model evaluation ran at that accuracy level for asset role classification. The goal is to show whether the trained role model itself is learning role classes well enough before we trust it in live assignment workflows. ${qualityText(value)}`;
+      }
+      return `${latestContext}${displayed}% model accuracy is currently being estimated from evaluated role prediction outcomes because stored role-training accuracy was not available. ${dataActivityText(dataUsed, "Correct predictions", "Total evaluated predictions")} The goal is to keep a usable model-quality signal available for the role model even when dedicated training telemetry is missing. ${qualityText(value)}`;
     case "cia_prediction_accuracy_pct":
       return `${latestContext}${displayed}% CIA prediction accuracy means CIA outcomes were matched or covered at that rate. ${dataActivityText(dataUsed, "Assets with CIA rating", "Total assets") || dataActivityText(dataUsed, "Correct predictions", "Total evaluated predictions")} The goal is to keep confidentiality, integrity, and availability classification consistent before risk scoring depends on it. ${qualityText(value)}`;
     case "f1_score_role_model":
       return `${latestContext}An F1 score of ${displayed} is a class-balanced role model quality signal. It penalizes both false role assignments and missed role assignments, so it is more useful than accuracy when role classes are uneven. The goal is for every asset role class, not only the most common ones, to be predicted reliably. ${qualityText(value === null ? null : value * 100)}`;
     case "behavior_model_accuracy_pct":
       return `${latestContext}${displayed}% behavior model accuracy means the user-behavior model predicted held-out behavior-risk labels correctly at that rate. This reflects how well the model generalizes from training behavior records to unseen behavior records, which matters for UABV risk detection. ${qualityText(value)}`;
-    case "average_behavior_risk_score":
-      return `${latestContext}The average behavior risk score is ${displayed}. It summarizes monitored user behavior activity into one risk-level signal, so higher values mean more suspicious or policy-sensitive behavior patterns across the current records.`;
     case "high_risk_user_percentage_pct":
       return `${latestContext}${displayed}% of user behavior records are currently high risk. ${dataActivityText(dataUsed, "High-risk user behavior records", "Total user behavior records")} The goal is to show how much monitored activity is being pushed into the highest risk band. ${qualityText(value, false)}`;
     case "score_difference_ml_vs_rule":
@@ -769,28 +822,8 @@ function KpiDetailModal({
 }
 
 const fallbackDatasetProvenance: NonNullable<AimlDashboardDTO["dataset_provenance"]> = {
-  summary: {
-    total_records_all_datasets: 2060,
-    synthetic_records_all_datasets: 1800,
-    real_records_all_datasets: 260,
-  },
-  datasets: {
-    server_role_training_dataset: {
-      total_records: 940,
-      synthetic_records: 800,
-      real_records: 140,
-    },
-    workstation_role_training_dataset: {
-      total_records: 820,
-      synthetic_records: 700,
-      real_records: 120,
-    },
-    user_behavior_training_dataset: {
-      total_records: 300,
-      synthetic_records: 300,
-      real_records: 0,
-    },
-  },
+  summary: {},
+  datasets: {},
 };
 
 function MiniInfoCard({

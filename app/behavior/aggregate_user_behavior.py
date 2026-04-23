@@ -231,22 +231,36 @@ def build_default_behavior_record(hostname: str, ip_address: str, template: dict
     }
 
 
-def backfill_missing_workstations(final_records: list) -> list:
+def sync_workstations_from_assetdetails(final_records: list, remote_hostnames_with_data: set | None = None) -> tuple[list, list]:
     assetinventory_workstations = extract_workstations_from_assetinventory()
     template_map = build_assetdetails_user_behavior_map()
-
-    existing_hostnames = {
-        str(r.get("hostname", "")).strip().upper()
-        for r in final_records
+    remote_hostnames_with_data = {
+        str(hostname).strip().upper()
+        for hostname in (remote_hostnames_with_data or set())
+        if str(hostname).strip()
     }
 
-    added = []
+    workstation_hostnames = {
+        str(ws.get("hostname", "")).strip().upper()
+        for ws in assetinventory_workstations
+        if str(ws.get("hostname", "")).strip()
+    }
+
+    synced_records = [
+        record for record in final_records
+        if (
+            str(record.get("hostname", "")).strip().upper() not in workstation_hostnames
+            or str(record.get("hostname", "")).strip().upper() in remote_hostnames_with_data
+        )
+    ]
+
+    synced = []
 
     for ws in assetinventory_workstations:
-        hostname = ws["hostname"].upper()
-        ip_address = ws.get("ip_address", "")
+        hostname = str(ws.get("hostname", "")).strip().upper()
+        ip_address = str(ws.get("ip_address", "")).strip()
 
-        if hostname in existing_hostnames:
+        if not hostname or hostname in remote_hostnames_with_data:
             continue
 
         template = template_map.get(hostname)
@@ -255,17 +269,14 @@ def backfill_missing_workstations(final_records: list) -> list:
             print(f"[DEBUG] No template for {hostname}")
             continue
 
-        record = build_default_behavior_record(hostname, ip_address, template)
-
-        final_records.append(record)
-
-        added.append({
+        synced_records.append(build_default_behavior_record(hostname, ip_address, template))
+        synced.append({
             "hostname": hostname,
             "ip_address": ip_address,
-            "status": "backfilled_from_assetdetails"
+            "status": "populated_from_assetdetails"
         })
 
-    return added
+    return synced_records, synced
 
 def merge_many_hosts(retention_days: int = 30) -> dict:
     targets = [
@@ -278,6 +289,8 @@ def merge_many_hosts(retention_days: int = 30) -> dict:
 
     merged = {record_key(r): r for r in central_records}
     results = []
+    remote_hostnames_with_data = set()
+    template_map = build_assetdetails_user_behavior_map()
 
     # Step 1: merge remote records from targets.json workstations
     for host in targets:
@@ -304,19 +317,30 @@ def merge_many_hosts(retention_days: int = 30) -> dict:
 
             merged[record_key(r)] = r
 
+        normalized_hostname = str(hostname).strip().upper()
+        if remote_records:
+            remote_hostnames_with_data.add(normalized_hostname)
+            host_status = "ok"
+        elif template_map.get(normalized_hostname):
+            host_status = "populated_from_assetdetails"
+        else:
+            host_status = "no_remote_records"
+
         results.append({
             "hostname": hostname,
             "ip_address": ip_address,
-            "status": "ok",
+            "status": host_status,
             "records_merged": len(remote_records),
         })
 
     # Step 2: apply retention
     retained_records = apply_retention(list(merged.values()), retention_days)
 
-    # Step 3: backfill missing workstations
-    final_records = retained_records.copy()
-    backfilled = backfill_missing_workstations(final_records)
+    # Step 3: populate workstation records from AssetDetails.json when current remote data is unavailable
+    final_records, backfilled = sync_workstations_from_assetdetails(
+        retained_records.copy(),
+        remote_hostnames_with_data,
+    )
 
     # Step 4: final sort and save
     final_records.sort(key=lambda x: (str(x.get("hostname", "")).upper(), x.get("date", "")))

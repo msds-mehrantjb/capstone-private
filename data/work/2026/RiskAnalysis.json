@@ -9,7 +9,7 @@
       "severity": "Critical",
       "cvss_score": 10.0,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2020-1472",
       "open_ports": [
         88,
@@ -36,7 +36,7 @@
       "severity": "Critical",
       "cvss_score": 10.0,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2020-1350",
       "open_ports": [
         88,
@@ -63,7 +63,7 @@
       "severity": "Critical",
       "cvss_score": 10.0,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2020-1350",
       "open_ports": [
         53,
@@ -74,20 +74,20 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "High",
-      "likelihood_score": 0.9945,
-      "risk_score": 7.956,
+      "likelihood_score": 1.0,
+      "risk_score": 8.0,
       "exposure": "Critical"
     },
     {
       "hostname": "WS-01",
       "ip_address": "10.0.0.10",
-      "role": "Standard Employee Workstation",
+      "role": "Finance Workstation",
       "CIA rating": "Medium",
       "vulnerability_name": "Remote Desktop Services Remote Code Execution",
       "severity": "Critical",
       "cvss_score": 9.8,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2019-0708",
       "open_ports": [
         3389
@@ -96,8 +96,8 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
-      "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
+      "likelihood_score": 0.9958,
+      "risk_score": 5.9748,
       "exposure": "Critical"
     },
     {
@@ -109,7 +109,7 @@
       "severity": "Critical",
       "cvss_score": 9.8,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2019-0708",
       "open_ports": [
         3389
@@ -118,8 +118,8 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
-      "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
+      "likelihood_score": 0.9958,
+      "risk_score": 5.9748,
       "exposure": "Critical"
     },
     {
@@ -131,7 +131,7 @@
       "severity": "Critical",
       "cvss_score": 9.8,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2019-0708",
       "open_ports": [
         3389
@@ -140,58 +140,8 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
-      "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
-      "exposure": "Critical"
-    },
-    {
-      "hostname": "SRV-03",
-      "ip_address": "10.0.0.18",
-      "role": "File Server",
-      "CIA rating": "High",
-      "vulnerability_name": "SMB Remote Code Execution",
-      "severity": "Critical",
-      "cvss_score": 8.8,
-      "exploit_available": true,
-      "patch_status": 1,
-      "cve": "CVE-2017-0144",
-      "open_ports": [
-        135,
-        139,
-        445,
-        5985
-      ],
-      "ml_probability": 0.3,
-      "override": 0,
-      "likelihood": "Critical",
-      "risk": "High",
-      "likelihood_score": 0.9633,
-      "risk_score": 7.7064,
-      "exposure": "Critical"
-    },
-    {
-      "hostname": "SRV-03",
-      "ip_address": "10.0.0.18",
-      "role": "File Server",
-      "CIA rating": "High",
-      "vulnerability_name": "WinRM Remote Command Execution Exposure",
-      "severity": "Medium",
-      "cvss_score": 6.5,
-      "exploit_available": true,
-      "patch_status": 1,
-      "cve": "CVE-2021-31166",
-      "open_ports": [
-        135,
-        139,
-        445,
-        5985
-      ],
-      "ml_probability": 0.3,
-      "override": 0,
-      "likelihood": "Critical",
-      "risk": "High",
-      "likelihood_score": 0.9035,
-      "risk_score": 7.228,
+      "likelihood_score": 0.9958,
+      "risk_score": 5.9748,
       "exposure": "Critical"
     },
     {
@@ -203,7 +153,7 @@
       "severity": "Critical",
       "cvss_score": 10.0,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2021-44228",
       "open_ports": [
         80,
@@ -214,8 +164,8 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "High",
-      "likelihood_score": 0.9945,
-      "risk_score": 7.956,
+      "likelihood_score": 1.0,
+      "risk_score": 8.0,
       "exposure": "Critical"
     },
     {
@@ -227,7 +177,7 @@
       "severity": "Medium",
       "cvss_score": 6.5,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2021-31166",
       "open_ports": [
         80,
@@ -238,8 +188,8 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "High",
-      "likelihood_score": 0.9035,
-      "risk_score": 7.228,
+      "likelihood_score": 0.962,
+      "risk_score": 7.696,
       "exposure": "Critical"
     },
     {
@@ -251,17 +201,17 @@
       "severity": "Critical",
       "cvss_score": 9.8,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2019-0708",
       "open_ports": [
         3389
       ],
       "ml_probability": 0.3,
-      "override": 1,
+      "override": 0,
       "likelihood": "Critical",
-      "risk": "High",
-      "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
+      "risk": "Medium",
+      "likelihood_score": 0.9958,
+      "risk_score": 5.9748,
       "exposure": "Critical"
     },
     {
@@ -273,7 +223,7 @@
       "severity": "Critical",
       "cvss_score": 9.8,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2019-0708",
       "open_ports": [
         2375,
@@ -284,8 +234,8 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
-      "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
+      "likelihood_score": 0.9958,
+      "risk_score": 5.9748,
       "exposure": "Critical"
     },
     {
@@ -297,7 +247,7 @@
       "severity": "High",
       "cvss_score": 7.5,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2019-5736",
       "open_ports": [
         2375,
@@ -306,10 +256,10 @@
       ],
       "ml_probability": 0.3,
       "override": 0,
-      "likelihood": "High",
+      "likelihood": "Critical",
       "risk": "Medium",
-      "likelihood_score": 0.8775,
-      "risk_score": 5.265,
+      "likelihood_score": 0.936,
+      "risk_score": 5.616,
       "exposure": "Critical"
     },
     {
@@ -321,7 +271,7 @@
       "severity": "Critical",
       "cvss_score": 9.8,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2019-0708",
       "open_ports": [
         3389,
@@ -332,8 +282,8 @@
       "override": 0,
       "likelihood": "Critical",
       "risk": "Medium",
-      "likelihood_score": 0.9373,
-      "risk_score": 5.6238,
+      "likelihood_score": 0.9958,
+      "risk_score": 5.9748,
       "exposure": "Critical"
     },
     {
@@ -345,7 +295,7 @@
       "severity": "Medium",
       "cvss_score": 6.5,
       "exploit_available": true,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2021-32797",
       "open_ports": [
         3389,
@@ -354,10 +304,10 @@
       ],
       "ml_probability": 0.3,
       "override": 0,
-      "likelihood": "High",
+      "likelihood": "Critical",
       "risk": "Medium",
-      "likelihood_score": 0.8515,
-      "risk_score": 5.109,
+      "likelihood_score": 0.91,
+      "risk_score": 5.46,
       "exposure": "Critical"
     },
     {
@@ -369,7 +319,7 @@
       "severity": "Medium",
       "cvss_score": 6.0,
       "exploit_available": false,
-      "patch_status": 1,
+      "patch_status": 0,
       "cve": "CVE-2020-15257",
       "open_ports": [
         3389,
@@ -380,14 +330,14 @@
       "override": 0,
       "likelihood": "Medium",
       "risk": "Medium",
-      "likelihood_score": 0.611,
-      "risk_score": 3.666,
+      "likelihood_score": 0.6695,
+      "risk_score": 4.017,
       "exposure": "Critical"
     },
     {
       "hostname": "WS-01",
       "ip_address": "10.0.0.10",
-      "role": "Standard Employee Workstation",
+      "role": "Finance Workstation",
       "CIA rating": "Medium",
       "vulnerability_name": "User Activity Behavior",
       "severity": "",
@@ -405,12 +355,12 @@
       "user_behavior": {
         "failedLoginAttempts": 1,
         "accessFrequency": 1.0,
-        "loginConsistency": 0.8013,
+        "loginConsistency": 0.7669,
         "passwordResets": 0,
-        "sessionDuration": 0.0012,
-        "rule_score": 0.1102,
+        "sessionDuration": 0.0063,
+        "rule_score": 0.1068,
         "ml_score": 0.85,
-        "behaviorRiskScore": 0.4061,
+        "behaviorRiskScore": 0.4041,
         "likelihood": "Low"
       }
     },
@@ -435,12 +385,12 @@
       "user_behavior": {
         "failedLoginAttempts": 1,
         "accessFrequency": 1.0,
-        "loginConsistency": 0.9269,
+        "loginConsistency": 0.7669,
         "passwordResets": 0,
-        "sessionDuration": 0.0015,
-        "rule_score": 0.1227,
+        "sessionDuration": 0.0063,
+        "rule_score": 0.1068,
         "ml_score": 0.85,
-        "behaviorRiskScore": 0.4136,
+        "behaviorRiskScore": 0.4041,
         "likelihood": "Low"
       }
     },
@@ -486,9 +436,9 @@
       "patch_status": 0,
       "cve": "UB-WS-04",
       "open_ports": [],
-      "override": 0,
+      "override": 1,
       "likelihood": "Low",
-      "risk": "Low",
+      "risk": "Medium",
       "likelihood_score": 0.25,
       "risk_score": 1.5,
       "exposure": "",
@@ -517,21 +467,21 @@
       "cve": "UB-WS-05",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "High",
+      "risk": "Medium",
+      "likelihood_score": 0.85,
+      "risk_score": 5.1,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.7669,
-        "passwordResets": 0,
-        "sessionDuration": 0.0063,
-        "rule_score": 0.1068,
+        "failedLoginAttempts": 8,
+        "accessFrequency": 17.0,
+        "loginConsistency": 0.91,
+        "passwordResets": 3,
+        "sessionDuration": 10.2,
+        "rule_score": 0.7985,
         "ml_score": 0.85,
-        "behaviorRiskScore": 0.4041,
-        "likelihood": "Low"
+        "behaviorRiskScore": 0.8191,
+        "likelihood": "High"
       }
     },
     {
@@ -547,21 +497,21 @@
       "cve": "UB-WS-06",
       "open_ports": [],
       "override": 0,
-      "likelihood": "Low",
-      "risk": "Low",
-      "likelihood_score": 0.25,
-      "risk_score": 1.5,
+      "likelihood": "High",
+      "risk": "Medium",
+      "likelihood_score": 0.85,
+      "risk_score": 5.1,
       "exposure": "",
       "user_behavior": {
-        "failedLoginAttempts": 1,
-        "accessFrequency": 1.0,
-        "loginConsistency": 0.7669,
-        "passwordResets": 0,
-        "sessionDuration": 0.0063,
-        "rule_score": 0.1068,
+        "failedLoginAttempts": 9,
+        "accessFrequency": 18.0,
+        "loginConsistency": 0.94,
+        "passwordResets": 4,
+        "sessionDuration": 11.1,
+        "rule_score": 0.8902,
         "ml_score": 0.85,
-        "behaviorRiskScore": 0.4041,
-        "likelihood": "Low"
+        "behaviorRiskScore": 0.8741,
+        "likelihood": "High"
       }
     }
   ]

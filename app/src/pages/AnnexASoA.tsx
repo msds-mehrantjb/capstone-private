@@ -69,6 +69,13 @@ type AnnexInventoryResponse = {
   controls?: AnnexControl[];
 };
 
+type RiskEvaluationTreatmentInventoryResponse = {
+  hosts?: Array<{
+    evaluation?: string;
+    treatment?: string;
+  }>;
+};
+
 type AnnexCreateResponse = {
   success?: boolean;
   message?: string;
@@ -172,6 +179,14 @@ async function apiDeleteAnnexControl(
 async function apiGetAnnexInventory(year: number): Promise<AnnexInventoryResponse> {
   return apiGetJSON<AnnexInventoryResponse>(
     `/api/annex-a-soa/inventory?year=${encodeURIComponent(String(year))}`
+  );
+}
+
+async function apiGetRiskEvaluationTreatmentInventory(
+  year: number
+): Promise<RiskEvaluationTreatmentInventoryResponse> {
+  return apiGetJSON<RiskEvaluationTreatmentInventoryResponse>(
+    `/api/risk-evaluation-treatment/inventory?year=${encodeURIComponent(String(year))}`
   );
 }
 
@@ -311,6 +326,8 @@ function ConfirmModal({
 
 export default function AnnexASoA() {
   const YEAR = 2026;
+  const RISK_EVALUATION_REQUIRED_MESSAGE =
+    "You need to submit the Risk Evaluation/Treatment results first.";
     
   const [confirmRecreateOpen, setConfirmRecreateOpen] = useState(false);
 
@@ -328,7 +345,7 @@ export default function AnnexASoA() {
   const [scopeErr, setScopeErr] = useState<string | null>(null);
 
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupText] = useState("");
+  const [popupText, setPopupText] = useState("");
 
   const [pendingAssistantAction, setPendingAssistantAction] = useState<
     null | "recreate_annex" | "reset_annex" | "delete_annex_row" | "submit_annex"
@@ -450,15 +467,15 @@ export default function AnnexASoA() {
 
     setAssistantMode("awaiting_info_control_id");
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "assistant",
-        content:
-          "Enter control id from the recommendation list to show control information.\n\nAvailable control ids:\n" +
-          recommendedControls.map((item) => item.control_id).join(", "),
-      },
-    ]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Enter control id from the recommendation list to show control information, or /exit to return to command mode.\n\nAvailable control ids:\n" +
+            recommendedControls.map((item) => item.control_id).join(", "),
+        },
+      ]);
 
     scrollChatToBottom();
   };
@@ -583,6 +600,11 @@ export default function AnnexASoA() {
 
   const closePopup = () => setPopupOpen(false);
 
+  const showPopup = (text: string) => {
+    setPopupText(text);
+    setPopupOpen(true);
+  };
+
   const scrollChatToBottom = (behavior: ScrollBehavior = "smooth") => {
     requestAnimationFrame(() => {
       chatBottomRef.current?.scrollIntoView({ behavior, block: "end" });
@@ -663,6 +685,24 @@ export default function AnnexASoA() {
   const handleCreateAnnexTable = async () => {
     if (controls.length > 0) {
       setConfirmRecreateOpen(true);   // 👉 modal only
+      return;
+    }
+
+    try {
+      const riskEvalDoc = await apiGetRiskEvaluationTreatmentInventory(YEAR);
+      const sourceRecords = Array.isArray(riskEvalDoc?.hosts) ? riskEvalDoc.hosts : [];
+      const hasMitigationRecords = sourceRecords.some((record) => {
+        const evaluation = String(record?.evaluation ?? "").trim().toLowerCase();
+        const treatment = String(record?.treatment ?? "").trim().toLowerCase();
+        return evaluation === "treat" && treatment === "mitigate";
+      });
+
+      if (!hasMitigationRecords) {
+        showPopup(RISK_EVALUATION_REQUIRED_MESSAGE);
+        return;
+      }
+    } catch {
+      showPopup(RISK_EVALUATION_REQUIRED_MESSAGE);
       return;
     }
 
@@ -747,6 +787,49 @@ export default function AnnexASoA() {
     }
   };
 
+  const filterMissingRecommendations = (
+    recommendations: AnnexRecommendItem[],
+    currentControls: AnnexControl[]
+  ) => {
+    const existingControlIds = new Set(
+      currentControls.map((c) => (c.control_id || "").trim().toLowerCase())
+    );
+
+    return recommendations.filter(
+      (item) =>
+        !existingControlIds.has((item.control_id || "").trim().toLowerCase())
+    );
+  };
+
+  const refreshRecommendedControls = async (
+    currentControls?: AnnexControl[]
+  ) => {
+    let controlsForFilter = currentControls;
+
+    if (!controlsForFilter) {
+      const inventory = await apiGetAnnexInventory(YEAR);
+      controlsForFilter = Array.isArray(inventory?.controls)
+        ? inventory.controls
+        : [];
+      setControls(controlsForFilter);
+    }
+
+    const data = await apiRecommendAnnexControls(YEAR);
+    const backendRecommendations = Array.isArray(data?.recommendations)
+      ? data.recommendations
+      : [];
+    const missingControls = filterMissingRecommendations(
+      backendRecommendations,
+      controlsForFilter
+    );
+
+    setRecommendedControls(missingControls);
+    return missingControls;
+  };
+
+  const formatAvailableControlIds = (items: AnnexRecommendItem[]) =>
+    items.map((item) => item.control_id).join(", ");
+
   const handleRecommendControls = async () => {
     setSending(true);
 
@@ -760,28 +843,11 @@ export default function AnnexASoA() {
     ]);
 
     try {
-      const data = await apiRecommendAnnexControls(YEAR);
-
-      const backendRecommendations = Array.isArray(data?.recommendations)
-        ? data.recommendations
-        : [];
-
-      const existingControlIds = new Set(
-        controls.map((c) => (c.control_id || "").trim().toLowerCase())
-      );
-
-      const missingControls = backendRecommendations.filter(
-        (item) =>
-          !existingControlIds.has((item.control_id || "").trim().toLowerCase())
-      );
-
-      // IMPORTANT: always persist the filtered list here
-      setRecommendedControls(missingControls);
+      const missingControls = await refreshRecommendedControls();
 
       const message =
         missingControls.length === 0
-          ? (data?.message ||
-            "No additional recommended controls were found outside the current table.")
+          ? "No additional recommended controls were found outside the current table."
           : "Recommended controls not currently in the table:\n\n" +
             missingControls
               .map((item) => `${item.control_id} - ${item.control_name}`)
@@ -815,8 +881,18 @@ export default function AnnexASoA() {
     }
   };
 
-  const handleStartAddCommand = () => {
-    if (!Array.isArray(recommendedControls) || recommendedControls.length === 0) {
+  const handleStartAddCommand = async () => {
+    let latestRecommendations = recommendedControls;
+
+    if (!Array.isArray(latestRecommendations) || latestRecommendations.length === 0) {
+      try {
+        latestRecommendations = await refreshRecommendedControls();
+      } catch {
+        latestRecommendations = recommendedControls;
+      }
+    }
+
+    if (!Array.isArray(latestRecommendations) || latestRecommendations.length === 0) {
       setMessages((prev) => [
         ...prev,
         {
@@ -836,8 +912,8 @@ export default function AnnexASoA() {
       {
         role: "assistant",
         content:
-          "Enter control id from the recommendation list.\n\nAvailable control ids:\n" +
-          recommendedControls.map((item) => item.control_id).join(", "),
+          "Enter control id from the recommendation list, or /exit to return to command mode.\n\nAvailable control ids:\n" +
+          latestRecommendations.map((item) => item.control_id).join(", "),
       },
     ]);
 
@@ -859,11 +935,23 @@ export default function AnnexASoA() {
     try {
       const data = await apiAddAnnexControl(YEAR, controlId);
 
-      setControls(
-        Array.isArray(data?.inventory?.controls)
-          ? data.inventory.controls
-          : []
-      );
+      if (data?.success === false) {
+        throw new Error(data.message || "The selected control could not be added.");
+      }
+
+      const nextControls = Array.isArray(data?.inventory?.controls)
+        ? data.inventory.controls
+        : [];
+
+      setControls(nextControls);
+
+      try {
+        await refreshRecommendedControls(nextControls);
+      } catch {
+        setRecommendedControls((prev) =>
+          filterMissingRecommendations(prev, nextControls)
+        );
+      }
 
       setMessages((prev) => {
         const updated = [...prev];
@@ -877,6 +965,12 @@ export default function AnnexASoA() {
 
       setAssistantMode(null);
     } catch (e) {
+      try {
+        await refreshRecommendedControls();
+      } catch {
+        // Keep the previous list if the refresh fails; show the backend error below.
+      }
+
       setMessages((prev) => {
         const updated = [...prev];
         updated[updated.length - 1] = {
@@ -976,6 +1070,19 @@ export default function AnnexASoA() {
     }
 
     if (assistantMode === "awaiting_info_control_id") {
+      if (text.trim().toLowerCase() === "/exit") {
+        setAssistantMode(null);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Exited info mode. Returned to command mode.",
+          },
+        ]);
+        scrollChatToBottom();
+        return;
+      }
+
       const selectedId = text.trim().toLowerCase();
     
       const selectedRecommendation = recommendedControls.find(
@@ -983,12 +1090,14 @@ export default function AnnexASoA() {
       );
     
       if (!selectedRecommendation) {
+        const availableIds = formatAvailableControlIds(recommendedControls);
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
             content:
-              "Invalid control id. Please choose a control id only from the current recommendation list.",
+              "Invalid control id. Please choose a control id only from the current recommendation list." +
+              (availableIds ? `\n\nCurrent available control ids:\n${availableIds}` : ""),
           },
         ]);
         scrollChatToBottom();
@@ -1002,6 +1111,19 @@ export default function AnnexASoA() {
 
       
     if (assistantMode === "awaiting_add_control_id") {
+      if (text.trim().toLowerCase() === "/exit") {
+        setAssistantMode(null);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Exited add mode. Returned to command mode.",
+          },
+        ]);
+        scrollChatToBottom();
+        return;
+      }
+
       const selectedId = text.trim().toLowerCase();
     
       const selectedRecommendation = recommendedControls.find(
@@ -1009,12 +1131,14 @@ export default function AnnexASoA() {
       );
     
       if (!selectedRecommendation) {
+        const availableIds = formatAvailableControlIds(recommendedControls);
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
             content:
-              "Invalid control id. Please choose a control id only from the current recommendation list.",
+              "Invalid control id. Please choose a control id only from the current recommendation list." +
+              (availableIds ? `\n\nCurrent available control ids:\n${availableIds}` : ""),
           },
         ]);
         scrollChatToBottom();
@@ -1083,15 +1207,7 @@ export default function AnnexASoA() {
     }
 
     if (text.toLowerCase() === "/add") {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `recommendation count = ${recommendedControls.length}`,
-        },
-      ]);
-    
-      handleStartAddCommand();
+      await handleStartAddCommand();
       return;
     }
 
@@ -1122,15 +1238,13 @@ export default function AnnexASoA() {
         {
           role: "assistant",
           content:
-            "This section creates the Annex A & SoA table from RiskEvaluationTreatment.json.\n\n" +
-            "The table is empty by default.\n\n" +
-            "When you use /create or click the Create New Annex A & SoA Table button, " +
-            "the backend reads RiskEvaluationTreatment.json and extracts only records where:\n" +
-            'evaluation = "Treat"\n' +
-            'treatment = "Mitigate"\n\n' +
-            "Those records are then used to build the Annex A & SoA control table.\n\n" +
-            "When you use /recommend, the system shows recommended controls that do not already exist in the current table.\n\n" +
-            "When you use /add, the system asks for a control id from the recommendation list, then adds that control to the table.",
+            "Annex A & SoA\n\n" +
+            "What this page is about:\n" +
+            "This stage builds the Statement of Applicability and the selected Annex A control set for the audit. It translates treatment decisions into specific ISO 27001 / ISO 27002 controls, records why they are needed, and tracks their implementation status.\n\n" +
+            "Why it is important:\n" +
+            "The SoA is one of the core ISO 27001 deliverables. It shows which controls are applicable, why they are applicable, and how the organization intends to implement them. It is the formal bridge between risk treatment decisions and control execution.\n\n" +
+            "Its place in the ISO 27001 lifecycle:\n" +
+            "This comes after Risk Evaluation / Treatment and before Action Plan / Implementation. First the organization decides which risks must be treated, then it selects and justifies the controls that will address those risks.",
         },
       ]);
       scrollChatToBottom();

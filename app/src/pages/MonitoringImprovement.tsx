@@ -110,6 +110,9 @@ type AnnexUpdateResponse = {
   success?: boolean;
   message?: string;
   inventory?: MonitoringInventoryResponse;
+  guide_id?: string;
+  guide_key?: string;
+  guide_deleted?: boolean;
 };
 
 type AnnexSubmitResponse = {
@@ -122,6 +125,17 @@ type AnnexSubmitResponse = {
 type AddEvidenceResponse = {
   success?: boolean;
   message?: string;
+  inventory?: MonitoringInventoryResponse;
+  guide_id?: string;
+  guide_key?: string;
+};
+
+type AddEvidenceAllResponse = {
+  success?: boolean;
+  message?: string;
+  added_count?: number;
+  skipped_count?: number;
+  failed_count?: number;
   inventory?: MonitoringInventoryResponse;
 };
 
@@ -186,6 +200,13 @@ async function apiAddEvidence(
       vulnerability_name,  
       evidence,
     }
+  );
+}
+
+async function apiAddEvidenceAll(year: number): Promise<AddEvidenceAllResponse> {
+  return apiPostJSONBody<AddEvidenceAllResponse>(
+    "/api/monitoring-improvement/add-evidence-all",
+    { year }
   );
 }
 
@@ -751,6 +772,7 @@ export default function MonitoringImprovement() {
         "/delete     → Delete the selected evidence\n" +
         "/add        → Add an evidence for selected host\n" +
         "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" + 
+        "/evidence-all → Add one auto-filled evidence item for every host row in the table\n" +
         "/edit       → Edit evidence for selected host\n" +
         "/submit     → Submit the table\n" +
         "/commands   → Display available commands\n" +
@@ -832,6 +854,10 @@ export default function MonitoringImprovement() {
         selectedEvidenceIndex
       );
 
+      if (data?.success === false) {
+        throw new Error(data.message || "Failed to delete evidence.");
+      }
+
       const updated = Array.isArray(data?.inventory?.cves)
         ? data.inventory.cves
         : [];
@@ -843,7 +869,9 @@ export default function MonitoringImprovement() {
         ...prev,
         {
           role: "assistant",
-          content: data.message || "Selected evidence was deleted successfully.",
+          content:
+            data.message ||
+            "Selected evidence and its linked monitoring guide were deleted successfully.",
         },
       ]);
     } catch (e) {
@@ -1029,13 +1057,19 @@ export default function MonitoringImprovement() {
         }
       );
 
+      if (data?.success === false) {
+        throw new Error(data.message || "Failed to add evidence.");
+      }
+
       setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.message || `Evidence added for host ${selectedHostLabel}.`,
+          content:
+            data.message ||
+            `Evidence added for host ${selectedHostLabel} and the linked monitoring guide was generated.`,
         },
       ]);
 
@@ -1053,6 +1087,66 @@ export default function MonitoringImprovement() {
       scrollChatToBottom();
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleAddEvidenceAll = async () => {
+    if (monitoringImprovementControls.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "No Monitoring and Improvement rows are available.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
+    setSending(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Please wait while the system generates one evidence item for every host that does not already have evidence.",
+      },
+    ]);
+
+    try {
+      const data = await apiAddEvidenceAll(YEAR);
+
+      if (data?.success === false && (data.added_count || 0) === 0 && (data.skipped_count || 0) === 0) {
+        throw new Error(data.message || "Failed to generate evidence for all hosts.");
+      }
+
+      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            data.message ||
+            "Evidence generation completed for all Monitoring and Improvement host rows.",
+        };
+        return updated;
+      });
+    } catch (e) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            e instanceof Error
+              ? e.message
+              : "Failed to generate evidence for all hosts.",
+        };
+        return updated;
+      });
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
     }
   };
 
@@ -1156,6 +1250,14 @@ export default function MonitoringImprovement() {
 
       setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
       await handleDeleteSelectedMonitoringImprovementRow();
+      return;
+    }
+
+    if (pendingAssistantAction === "delete_evidence") {
+      setPendingAssistantAction(null);
+
+      setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
+      await handleDeleteSelectedEvidence();
       return;
     }
 
@@ -1274,13 +1376,19 @@ export default function MonitoringImprovement() {
         }
       );
 
+      if (data?.success === false) {
+        throw new Error(data.message || "Failed to edit evidence.");
+      }
+
       setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: data.message || `Evidence updated for host ${selectedHostLabel}.`,
+          content:
+            data.message ||
+            `Evidence updated for host ${selectedHostLabel} and the linked monitoring guide was regenerated.`,
         },
       ]);
 
@@ -1329,6 +1437,19 @@ export default function MonitoringImprovement() {
     }
 
     if (pendingAssistantAction === "delete_annex_row") {
+      setPendingAssistantAction(null);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: "No" },
+        { role: "assistant", content: "Delete operation cancelled." },
+      ]);
+
+      scrollChatToBottom();
+      return;
+    }
+
+    if (pendingAssistantAction === "delete_evidence") {
       setPendingAssistantAction(null);
 
       setMessages((prev) => [
@@ -1595,6 +1716,7 @@ export default function MonitoringImprovement() {
             "/delete     → Delete the selected evidence\n" +
             "/add        → Add an evidence for selected host\n" +
             "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" + 
+            "/evidence-all → Add one auto-filled evidence item for every host row in the table\n" +
             "/edit       → Edit evidence for selected host\n" +
             "/submit     → Submit the table\n" +
             "/commands   → Display available commands\n" +
@@ -1629,6 +1751,11 @@ export default function MonitoringImprovement() {
       await handleOpenAddEvidence(true);
       return;
     }
+
+    if (trimmed === "/evidence-all") {
+      await handleAddEvidenceAll();
+      return;
+    }
  
     if (trimmed === "/edit") {
       handleOpenEditEvidence();
@@ -1652,7 +1779,15 @@ export default function MonitoringImprovement() {
         return;
       }
 
-      setConfirmDeleteEvidenceOpen(true);
+      setPendingAssistantAction("delete_evidence");
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Are you sure you want to delete the selected evidence?",
+          confirmAction: "delete_evidence",
+        },
+      ]);
       scrollChatToBottom();
       return;
     }
@@ -1682,16 +1817,13 @@ export default function MonitoringImprovement() {
         {
           role: "assistant",
           content:
-            "Monitoring and Improvement — Overview\n\n" +
-            "This section focuses on monitoring the effectiveness of implemented ISO 27001 controls and continuously improving the organization's security posture.\n\n" +
-            "The Monitoring and Improvement table builds on the Action Plan / Implementation stage and tracks how well controls are operating in practice across assets (hosts), vulnerabilities, and applied treatments. It allows you to:\n\n" +
-            "- Monitor the implementation status of each control over time\n" +
-            "- Evaluate whether controls are effectively reducing identified risks\n" +
-            "- Record and manage evidence of control operation (logs, screenshots, reports, tickets, etc.)\n" +
-            "- Identify gaps, weaknesses, or failures in control implementation\n" +
-            "- Trigger corrective and improvement actions when needed\n" +
-            "- Maintain full traceability between risks, controls, assets, and real-world outcomes\n\n" +
-            "This stage ensures that implemented controls are continuously assessed, validated, and improved in alignment with ISO 27001:2022 monitoring and continual improvement requirements.",
+            "Monitoring & Improvement\n\n" +
+            "What this page is about:\n" +
+            "This stage checks whether implemented controls are actually operating as intended and whether they are reducing risk over time. It records monitoring evidence, recommended monitoring actions, implementation status, and improvement follow-up.\n\n" +
+            "Why it is important:\n" +
+            "ISO 27001 expects the ISMS to be monitored, measured, and continually improved. A control is not complete just because it was implemented once. This page shows whether the control remains effective in the live environment.\n\n" +
+            "Its place in the ISO 27001 lifecycle:\n" +
+            "This comes after Action Plan / Implementation and before final reporting. Implementation proves that controls were deployed. Monitoring & Improvement proves that they are working, sustained, and improved when weaknesses are found.",
         },
       ]);
       scrollChatToBottom();
@@ -1949,6 +2081,7 @@ export default function MonitoringImprovement() {
                     (m.confirmAction === "recreate_annex" ||
                       m.confirmAction === "reset_annex" ||
                       m.confirmAction === "delete_annex_row" ||
+                      m.confirmAction === "delete_evidence" ||
                       m.confirmAction === "submit_annex") ? (
                       <div className="mt-3 flex gap-2">
                         <button
@@ -1996,7 +2129,7 @@ export default function MonitoringImprovement() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /create /recommend /delete /add /evidence /edit /submit /commands /help
+          Command mode: /create /recommend /delete /add /evidence /evidence-all /edit /submit /commands /help
         </div>
       </div>
     </ShellCard>
@@ -2341,7 +2474,7 @@ export default function MonitoringImprovement() {
 
         </div>
 
-        <div className="col-[4] row-[3/6] min-h-0 p-1 pl-0 pt-0">{assistantPanel}</div>
+        <div className="col-[4] row-[3/6] min-h-0 p-3 pl-2 pt-0">{assistantPanel}</div>
       </div>
     </div>
   );

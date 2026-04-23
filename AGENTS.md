@@ -5,7 +5,7 @@ The project root is `Capstone-main`.
 
 ## Runtime layout
 - Backend runs from the project root:
-  - `python -m uvicorn app.main:app --reload`
+  - `venv\Scripts\python.exe -m uvicorn app.main:app --reload`
 - Frontend runs from the `app` subfolder:
   - `cd app && npm run dev`
 
@@ -21,9 +21,10 @@ The project root is `Capstone-main`.
 - Frontend code: `app/src`
 - API routes: `app/api`
 - Agent code: `app/agent`
+- Behavior agent code: `app/behavior`
 - RAG code: `app/rag`
 - Data: `data/`
-- Vector DB: `chroma_iso27002/`
+- Vector DB: `app/chroma_db`
 
 ## Constraints
 - Do not rename or move project data files unless explicitly requested

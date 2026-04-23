@@ -101,6 +101,10 @@ def _monitoring_improvement_file(year: int) -> Path:
 def _action_plan_implementation_guides_file(year: int) -> Path:
     return _work_dir(year) / "ActionImplementationGuides.json"
 
+
+def _monitoring_implementation_guides_file(year: int) -> Path:
+    return _work_dir(year) / "MonitoringImplementationGuides.json"
+
 def _read_json(path: Path, default: Any) -> Any:
     if not path.exists():
         return default
@@ -500,9 +504,159 @@ SECTION_BUILDERS = {
     "monitoring-improvement": build_monitoring_improvement_markdown,
 }
 
+SECTION_EMPTY_MESSAGES = {
+    "executive-summary": {
+        "title": "Executive Summary",
+        "message": "No final deliverable data is available yet.",
+        "next_step": "Complete and submit the audit lifecycle sections before generating the executive summary.",
+    },
+    "asset-inventory": {
+        "title": "Asset Inventory",
+        "message": "No asset inventory records are available yet.",
+        "next_step": "Start an Asset Inventory & CIA assessment and submit the results first.",
+    },
+    "risk-register": {
+        "title": "Risk Register",
+        "message": "No risk analysis records are available yet.",
+        "next_step": "Run and submit the Risk Analysis section first.",
+    },
+    "risk-treatment-plan": {
+        "title": "Risk Treatment Plan",
+        "message": "No risk treatment records are available yet.",
+        "next_step": "Finalize Risk Analysis, then complete and submit Risk Evaluation/Treatment.",
+    },
+    "annex-a-soa": {
+        "title": "Annex A & Statement of Applicability",
+        "message": "No Annex A & SoA control records are available yet.",
+        "next_step": "Submit the Risk Evaluation/Treatment results, then create and submit the Annex A & SoA table.",
+    },
+    "action-plan-implementation": {
+        "title": "Action Plan / Implementation",
+        "message": "No action plan records are available yet.",
+        "next_step": "Submit the Annex A & SoA table first.",
+    },
+    "monitoring-improvement": {
+        "title": "Monitoring & Improvement",
+        "message": "No monitoring and improvement records are available yet.",
+        "next_step": "Submit the Action Plan / Implementation results, then create Monitoring & Improvement records.",
+    },
+}
+
+
+def _asset_inventory_table_row_count(year: int) -> int:
+    doc = _read_json(_asset_inventory_file(year), {})
+    if not isinstance(doc, dict):
+        return 0
+
+    total = 0
+    for subnet in _safe_list(doc.get("subnets")):
+        if isinstance(subnet, dict):
+            total += len([asset for asset in _safe_list(subnet.get("assets")) if isinstance(asset, dict)])
+    return total
+
+
+def _grouped_host_table_row_count(doc: Any) -> int:
+    if not isinstance(doc, dict):
+        return 0
+
+    hostnames = set()
+    for host in _safe_list(doc.get("hosts")):
+        if not isinstance(host, dict):
+            continue
+        hostname = str(host.get("hostname") or "").strip().lower()
+        if hostname:
+            hostnames.add(hostname)
+    return len(hostnames)
+
+
+def _controls_table_row_count(doc: Any) -> int:
+    if not isinstance(doc, dict):
+        return 0
+    return len([row for row in _safe_list(doc.get("controls")) if isinstance(row, dict)])
+
+
+def _monitoring_table_row_count(year: int) -> int:
+    doc = _read_json(_monitoring_improvement_file(year), {})
+    if not isinstance(doc, dict):
+        return 0
+    return len([row for row in _safe_list(doc.get("cves")) if isinstance(row, dict)])
+
+
+def _section_table_row_count(section: str, year: int) -> int:
+    if section == "asset-inventory":
+        return _asset_inventory_table_row_count(year)
+
+    if section == "risk-register":
+        return _grouped_host_table_row_count(_read_json(_risk_analysis_file(year), {}))
+
+    if section == "risk-treatment-plan":
+        return _grouped_host_table_row_count(_read_json(_risk_evaluation_treatment_file(year), {}))
+
+    if section == "annex-a-soa":
+        return _controls_table_row_count(_read_json(_annex_a_soa_file(year), {}))
+
+    if section == "action-plan-implementation":
+        return _controls_table_row_count(_read_json(_action_plan_implementation_file(year), {}))
+
+    if section == "monitoring-improvement":
+        return _monitoring_table_row_count(year)
+
+    if section == "executive-summary":
+        return sum(
+            [
+                _section_table_row_count("asset-inventory", year),
+                _section_table_row_count("risk-register", year),
+                _section_table_row_count("risk-treatment-plan", year),
+                _section_table_row_count("annex-a-soa", year),
+                _section_table_row_count("action-plan-implementation", year),
+                _section_table_row_count("monitoring-improvement", year),
+            ]
+        )
+
+    return 0
+
+
+def _empty_section_markdown(section: str, year: int) -> str:
+    config = SECTION_EMPTY_MESSAGES.get(section, SECTION_EMPTY_MESSAGES["executive-summary"])
+    title = config["title"]
+    message = config["message"]
+    next_step = config["next_step"]
+
+    return "\n".join(
+        [
+            f"# {title}",
+            "",
+            f"**Assessment Year:** {year}",
+            "",
+            "## Not Ready Yet",
+            "",
+            message,
+            "",
+            f"**Next step:** {next_step}",
+            "",
+        ]
+    )
+
+
+def _section_is_empty(section: str, year: int) -> bool:
+    return _section_table_row_count(section, year) == 0
+
 
 def _find_action_implementation_guide(year: int, guide_id: str) -> dict | None:
     doc = _read_json(_action_plan_implementation_guides_file(year), {})
+    guides = doc.get("guides", [])
+    if not isinstance(guides, list):
+        return None
+
+    for guide in guides:
+        if isinstance(guide, dict) and str(guide.get("guide_id", "")).strip() == guide_id:
+            return guide
+
+    return None
+
+
+def _find_monitoring_implementation_guide(year: int, guide_id: str) -> dict | None:
+    doc = _read_json(_monitoring_implementation_guides_file(year), {})
     guides = doc.get("guides", [])
     if not isinstance(guides, list):
         return None
@@ -594,7 +748,9 @@ def _guide_to_printable_html(guide_doc: dict) -> str:
             table {{ width: 100%; border-collapse: collapse; margin-bottom: 20px; }}
             th, td {{ border: 1px solid #999; padding: 8px; }}
             .step-card {{ border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }}
-            pre {{background: #f5f5f5; color: #000; padding: 10px; border: 1px solid #ddd; border-radius: 4px; overflow-x: auto; font-size: 12px;
+            pre {{background: #f5f5f5; color: #000; padding: 10px; border: 1px solid #ddd; border-radius: 4px;
+                 font-size: 11px; line-height: 1.4; white-space: pre-wrap; word-break: break-word;
+                 overflow-wrap: anywhere; overflow-x: visible; max-width: 100%; box-sizing: border-box;
                  font-family: Consolas, "Courier New", monospace; font-style: normal; font-weight: normal; }}
             pre, code {{font-style: normal !important; font-weight: normal !important; color: #000 !important;}}     
         </style>
@@ -656,6 +812,24 @@ def get_action_implementation_guide(
     }
 
 
+@router.get("/monitoring-improvement/guide/{guide_id}")
+def get_monitoring_implementation_guide(
+    guide_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _find_monitoring_implementation_guide(resolved_year, guide_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Guide not found.")
+
+    return {
+        "success": True,
+        "year": resolved_year,
+        "guide": guide,
+    }
+
+
 @router.get("/action-plan-implementation/guide/{guide_id}/document")
 def get_action_implementation_guide_document(
     guide_id: str,
@@ -663,6 +837,21 @@ def get_action_implementation_guide_document(
 ):
     resolved_year = year if year is not None else get_system_year()
     guide = _find_action_implementation_guide(resolved_year, guide_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Guide not found.")
+
+    html = _guide_to_printable_html(guide)
+    return Response(content=html, media_type="text/html")
+
+
+@router.get("/monitoring-improvement/guide/{guide_id}/document")
+def get_monitoring_implementation_guide_document(
+    guide_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _find_monitoring_implementation_guide(resolved_year, guide_id)
 
     if guide is None:
         raise HTTPException(status_code=404, detail="Guide not found.")
@@ -695,7 +884,10 @@ def get_final_delivery_section(
             detail=f"Unknown final delivery section: {section}",
         )
 
-    markdown = builder(resolved_year)
+    if _section_is_empty(section, resolved_year):
+        markdown = _empty_section_markdown(section, resolved_year)
+    else:
+        markdown = builder(resolved_year)
 
     return {
         "success": True,
@@ -879,7 +1071,20 @@ def export_final_delivery_pdf(payload: ExportPdfRequest):
             detail=f"Unknown final delivery section: {section}",
         )
 
-    markdown = builder(resolved_year)
+    if _section_is_empty(section, resolved_year):
+        markdown = _empty_section_markdown(section, resolved_year)
+    elif section == "action-plan-implementation":
+        markdown = build_action_plan_implementation_markdown(
+            resolved_year,
+            include_guide_column=False,
+        )
+    elif section == "monitoring-improvement":
+        markdown = build_monitoring_improvement_markdown(
+            resolved_year,
+            include_guide_column=False,
+        )
+    else:
+        markdown = builder(resolved_year)
     if not str(markdown).strip():
         raise HTTPException(status_code=400, detail="No markdown content available for export.")
 
@@ -915,6 +1120,42 @@ def download_action_implementation_guide_pdf(
     resolved_year = year if year is not None else get_system_year()
 
     guide = _find_action_implementation_guide(resolved_year, guide_id)
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Guide not found.")
+
+    html = _guide_to_printable_html(guide)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = Path(tmpdir) / f"{guide_id}.pdf"
+        _render_html_to_pdf(html, pdf_path)
+        pdf_bytes = pdf_path.read_bytes()
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{guide_id}.pdf"'
+        },
+    )
+
+
+@router.get(
+    "/monitoring-improvement/guide/{guide_id}/pdf",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "PDF file"
+        }
+    }
+)
+def download_monitoring_implementation_guide_pdf(
+    guide_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+
+    guide = _find_monitoring_implementation_guide(resolved_year, guide_id)
     if guide is None:
         raise HTTPException(status_code=404, detail="Guide not found.")
 

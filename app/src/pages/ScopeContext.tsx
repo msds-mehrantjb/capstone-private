@@ -56,6 +56,7 @@ interface AgentResponse {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 const YEAR = 2026;
+const BASELINE_SCOPE_FILE = `${YEAR}-Scope-Draft-v0.json`;
 
 function renderWithPlaceholders(text: string) {
   const parts = (text ?? "").split(/(\[[^\]]+\])/g);
@@ -110,7 +111,7 @@ export default function ScopeContext() {
         "/fill      → Fill the scope document in conversation mode\n" +
         "/autofill  → Load a specified version of the scope document or samples\n" +
         "/load      → Load latest saved versions as buttons\n" +
-        "/submit    → Save as a new version and update dashboard/system status\n" +
+        "/submit    → Save Scope & Context Document\n" +
         "/cancel    → Discard unsaved changes and reload the latest saved version\n" +
         "/reset     → Reset to the baseline template\n" +
         "/exit      → Exit fill mode\n" +
@@ -125,6 +126,8 @@ export default function ScopeContext() {
   const [sending, setSending] = useState(false);
   const [fillQuestion, setFillQuestion] = useState<string | null>(null);
   const [loadOptions, setLoadOptions] = useState<LoadOption[] | null>(null);
+  const [startScopeConfirmOpen, setStartScopeConfirmOpen] = useState(false);
+  const [startScopeErr, setStartScopeErr] = useState<string | null>(null);
 
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -181,6 +184,8 @@ export default function ScopeContext() {
   }, [data]);
 
   const title = useMemo(() => data?.meta?.title ?? "Scope & Context", [data]);
+  const activeScopeFile = data?.meta?.source_file?.trim() ?? "";
+  const isBaselineScopeFile = activeScopeFile === BASELINE_SCOPE_FILE;
 
   async function callAgent(commandRaw: string, answer?: string): Promise<AgentResponse> {
     const command = stripSlash(commandRaw).toLowerCase() as AgentCommand;
@@ -332,6 +337,40 @@ export default function ScopeContext() {
     }
   }
 
+  async function startNewScopeDocument() {
+    if (sending) return;
+
+    setSending(true);
+    setStartScopeErr(null);
+
+    try {
+      const resp = await callAgent("reset");
+      if (resp.draft) setData(resp.draft);
+
+      setMessages((prev) => [...prev, { role: "assistant", content: resp.message }]);
+      setLoadOptions(resp.load_options ?? null);
+      setFillQuestion(resp.next_question ?? null);
+      setStartScopeConfirmOpen(false);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setStartScopeErr(message);
+      setMessages((prev) => [...prev, { role: "assistant", content: `Warning: ${message}` }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  function onStartNewScopeDocument() {
+    setStartScopeErr(null);
+
+    if (!isBaselineScopeFile) {
+      setStartScopeConfirmOpen(true);
+      return;
+    }
+
+    void startNewScopeDocument();
+  }
+
   return (
     <div className="h-screen overflow-hidden bg-[#070A12] text-slate-50">
       {/* Mobile / small screens */}
@@ -427,9 +466,13 @@ export default function ScopeContext() {
             </ShellCard>
 
             <div className="flex justify-end">
-              <button className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600">
+              <button
+                className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={onStartNewScopeDocument}
+                disabled={sending}
+              >
                 <Plus className="h-14 w-4" />
-                New Scope Draft
+                Start New Scope Document
               </button>
             </div>
 
@@ -687,9 +730,13 @@ export default function ScopeContext() {
         {/* Section 5 */}
         <div className="col-[4] row-[2] h-full overflow-hidden p-3 pl-2">
           <div className="flex min-h-[71px] items-center justify-end">
-            <button className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600">
+            <button
+              className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600 disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={onStartNewScopeDocument}
+              disabled={sending}
+            >
               <Plus className="h-14 w-4" />
-              New Scope Draft
+              Start New Scope Document
             </button>
           </div>
         </div>
@@ -842,6 +889,45 @@ export default function ScopeContext() {
           </ShellCard>
         </div>
       </div>
+
+      {startScopeConfirmOpen ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 px-4">
+          <div className="w-full max-w-md rounded-lg border border-white/10 bg-[#101420] p-5 text-slate-100 shadow-2xl ring-1 ring-white/10">
+            <div className="text-lg font-semibold">Start New Scope Document</div>
+            <div className="mt-3 text-sm leading-6 text-slate-300">
+              The current Scope &amp; Context document will be erased. Are you sure?
+            </div>
+
+            {startScopeErr ? (
+              <div className="mt-3 rounded-lg border border-rose-500/20 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+                {startScopeErr}
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setStartScopeConfirmOpen(false);
+                  setStartScopeErr(null);
+                }}
+                disabled={sending}
+                className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={() => void startNewScopeDocument()}
+                disabled={sending}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

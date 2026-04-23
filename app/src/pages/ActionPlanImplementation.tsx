@@ -111,6 +111,27 @@ type AddEvidenceResponse = {
   guide_key?: string;
 };
 
+type EvidenceDefaultsResponse = {
+  success?: boolean;
+  message?: string;
+  evidence?: {
+    responsible?: string;
+    resources?: string;
+    date?: string;
+    url?: string;
+    desc?: string;
+  };
+  inventory?: AnnexInventoryResponse;
+};
+
+type AddEvidenceAllResponse = {
+  success?: boolean;
+  message?: string;
+  added_count?: number;
+  failed_count?: number;
+  inventory?: AnnexInventoryResponse;
+};
+
   type EditEvidenceForm = {
     responsible: string;
     date: string;
@@ -119,6 +140,23 @@ type AddEvidenceResponse = {
     desc: string;
   };
 
+
+async function apiGetEvidenceDefaults(
+  year: number,
+  control_id: string,
+  hostname: string,
+  vulnerability_name: string
+): Promise<EvidenceDefaultsResponse> {
+  return apiPostJSONBody<EvidenceDefaultsResponse>(
+    "/api/action-plan-implementation/evidence-defaults",
+    {
+      year,
+      control_id,
+      hostname,
+      vulnerability_name,
+    }
+  );
+}
 
 async function apiAddEvidence(
   year: number,
@@ -141,6 +179,15 @@ async function apiAddEvidence(
       hostname,
       vulnerability_name,  
       evidence,
+    }
+  );
+}
+
+async function apiAddEvidenceAll(year: number): Promise<AddEvidenceAllResponse> {
+  return apiPostJSONBody<AddEvidenceAllResponse>(
+    "/api/action-plan-implementation/add-evidence-all",
+    {
+      year,
     }
   );
 }
@@ -674,6 +721,7 @@ function EditEvidenceModal({
 
 export default function ActionPlanImplentation() {
   const YEAR = 2026;
+  const ANNEX_SOA_REQUIRED_MESSAGE = "You need to submit the Annex A & SoA table first.";
 
   const [confirmRecreateOpen, setConfirmRecreateOpen] = useState(false);
 
@@ -711,7 +759,8 @@ export default function ActionPlanImplentation() {
   });
 
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupText] = useState("");
+  const [popupText, setPopupText] = useState("");
+  const emptyActionPlanPopupShownRef = useRef(false);
 
   const [pendingAssistantAction, setPendingAssistantAction] = useState<
     null | "recreate_annex" | "reset_annex" | "delete_annex_row" | "delete_evidence" | "submit_annex"
@@ -726,6 +775,7 @@ export default function ActionPlanImplentation() {
         "/delete     → Delete the selected evidence\n" +
         "/add        → Add an evidence for selected host\n" +
         "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" +
+        "/evidence-all → Add one auto-filled evidence item for every host row in the table\n" +
         "/edit       → Edit evidence for selected host\n" +
         "/submit     → Submit the table\n" +
         "/commands   → Display available commands\n" +
@@ -958,7 +1008,7 @@ export default function ActionPlanImplentation() {
     
   const selectedHostLabel = selectedHost?.hostname?.trim() || "selected host";
  
-  const handleOpenAddEvidence = () => {
+  const handleOpenAddEvidence = async (autoFill: boolean) => {
     if (!selectedControl) {
       setMessages((prev) => [
         ...prev,
@@ -977,25 +1027,86 @@ export default function ActionPlanImplentation() {
       return;
     }
 
-    const autoForm = buildAutoEvidenceForm(selectedControl, selectedHost);
-    setEvidenceForm(autoForm);
+    if (!autoFill) {
+      resetEvidenceForm();
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            `Evidence form opened for host - ${selectedHostLabel}\n` +
+            `Fill the evidence fields, then submit the form.`,
+        },
+      ]);
+
+      setAddEvidenceModalOpen(true);
+      scrollChatToBottom();
+      return;
+    }
 
     setMessages((prev) => [
       ...prev,
       {
         role: "assistant",
-        content:
-          `Evidence form opened for host - ${selectedHostLabel}\n` +
-          `The system auto-filled:\n` +
-          `- Responsible\n` +
-          `- Resources\n` +
-          `- Description\n` +
-          `based on selected control, vulnerability, implementation status, justification, and treatment action.`,
+        content: `Preparing evidence defaults for host ${selectedHostLabel}...`,
       },
     ]);
 
-    setAddEvidenceModalOpen(true);
-    scrollChatToBottom();
+    try {
+      setSending(true);
+
+      const data = await apiGetEvidenceDefaults(
+        YEAR,
+        selectedControl.control,
+        selectedHost.hostname || "",
+        selectedHost.vulnerability_name || ""
+      );
+
+      if (data?.success === false) {
+        throw new Error(data.message || "Failed to prepare evidence fields.");
+      }
+
+      const fallbackForm = buildAutoEvidenceForm(selectedControl, selectedHost);
+      setEvidenceForm({
+        responsible: data?.evidence?.responsible || fallbackForm.responsible,
+        resources: data?.evidence?.resources || fallbackForm.resources,
+        date: data?.evidence?.date || "",
+        url: data?.evidence?.url || "",
+        desc: data?.evidence?.desc || fallbackForm.desc,
+      });
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            data.message ||
+            `Evidence fields prepared for host ${selectedHostLabel}.`,
+        };
+        return updated;
+      });
+
+      setAddEvidenceModalOpen(true);
+    } catch (e) {
+      const fallbackForm = buildAutoEvidenceForm(selectedControl, selectedHost);
+      setEvidenceForm(fallbackForm);
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            (e instanceof Error ? e.message : "Failed to prepare evidence fields.") +
+            " The form was opened with local fallback defaults.",
+        };
+        return updated;
+      });
+
+      setAddEvidenceModalOpen(true);
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
+    }
   };
     
   const handleEvidenceFormChange = (
@@ -1041,6 +1152,10 @@ export default function ActionPlanImplentation() {
         }
       );
 
+      if (data?.success === false) {
+        throw new Error(data.message || "Failed to add evidence.");
+      }
+
       setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
 
       setMessages((prev) => [
@@ -1067,6 +1182,66 @@ export default function ActionPlanImplentation() {
       scrollChatToBottom();
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleAddEvidenceAll = async () => {
+    if (controls.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "No Action Plan / Implementation rows are available.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
+    setSending(true);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        content:
+          "Please wait while the system generates one evidence item for every host under every control.",
+      },
+    ]);
+
+    try {
+      const data = await apiAddEvidenceAll(YEAR);
+
+      if (data?.success === false && (data.added_count || 0) === 0) {
+        throw new Error(data.message || "Failed to generate evidence for all hosts.");
+      }
+
+      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            data.message ||
+            "Evidence generation completed for all Action Plan host rows.",
+        };
+        return updated;
+      });
+    } catch (e) {
+      setMessages((prev) => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: "assistant",
+          content:
+            e instanceof Error
+              ? e.message
+              : "Failed to generate evidence for all hosts.",
+        };
+        return updated;
+      });
+    } finally {
+      setSending(false);
+      scrollChatToBottom();
     }
   };
 
@@ -1177,6 +1352,14 @@ export default function ActionPlanImplentation() {
 
       setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
       await handleDeleteSelectedRow();
+      return;
+    }
+
+    if (pendingAssistantAction === "delete_evidence") {
+      setPendingAssistantAction(null);
+
+      setMessages((prev) => [...prev, { role: "user", content: "Yes" }]);
+      await handleDeleteSelectedEvidence();
       return;
     }
 
@@ -1364,6 +1547,19 @@ export default function ActionPlanImplentation() {
       return;
     }
 
+    if (pendingAssistantAction === "delete_evidence") {
+      setPendingAssistantAction(null);
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: "No" },
+        { role: "assistant", content: "Delete operation cancelled." },
+      ]);
+
+      scrollChatToBottom();
+      return;
+    }
+
     if (pendingAssistantAction === "submit_annex") {
       setPendingAssistantAction(null);
 
@@ -1410,12 +1606,28 @@ export default function ActionPlanImplentation() {
     }
   };
 
-  const refreshActionPlanControls = async () => {
+  const refreshActionPlanControls = async (showEmptyTablePopup = false) => {
     try {
       const doc = await apiGetActionPlanInventory(YEAR);
-      setControls(Array.isArray(doc?.controls) ? doc.controls : []);
+      const nextControls = Array.isArray(doc?.controls) ? doc.controls : [];
+      setControls(nextControls);
+
+      if (
+        showEmptyTablePopup &&
+        nextControls.length === 0 &&
+        !emptyActionPlanPopupShownRef.current
+      ) {
+        emptyActionPlanPopupShownRef.current = true;
+        setPopupText(ANNEX_SOA_REQUIRED_MESSAGE);
+        setPopupOpen(true);
+      }
     } catch {
       setControls([]);
+      if (showEmptyTablePopup && !emptyActionPlanPopupShownRef.current) {
+        emptyActionPlanPopupShownRef.current = true;
+        setPopupText(ANNEX_SOA_REQUIRED_MESSAGE);
+        setPopupOpen(true);
+      }
     }
   };
 
@@ -1619,6 +1831,7 @@ export default function ActionPlanImplentation() {
             "/delete     → Delete the selected evidence\n" +
             "/add        → Add an evidence for selected host\n" +
             "/evidence   → Add evidence with auto-filled responsible, resources, and description\n" +  
+            "/evidence-all → Add one auto-filled evidence item for every host row in the table\n" +
             "/edit       → Edit evidence for selected host\n" +
             "/submit     → Submit the table\n" +
             "/commands   → Display available commands\n" +
@@ -1631,10 +1844,18 @@ export default function ActionPlanImplentation() {
 
     const command = input.trim().toLowerCase();
     
-    if (command === "/add" || command === "/evidence") {
-      setMessages((prev) => [...prev, { role: "user", content: input }]);
-      setInput("");
-      handleOpenAddEvidence();
+    if (command === "/add") {
+      await handleOpenAddEvidence(false);
+      return;
+    }
+
+    if (command === "/evidence") {
+      await handleOpenAddEvidence(true);
+      return;
+    }
+
+    if (command === "/evidence-all") {
+      await handleAddEvidenceAll();
       return;
     }
       
@@ -1661,7 +1882,15 @@ export default function ActionPlanImplentation() {
         return;
       }
 
-      setConfirmDeleteEvidenceOpen(true);
+      setPendingAssistantAction("delete_evidence");
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Are you sure you want to delete the selected evidence?",
+          confirmAction: "delete_evidence",
+        },
+      ]);
       scrollChatToBottom();
       return;
     }
@@ -1691,14 +1920,13 @@ export default function ActionPlanImplentation() {
         {
           role: "assistant",
           content:
-            "Action Plan / Implementation — Overview\n\n" +
-            "This section focuses on executing the selected ISO 27001 controls from Annex A & SoA and tracking their implementation across the organization.\n\n" +
-            "The Action Plan / Implementation table connects each control to affected assets (hosts), identified vulnerabilities, and defined treatment actions. It allows you to:\n\n" +
-            "- Assign and track implementation status for each control\n" +
-            "- Apply treatment actions to mitigate identified risks\n" +
-            "- Record evidence proving implementation (logs, screenshots, tickets, reports, etc.)\n" +
-            "- Maintain traceability between risks, controls, and remediation activities\n\n" +
-            "This stage ensures that all planned security controls are properly implemented, validated, and documented before final submission.",
+            "Action Plan / Implementation\n\n" +
+            "What this page is about:\n" +
+            "This stage turns the selected Annex A controls into operational work. It tracks treatment actions, implementation status, host-level evidence, and the practical steps required to put the chosen controls into effect.\n\n" +
+            "Why it is important:\n" +
+            "ISO 27001 requires more than selecting controls on paper. The organization has to implement them, prove they were implemented, and keep a traceable link back to the risks they were meant to address. This page is where that execution happens.\n\n" +
+            "Its place in the ISO 27001 lifecycle:\n" +
+            "This comes after Annex A & SoA and before Monitoring & Improvement. The SoA says which controls apply. Action Plan / Implementation is where those controls are executed and evidenced.",
         },
       ]);
       scrollChatToBottom();
@@ -1717,7 +1945,7 @@ export default function ActionPlanImplentation() {
 
     
   useEffect(() => {
-    void refreshActionPlanControls();
+    void refreshActionPlanControls(true);
   }, []);
 
   useEffect(() => {
@@ -1956,6 +2184,7 @@ export default function ActionPlanImplentation() {
                     (m.confirmAction === "recreate_annex" ||
                       m.confirmAction === "reset_annex" ||
                       m.confirmAction === "delete_annex_row" ||
+                      m.confirmAction === "delete_evidence" ||
                       m.confirmAction === "submit_annex") ? (
                       <div className="mt-3 flex gap-2">
                         <button
@@ -2003,7 +2232,7 @@ export default function ActionPlanImplentation() {
         </div>
 
         <div className="mt-3 shrink-0 text-xs text-slate-500">
-          Command mode: /treatment /delete /add /evidence /edit /submit /commands /help
+          Command mode: /treatment /delete /add /evidence /evidence-all /edit /submit /commands /help
         </div>
       </div>
     </ShellCard>

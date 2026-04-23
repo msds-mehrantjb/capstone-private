@@ -68,15 +68,28 @@ def _risk_evaluation_treatment_file(year: int) -> Path:
     return _work_dir(year) / "RiskEvaluationTreatment.json"
 
 
+def _annex_a_soa_file(year: int) -> Path:
+    return _work_dir(year) / "AnnexA_SoA.json"
+
+
 def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "SystemStatus.json"
+
 
 def _action_plan_implementation_file(year: int) -> Path:
     return _work_dir(year) / "ActionPlanImplementation.json"
 
 
+def _action_implementation_guides_file(year: int) -> Path:
+    return _work_dir(year) / "ActionImplementationGuides.json"
+
+
 def _monitoring_improvement_file(year: int) -> Path:
     return _work_dir(year) / "MonitoringImprovement.json"
+
+
+def _monitoring_implementation_guides_file(year: int) -> Path:
+    return _work_dir(year) / "MonitoringImplementationGuides.json"
 
 def _load_json(path: Path) -> Any:
     with open(path, "r", encoding="utf-8") as f:
@@ -174,6 +187,7 @@ def _all_hosts(inventory: dict) -> list[dict]:
 
 def _normalize_existing_record(record: dict) -> dict:
     risk_value = _normalize_risk(str(record.get("risk") or "Unscanned")) or "Unscanned"
+    cve_value = str(record.get("cve") or "").strip()
 
     evaluation_value = _normalize_evaluation(
         str(
@@ -182,6 +196,12 @@ def _normalize_existing_record(record: dict) -> dict:
             or ""
         ).strip()
     )
+
+    if not evaluation_value:
+        evaluation_value = _derive_default_evaluation({
+            "cve": cve_value,
+            "risk": risk_value,
+        })
 
     raw_treatment = str(
         record.get("treatment")
@@ -194,6 +214,17 @@ def _normalize_existing_record(record: dict) -> dict:
         raw_treatment,
     )
 
+    # Migrate legacy User Activity Behavior rows that were previously auto-set
+    # to Monitor when Low risk. Low risk should now default to Accept.
+    if (
+        cve_value.upper().startswith("UB-WS-")
+        and risk_value == "Low"
+        and evaluation_value == "Monitor"
+        and normalized_treatment == "-"
+    ):
+        evaluation_value = "Accept"
+        normalized_treatment = "-"
+
     return {
         "hostname": str(record.get("hostname") or "").strip(),
         "ip_address": str(record.get("ip_address") or "").strip(),
@@ -205,7 +236,7 @@ def _normalize_existing_record(record: dict) -> dict:
             or ""
         ).strip(),
         "vulnerability_name": str(record.get("vulnerability_name") or "").strip(),
-        "cve": str(record.get("cve") or "").strip(),
+        "cve": cve_value,
         "riskid": str(record.get("riskid") or "").strip(),
         "risk": risk_value,
         "evaluation": evaluation_value,
@@ -223,7 +254,11 @@ def _load_risk_evaluation_treatment_inventory_or_blank(year: int) -> dict:
         if isinstance(data, dict):
             if not isinstance(data.get("hosts"), list):
                 data["hosts"] = []
-            data["hosts"] = [_normalize_existing_record(h) for h in _all_hosts(data)]
+            original_hosts = _all_hosts(data)
+            normalized_hosts = [_normalize_existing_record(h) for h in original_hosts]
+            data["hosts"] = normalized_hosts
+            if normalized_hosts != original_hosts:
+                _save_json(path, data)
             return data
     except Exception:
         pass
@@ -295,10 +330,26 @@ def _set_annex_a_soa_status(year: int, new_status: str) -> None:
     _set_section_status(year, "annex_a_soa", new_status)
 
 
+def _set_action_plan_implementation_status(year: int, new_status: str) -> None:
+    _set_section_status(year, "action_plan_implementation", new_status)
+
+
+def _set_monitoring_improvement_status(year: int, new_status: str) -> None:
+    _set_section_status(year, "monitoring_improvement", new_status)
+
+
 def _risk_evaluation_treatment_is_read_only(year: int) -> bool:
     doc = _load_system_status_or_default(year)
     status = doc.get("sections", {}).get("risk_evaluation_treatment", {}).get("status")
     return status == "Completed"
+
+
+def _ensure_risk_evaluation_treatment_editable(year: int, inventory: dict | None = None) -> None:
+    doc = inventory if isinstance(inventory, dict) else _load_risk_evaluation_treatment_inventory_or_blank(year)
+    if len(_all_hosts(doc)) == 0:
+        return
+    if _risk_evaluation_treatment_is_read_only(year):
+        _set_risk_evaluation_treatment_status(year, "In Progress")
 
 
 def _find_record_by_hostname_and_cve(
@@ -394,11 +445,7 @@ def _fetch_cve_from_nvd(cve_id: str) -> dict:
 
 
 def _derive_default_evaluation(record: dict) -> str:
-    cve = str(record.get("cve") or "").strip()
     risk = _normalize_risk(str(record.get("risk") or ""))
-
-    if cve.startswith("UB-WS-") and risk == "Low":
-        return "Monitor"
 
     return _derive_risk_evaluation_from_risk(risk)
 
@@ -420,6 +467,8 @@ Generate two short fields for a MonitoringImprovement.json record:
 
 Use the host context and the CVE details from NVD.
 Be specific, practical, and concise.
+The justification field is required. It must be one short paragraph explaining why this risk needs monitoring.
+The recommended_action field is required. It must start with "Recommended monitoring actions:" and then use dash bullets.
 Do not use markdown.
 Return valid JSON only in this format:
 {{
@@ -475,6 +524,69 @@ vector: {cve_info.get("vector", "")}
     return justification, recommended_action
 
 
+def _ask_llama3_for_monitoring_justification(record: dict, cve_info: dict, year: int = 2026) -> str:
+    hostname = str(record.get("hostname") or "").strip()
+    role = str(record.get("role") or "").strip()
+    cia_rating = str(record.get("CIA rating") or "").strip()
+    vulnerability_name = str(record.get("vulnerability_name") or "").strip()
+    cve_id = str(record.get("cve") or "").strip()
+    risk = str(record.get("risk") or "").strip()
+    evaluation = str(record.get("evaluation") or "").strip()
+
+    prompt = f"""
+Return JSON only with one key named justification.
+The justification value must be non-empty and must be one short ISO 27001 monitoring paragraph.
+
+Write why ongoing monitoring is needed for this exact risk:
+Host: {hostname or "affected asset"}
+Role: {role or "unknown role"}
+CIA rating: {cia_rating or "unknown"}
+Vulnerability: {vulnerability_name or cve_id or "identified vulnerability"}
+CVE: {cve_id or "NA"}
+Risk level: {risk or "Monitor"}
+Evaluation decision: {evaluation or "Monitor"}
+NVD description: {cve_info.get("description", "") or "No NVD description available."}
+NVD severity: {cve_info.get("severity", "") or "NA"}
+NVD CWE: {", ".join(cve_info.get("cwe", [])) or "NA"}
+NVD vector: {cve_info.get("vector", "") or "NA"}
+
+The paragraph must explain detection, exposure review, remediation tracking, evidence collection, and ISO 27001 continual improvement.
+Do not return an empty string.
+"""
+
+    response = SESSION.post(
+        OLLAMA_GEN_URL,
+        json={
+            "model": LLM_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "format": "json",
+            "keep_alive": "10m",
+            "options": {
+                "temperature": 0.15,
+                "top_p": 0.85,
+                "num_predict": 220,
+            },
+        },
+        timeout=180,
+    )
+    response.raise_for_status()
+
+    response_data = response.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(response_data))
+    raw = response_data.get("response", "{}")
+    try:
+        parsed = json.loads(raw)
+    except Exception:
+        parsed = {}
+
+    return str(parsed.get("justification") or "").strip()
+
+
+def _is_meaningful_monitoring_text(value: str) -> bool:
+    return len((value or "").strip()) >= 30
+
+
 def _safe_generate_monitoring_fields(record: dict, year: int = 2026) -> tuple[str, str]:
     cve_id = str(record.get("cve") or "").strip()
 
@@ -492,22 +604,50 @@ def _safe_generate_monitoring_fields(record: dict, year: int = 2026) -> tuple[st
         except Exception:
             pass
 
+    fallback_justification, fallback_action = _fallback_monitoring_fields(record)
+
     try:
         justification, recommended_action = _ask_llama3_for_monitoring_fields(record, cve_info, year=year)
-        return justification, recommended_action
     except Exception:
-        vulnerability_name = str(record.get("vulnerability_name") or "").strip()
-        risk = str(record.get("risk") or "").strip()
+        justification, recommended_action = "", ""
 
-        fallback_justification = (
-            f"Monitoring is recommended for {vulnerability_name or cve_id or 'the identified vulnerability'} "
-            f"because the risk is currently evaluated as {risk or 'Monitor'} and requires follow-up verification."
-        )
-        fallback_action = (
-            "Track remediation progress, review exposure regularly, collect supporting evidence, "
-            "and reassess the risk after control improvements."
-        )
-        return fallback_justification, fallback_action
+    if not _is_meaningful_monitoring_text(justification):
+        try:
+            justification = _ask_llama3_for_monitoring_justification(record, cve_info, year=year)
+        except Exception:
+            justification = ""
+
+    return (
+        justification if _is_meaningful_monitoring_text(justification) else fallback_justification,
+        recommended_action if _is_meaningful_monitoring_text(recommended_action) else fallback_action,
+    )
+
+
+def _fallback_monitoring_fields(record: dict) -> tuple[str, str]:
+    hostname = str(record.get("hostname") or "").strip()
+    vulnerability_name = str(record.get("vulnerability_name") or "").strip()
+    cve_id = str(record.get("cve") or "").strip()
+    risk = str(record.get("risk") or "").strip()
+
+    vulnerability_label = vulnerability_name or cve_id or "the identified vulnerability"
+    host_label = hostname or "the affected asset"
+    risk_label = risk or "the monitored risk"
+
+    justification = (
+        f"Monitoring is required for {vulnerability_label} on {host_label} because the risk is currently "
+        f"evaluated as {risk_label} and was selected for ongoing monitoring instead of immediate treatment. "
+        "Tracking security events, exposure, patch status, and remediation evidence helps confirm the risk "
+        "stays controlled and supports ISO 27001 continual improvement."
+    )
+    recommended_action = (
+        "Recommended monitoring actions:\n"
+        f"- Review security logs and alerts related to {vulnerability_label} on affected hosts.\n"
+        "- Track patch, configuration, and exposure status until the risk is formally reassessed.\n"
+        "- Collect monitoring evidence such as scan results, SIEM alerts, tickets, or screenshots.\n"
+        "- Escalate repeated suspicious activity or failed remediation for corrective action."
+    )
+
+    return justification, recommended_action
     
 
 def _build_monitoring_improvement_record(record: dict, year: int = 2026) -> dict:
@@ -537,6 +677,74 @@ def _build_monitoring_improvement_record(record: dict, year: int = 2026) -> dict
         ],
     }
 
+
+def _blank_controls_doc() -> dict:
+    return {"controls": []}
+
+
+def _blank_monitoring_evidence() -> dict:
+    return {
+        "responsible": "",
+        "resources": "",
+        "date": "",
+        "url": "",
+        "desc": "",
+    }
+
+
+def _build_monitoring_improvement_doc(records: list[dict], year: int = 2026) -> dict:
+    cve_map: dict[str, dict] = {}
+
+    for record in records:
+        r = _normalize_existing_record(record)
+
+        if str(r.get("evaluation") or "").strip() != "Monitor":
+            continue
+
+        cve_value = str(r.get("cve") or "").strip()
+        if not cve_value:
+            continue
+
+        vulnerability_value = str(r.get("vulnerability_name") or "").strip()
+
+        if cve_value not in cve_map:
+            justification, recommended_action = _safe_generate_monitoring_fields(r, year=year)
+            cve_map[cve_value] = {
+                "CVE": cve_value,
+                "vulnerability": vulnerability_value,
+                "implementation_status": "In Progress",
+                "justification": justification,
+                "recommended_action": recommended_action,
+                "hosts": [],
+            }
+
+        host_obj = {
+            "hostname": str(r.get("hostname") or "").strip(),
+            "ip_address": str(r.get("ip_address") or "").strip(),
+            "role": str(r.get("role") or "").strip(),
+            "CIA rating": str(r.get("CIA rating") or "").strip(),
+            "vulnerability_name": vulnerability_value,
+            "risk": str(r.get("risk") or "").strip(),
+            "riskid": str(r.get("riskid") or "").strip(),
+            "evaluation": str(r.get("evaluation") or "").strip(),
+            "treatment": str(r.get("treatment") or "").strip(),
+            "evidence": [_blank_monitoring_evidence()],
+        }
+
+        existing_hosts = cve_map[cve_value]["hosts"]
+        duplicate = any(
+            _normalize_hostname(str(h.get("hostname") or "")) == _normalize_hostname(host_obj["hostname"])
+            and str(h.get("ip_address") or "").strip() == host_obj["ip_address"]
+            for h in existing_hosts
+            if isinstance(h, dict)
+        )
+
+        if not duplicate:
+            existing_hosts.append(host_obj)
+
+    return {"cves": list(cve_map.values())}
+
+
 @router.get("/inventory")
 def get_risk_evaluation_treatment_inventory(year: int = Query(2026)):
     year = int(year)
@@ -547,8 +755,7 @@ def get_risk_evaluation_treatment_inventory(year: int = Query(2026)):
 
     inventory = _load_risk_evaluation_treatment_inventory_or_blank(year)
 
-    if not _risk_evaluation_treatment_is_read_only(year) and len(_all_hosts(inventory)) > 0:
-        _set_risk_evaluation_treatment_status(year, "In Progress")
+    _ensure_risk_evaluation_treatment_editable(year, inventory)
 
     return inventory
 
@@ -563,6 +770,7 @@ def risk_evaluation_treatment_exists(year: int = Query(2026)):
 def set_treatment(payload: SetTreatmentRequest):
     year = int(payload.year or 2026)
     inventory = _load_risk_evaluation_treatment_inventory_or_blank(year)
+    _ensure_risk_evaluation_treatment_editable(year, inventory)
 
     if _risk_evaluation_treatment_is_read_only(year):
         return {
@@ -638,6 +846,7 @@ def set_treatment(payload: SetTreatmentRequest):
 def submit_risk_evaluation_treatment(payload: SubmitRequest):
     year = int(payload.year or 2026)
     inventory = _load_risk_evaluation_treatment_inventory_or_blank(year)
+    _ensure_risk_evaluation_treatment_editable(year, inventory)
     hosts = _all_hosts(inventory)
 
     if _risk_evaluation_treatment_is_read_only(year):
@@ -675,47 +884,39 @@ def submit_risk_evaluation_treatment(payload: SubmitRequest):
             "inventory": inventory,
         }
 
-    monitoring_path = _monitoring_improvement_file(year)
-
-    if monitoring_path.exists() and not payload.confirm:
-        return {
-            "success": False,
-            "requires_confirmation": True,
-            "message": "You submitted the risk evaluation and treatment result before, do you want to continue?",
-            "inventory": inventory,
-        }
-
-    if monitoring_path.exists() and payload.confirm:
-        # overwrite existing monitoring file
-        try:
-            monitoring_path.unlink()
-        except Exception:
-            pass        
-            
     normalized_hosts = [_normalize_existing_record(h) for h in hosts]
 
-    monitoring_records = [
-        _build_monitoring_improvement_record(h, year=year)
-        for h in normalized_hosts
-        if str(h.get("evaluation") or "").strip() == "Monitor"
-    ]
+    monitoring_doc = _build_monitoring_improvement_doc(normalized_hosts, year=year)
+    monitoring_count = len(monitoring_doc.get("cves", []))
 
     _save_json(_risk_evaluation_treatment_file(year), inventory)
-    _save_json(monitoring_path, monitoring_records)
+    _save_json(_annex_a_soa_file(year), _blank_controls_doc())
+    _save_json(_action_plan_implementation_file(year), _blank_controls_doc())
+    _save_json(_action_implementation_guides_file(year), {"guides": []})
+    _save_json(_monitoring_improvement_file(year), monitoring_doc)
+    _save_json(_monitoring_implementation_guides_file(year), {"guides": []})
 
     _set_risk_evaluation_treatment_status(year, "In Progress")
-    _set_annex_a_soa_status(year, "In Progress")
+    _set_annex_a_soa_status(year, "Not Started")
+    _set_action_plan_implementation_status(year, "Not Started")
+    _set_monitoring_improvement_status(year, "In Progress" if monitoring_count > 0 else "Not Started")
 
     return {
         "success": True,
-        "message": "Risk Evaluation/Treatment submitted successfully.",
+        "message": (
+            "Risk Evaluation/Treatment submitted successfully. "
+            "Annex A & SoA and Action Plan / Implementation were reset, "
+            f"and Monitoring / Improvement was rebuilt with {monitoring_count} CVE record(s)."
+        ),
         "inventory": inventory,
+        "monitoring_records_created": monitoring_count,
     }
 
 @router.post("/reinitialize")
 def reinitialize_risk_evaluation_treatment(payload: ReinitializeRequest):
     year = int(payload.year or 2026)
     inventory = _load_risk_evaluation_treatment_inventory_or_blank(year)
+    _ensure_risk_evaluation_treatment_editable(year, inventory)
 
     if _risk_evaluation_treatment_is_read_only(year):
         return {
@@ -728,7 +929,7 @@ def reinitialize_risk_evaluation_treatment(payload: ReinitializeRequest):
     if len(hosts) == 0:
         return {
             "success": False,
-            "message": "RiskEvaluationTreatment.json is empty or does not exist.",
+            "message": "You need to finalize the risk analysis first.",
             "inventory": inventory,
         }
 
@@ -736,7 +937,7 @@ def reinitialize_risk_evaluation_treatment(payload: ReinitializeRequest):
         return {
             "success": True,
             "requires_confirmation": True,
-            "message": "Risk Evaluation and Treatment will initialized with original states, are you sure?",
+            "message": "Risk Evaluation and Treatment will be re-initialized with the original default states. Are you sure?",
             "inventory": inventory,
         }
 
@@ -760,7 +961,8 @@ def reinitialize_risk_evaluation_treatment(payload: ReinitializeRequest):
 
     return {
         "success": True,
-        "message": "Risk Evaluation and Treatment has been re-initialized successfully.",
+        "message": f"Risk Evaluation and Treatment has been re-initialized successfully for {len(new_hosts)} records.",
+        "records_reinitialized": len(new_hosts),
         "inventory": inventory,
     }
 
@@ -768,6 +970,7 @@ def reinitialize_risk_evaluation_treatment(payload: ReinitializeRequest):
 def set_evaluation(payload: SetEvaluationRequest):
     year = int(payload.year or 2026)
     inventory = _load_risk_evaluation_treatment_inventory_or_blank(year)
+    _ensure_risk_evaluation_treatment_editable(year, inventory)
 
     if _risk_evaluation_treatment_is_read_only(year):
         return {

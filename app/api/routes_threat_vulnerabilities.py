@@ -55,6 +55,36 @@ def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "systemstatus.json"
 
 
+def _dashboard_file() -> Path:
+    return BASE_DIR / "data" / "raw" / "dashboard.json"
+
+
+def _has_submitted_scope_document() -> bool:
+    path = _dashboard_file()
+    if not path.exists():
+        return False
+
+    try:
+        dashboard = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+
+    if not isinstance(dashboard, dict):
+        return False
+
+    scope_file_name = str(dashboard.get("scope_file_name") or "").strip().lower()
+    return bool(scope_file_name) and not re.search(r"-v0\.json$", scope_file_name)
+
+
+def _threat_file_has_records(path: Path) -> bool:
+    if not path.exists():
+        return False
+
+    data = _read_json(path, {})
+    hosts = _normalize_hosts(data)
+    return len(hosts) > 0
+
+
 def _nvd_cve_file() -> Path:
     return BASE_DIR / "data" / "ml" / "nvdcve-2.0-modified.json"
 
@@ -192,17 +222,7 @@ def _extract_assets_from_inventory(data: Any) -> list[dict]:
     return assets
 
 def _compute_threat_status_from_data(hosts: list[dict]) -> str:
-    total = 0
-
-    for host in hosts:
-        vuls = host.get("vulnerabilities_threats", [])
-        if isinstance(vuls, list):
-            total += len(vuls)
-
-    if total == 0:
-        return "Not Started"
-    else:
-        return "In Progress"
+    return "In Progress" if hosts else "Not Started"
 
 def _build_threat_file_from_inventory(inventory_data: Any) -> dict:
     hosts: list[dict] = []
@@ -1332,6 +1352,12 @@ Output example:
 
 @router.post("/new")
 def create_new_threat_assessment(req: CreateThreatAssessmentRequest):
+    if not _has_submitted_scope_document():
+        raise HTTPException(
+            status_code=400,
+            detail="Submit the Scope & Context document first before starting Threats & Vulnerabilities.",
+        )
+
     _run_preflight(req.year)
 
     inventory_path = _asset_inventory_file(req.year)
@@ -1340,7 +1366,7 @@ def create_new_threat_assessment(req: CreateThreatAssessmentRequest):
     if not inventory_path.exists():
         raise HTTPException(status_code=404, detail=f"Inventory file not found: {inventory_path}")
 
-    existed_before = threat_path.exists()
+    existed_before = _threat_file_has_records(threat_path)
 
     if existed_before and not req.force_reset:
         raise HTTPException(status_code=409, detail="FILE_ALREADY_EXISTS_CONFIRM_RESET")
@@ -1514,8 +1540,10 @@ def reset_threat_assessment(req: ResetThreatAssessmentRequest):
     raw["hosts"] = hosts
     _write_json(threat_path, raw)
 
+    status = _compute_threat_status_from_data([host for host in hosts if isinstance(host, dict)])
+
     try:
-        _update_system_status(req.year, "Not Started")
+        _update_system_status(req.year, status)
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -1525,8 +1553,8 @@ def reset_threat_assessment(req: ResetThreatAssessmentRequest):
     return {
         "success": True,
         "year": req.year,
-        "status": "Not Started",
-        "message": "Threat and Vulnerability Assessment restarted.",
+        "status": status,
+        "message": "Threat and vulnerability entries were cleared.",
         "cleared_items": cleared_count,
     }
 
@@ -1645,7 +1673,12 @@ def get_host_threat_vulnerability_details(
 def get_cve_detail(cve_id: str = Query(...)):
     try:
         raw_result = _get_cve_detail_with_fallback(cve_id)
-        formatted_detail = _ollama_format_cve(raw_result)
+        try:
+            formatted_detail = _ollama_format_cve(raw_result)
+            formatter_error = ""
+        except Exception as e:
+            formatted_detail = ""
+            formatter_error = str(e)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except requests.HTTPError as e:
@@ -1661,4 +1694,5 @@ def get_cve_detail(cve_id: str = Query(...)):
         "success": True,
         "data": raw_result,
         "formatted_detail": formatted_detail,
+        "formatter_error": formatter_error,
     }

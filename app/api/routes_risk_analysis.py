@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ from app.api.aiml_kpi_telemetry import (
     append_aiml_kpi_events,
     safe_increment_manual_correction_counter,
 )
+from app.behavior.aggregate_user_behavior import merge_many_hosts
 
 router = APIRouter(prefix="/api/risk-analysis", tags=["risk-analysis"])
 
@@ -51,7 +53,8 @@ class TrainRequest(BaseModel):
     year: int | None = 2026
     dataset_path: str | None = None
     model_dir: str | None = None
-    
+
+
 class DeleteRequest(BaseModel):
     year: int | None = 2026
     hostname: str
@@ -108,6 +111,27 @@ def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "SystemStatus.json"
 
 
+def _dashboard_file() -> Path:
+    return BASE_DIR / "data" / "raw" / "dashboard.json"
+
+
+def _has_submitted_scope_document() -> bool:
+    path = _dashboard_file()
+    if not path.exists():
+        return False
+
+    try:
+        dashboard = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+
+    if not isinstance(dashboard, dict):
+        return False
+
+    scope_file_name = str(dashboard.get("scope_file_name") or "").strip().lower()
+    return bool(scope_file_name) and not re.search(r"-v0\.json$", scope_file_name)
+
+
 def _load_json(path: Path) -> Any:
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
@@ -131,6 +155,42 @@ def _safe_append_aiml_kpi_events(year: int, bucket: str, events: list[dict]) -> 
         append_aiml_kpi_events(year, bucket, events)
     except Exception as e:
         print(f"[aiml-kpi] failed to append {bucket}: {e}")
+
+
+def _record_behavior_training_telemetry(year: int, result: dict, source_endpoint: str) -> None:
+    _safe_append_aiml_kpi_event(year, "behavior_model_training_runs", {
+        "run_id": f"behavior_train_{datetime.now().astimezone().strftime('%Y-%m-%d_%H-%M-%S')}",
+        "model_type": "user_behavior",
+        "dataset_path": result.get("dataset_path"),
+        "model_path": result.get("model_path"),
+        "label_encoder_path": result.get("label_encoder_path"),
+        "accuracy": result.get("accuracy"),
+        "accuracy_pct": (
+            round(float(result["accuracy"]) * 100, 4)
+            if result.get("accuracy") is not None
+            else None
+        ),
+        "classification_report": result.get("classification_report"),
+        "confusion_matrix": result.get("confusion_matrix"),
+        "feature_importance": result.get("feature_importance"),
+        "sample_predictions": result.get("sample_predictions"),
+        "source_endpoint": source_endpoint,
+    })
+
+
+def _behavior_model_is_ready() -> bool:
+    return _default_behavior_model_path().exists() and _default_behavior_label_encoder_path().exists()
+
+
+def _ensure_behavior_model_ready(year: int) -> tuple[bool, str | None]:
+    if _behavior_model_is_ready():
+        return False, None
+
+    dataset_path = _default_behavior_dataset_path()
+    model_dir = _ml_models_dir()
+    result = _train_user_behavior_model(dataset_path, model_dir)
+    _record_behavior_training_telemetry(year, result, "/api/risk-analysis/analysis:auto-train")
+    return True, result.get("message") or "User behavior model trained successfully."
 
 
 def _build_behavior_prediction_telemetry_events(inventory: dict, source_endpoint: str) -> list[dict]:
@@ -1212,6 +1272,13 @@ def create_new_risk_inventory(
 ):
     year = int(year)
 
+    if not _has_submitted_scope_document():
+        return {
+            "success": False,
+            "message": "Submit the Scope & Context document first before starting Risk Analysis.",
+            "inventory": _blank_risk_inventory(),
+        }
+
     current = _load_risk_inventory_or_blank(year)
 
     if len(_all_hosts(current)) > 0 and not force:
@@ -1238,6 +1305,14 @@ def run_risk_analysis(payload: AnalysisRequest):
     year = int(payload.year or 2026)
 
     current = _load_risk_inventory_or_blank(year)
+    auto_train_message = ""
+
+    if not _has_submitted_scope_document():
+        return {
+            "success": False,
+            "message": "Submit the Scope & Context document first before starting Risk Analysis.",
+            "inventory": current,
+        }
 
     if _risk_analysis_is_read_only(year):
         return {
@@ -1247,6 +1322,7 @@ def run_risk_analysis(payload: AnalysisRequest):
         }
 
     try:
+        auto_trained, auto_train_message = _ensure_behavior_model_ready(year)
         risk_inventory = _build_risk_inventory_from_asset_vulnerabilities(year)
         
         risk_inventory = _remove_existing_user_behavior_risks(risk_inventory)
@@ -1281,9 +1357,14 @@ def run_risk_analysis(payload: AnalysisRequest):
 
     return {
         "success": True,
-        "message": "Risk analysis completed successfully.",
+        "message": (
+            f"{auto_train_message}\nRisk analysis completed successfully."
+            if auto_train_message
+            else "Risk analysis completed successfully."
+        ),
         "processed_hosts": len(_all_hosts(risk_inventory)),
         "aiml_kpi_events_appended": len(behavior_events),
+        "auto_trained_model": bool(auto_train_message),
         "inventory": risk_inventory,
     }
     
@@ -1424,24 +1505,7 @@ def train_user_behavior_model(payload: TrainRequest):
             model_dir = BASE_DIR / model_dir
 
         result = _train_user_behavior_model(dataset_path, model_dir)
-        _safe_append_aiml_kpi_event(year, "behavior_model_training_runs", {
-            "run_id": f"behavior_train_{datetime.now().astimezone().strftime('%Y-%m-%d_%H-%M-%S')}",
-            "model_type": "user_behavior",
-            "dataset_path": result.get("dataset_path"),
-            "model_path": result.get("model_path"),
-            "label_encoder_path": result.get("label_encoder_path"),
-            "accuracy": result.get("accuracy"),
-            "accuracy_pct": (
-                round(float(result["accuracy"]) * 100, 4)
-                if result.get("accuracy") is not None
-                else None
-            ),
-            "classification_report": result.get("classification_report"),
-            "confusion_matrix": result.get("confusion_matrix"),
-            "feature_importance": result.get("feature_importance"),
-            "sample_predictions": result.get("sample_predictions"),
-            "source_endpoint": "/api/risk-analysis/train",
-        })
+        _record_behavior_training_telemetry(year, result, "/api/risk-analysis/train")
         return result
 
     except Exception as e:
@@ -1453,7 +1517,61 @@ def train_user_behavior_model(payload: TrainRequest):
             "label_encoder_path": None,
             "accuracy": None,
         }
-        
+
+
+@router.post("/collect-uab")
+def collect_user_activity_behavior(payload: AnalysisRequest):
+    year = int(payload.year or 2026)
+
+    try:
+        result = merge_many_hosts(retention_days=30)
+        collected_hosts = sum(
+            1
+            for host_result in result.get("hosts", [])
+            if str(host_result.get("status", "")).strip().lower() == "ok"
+        )
+        populated_hosts = len(result.get("backfilled_hosts", []))
+
+        if collected_hosts > 0 and populated_hosts > 0:
+            message = (
+                "User activity behavior data collection completed.\n"
+                f"Collected live records for {collected_hosts} workstation host(s) and "
+                f"populated {populated_hosts} workstation host(s) from AssetDetails."
+            )
+        elif collected_hosts > 0:
+            message = (
+                "User activity behavior data collection completed.\n"
+                f"Collected live records for {collected_hosts} workstation host(s)."
+            )
+        elif populated_hosts > 0:
+            message = (
+                "User activity behavior data collection completed.\n"
+                f"Populated {populated_hosts} workstation host(s) from AssetDetails because "
+                "current lab-host behavior data was unavailable."
+            )
+        else:
+            message = (
+                "User activity behavior data collection completed, but no workstation "
+                "records were collected or populated."
+            )
+
+        return {
+            "success": True,
+            "message": message,
+            "year": year,
+            "total_records": result.get("total_records", 0),
+            "collected_hosts": collected_hosts,
+            "populated_hosts": populated_hosts,
+            "details": result,
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"User activity behavior data collection failed: {e}",
+            "year": year,
+        }
+
+
 @router.post("/submit")
 def submit_risk_analysis(payload: SubmitRequest):
     year = int(payload.year or 2026)
@@ -1476,12 +1594,26 @@ def submit_risk_analysis(payload: SubmitRequest):
             "inventory": inventory,
         }
 
-    # 3. Build RiskEvaluationTreatment.json
+    # 3. Retrain the user behavior model again before finalizing
+    try:
+        training_result = _train_user_behavior_model(
+            _default_behavior_dataset_path(),
+            _ml_models_dir(),
+        )
+        _record_behavior_training_telemetry(year, training_result, "/api/risk-analysis/submit")
+    except Exception as e:
+        return {
+            "success": False,
+            "message": f"Risk analysis finalization failed during model retraining: {e}",
+            "inventory": inventory,
+        }
+
+    # 4. Build RiskEvaluationTreatment.json
     risk_eval_doc = _build_risk_evaluation_treatment(inventory)
 
     _save_json(_risk_eval_treatment_file(year), risk_eval_doc)
 
-    # 4. Update system status
+    # 5. Update system status
     status_doc = _load_system_status_or_default(year)
 
     status_doc["sections"]["risk_analysis"]["status"] = "Completed"
@@ -1491,6 +1623,6 @@ def submit_risk_analysis(payload: SubmitRequest):
 
     return {
         "success": True,
-        "message": "Risk analysis finalized.",
+        "message": "User behavior model retrained successfully.\nRisk analysis finalized.",
         "records_created": len(risk_eval_doc["hosts"])
     }

@@ -1,0 +1,1421 @@
+{
+  "guides": [
+    {
+      "guide_id": "MIG-2026-0001",
+      "evidence_id": "MEVID-2026-0001",
+      "hostname": "WS-01",
+      "role": "Finance Workstation",
+      "department": "Finance",
+      "os_version": "Windows 11",
+      "control_id": "CVE-2019-0708",
+      "control_name": "Remote Desktop Services Remote Code Execution",
+      "cve_id": "CVE-2019-0708",
+      "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "The host WS-01, a Finance Workstation, was monitored for CVE-2019-0708 by ana...",
+      "evidence_description": "The host WS-01, a Finance Workstation, was monitored for CVE-2019-0708 by analyzing RDP logs and alerting on anomalous remote access, aligning with ISO 8.8 (vulnerability management) and 6.7 (remote working). This ensured timely detection of exploitation risks, correlating endpoint and firewall logs per ISO 8.20, while confirming patch efficacy to mitigate finance data exposure through unsecured RDP sessions.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2019-0708 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2019-0708"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Patch Installation for CVE-2019-0708",
+          "description": "Check if the system has installed the security update addressing CVE-2019-0708.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -like \"KB4490077\" }"
+          ],
+          "expected_result": "Output displays KB4490077 or later in the HotFixID column.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of the Get-HotFix command as proof of patch installation."
+        },
+        {
+          "step_no": 2,
+          "title": "Check RDP Service Status",
+          "description": "Verify if the Remote Desktop Services (TermService) is running.",
+          "commands": [
+            "Get-Service -Name TermService"
+          ],
+          "expected_result": "Output shows 'Status' as 'Running' for the TermService.",
+          "output_type": "Service status",
+          "evidence_capture": "Capture the service status output to confirm RDP is active."
+        },
+        {
+          "step_no": 3,
+          "title": "Monitor RDP-Related Security Events",
+          "description": "Collect Security Event Logs for RDP logon attempts and authentication failures.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4622,4624,4672} | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "Output lists events with IDs 4622 (successful logon), 4624 (interactive logon), or 4672 (special privilege assigned) containing 'RDP' in the message.",
+          "output_type": "Log export",
+          "evidence_capture": "Export the filtered event logs to a CSV file for analysis."
+        },
+        {
+          "step_no": 4,
+          "title": "Configure Audit Policies for RDP Access",
+          "description": "Enable auditing for remote interactive logon events to detect suspicious RDP activity.",
+          "commands": [
+            "auditpol set /subcategory:\"Remote Interactive Logon\" /failure:enable /success:enable"
+          ],
+          "expected_result": "Command output confirms success: 'The audit policy was successfully modified.'",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the command output to verify audit policy changes."
+        },
+        {
+          "step_no": 5,
+          "title": "Validate Firewall RDP Rule Configuration",
+          "description": "Check if the Windows Firewall allows RDP traffic (port 3389) and verify rule details.",
+          "commands": [
+            "netsh advfirewall firewall show rule name=all | findstr /i \"RDP\""
+          ],
+          "expected_result": "Output displays rules allowing TCP port 3389 with 'Remote Desktop' in the name.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Save the firewall rule output to confirm exposure status."
+        },
+        {
+          "step_no": 6,
+          "title": "Correlate Logs with SIEM for Anomalies",
+          "description": "Manually configure SIEM (e.g., Splunk, ELK) to correlate RDP events with authentication failures and lateral movement patterns.",
+          "commands": [],
+          "expected_result": "SIEM dashboard displays alerts for repeated RDP failures, non-standard hours, or unusual user behavior.",
+          "output_type": "SIEM dashboard screenshot",
+          "evidence_capture": "Capture a screenshot of the SIEM correlation rules and alert triggers."
+        },
+        {
+          "step_no": 7,
+          "title": "Verify Vulnerability Exposure via Scan",
+          "description": "Run a vulnerability scanner to confirm CVE-2019-0708 exposure post-patching.",
+          "commands": [
+            "openvas --target=WS-01 --port=3389 --scan-type=cve-2019-0708"
+          ],
+          "expected_result": "Scan report indicates 'No vulnerability detected' for CVE-2019-0708.",
+          "output_type": "PDF report",
+          "evidence_capture": "Save the OpenVAS scan report as evidence of patch effectiveness."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0002",
+      "evidence_id": "MEVID-2026-0002",
+      "hostname": "WS-02",
+      "role": "HR Workstation",
+      "department": "HR",
+      "os_version": "Windows 10",
+      "control_id": "CVE-2019-0708",
+      "control_name": "Remote Desktop Services Remote Code Execution",
+      "cve_id": "CVE-2019-0708",
+      "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "The host WS-02, an HR Workstation, demonstrates monitoring of RDP-related log...",
+      "evidence_description": "The host WS-02, an HR Workstation, demonstrates monitoring of RDP-related logs and authentication events for CVE-2019-0708, aligning with ISO 8.20 (network security) and 8.8 (vulnerability management). This ensures detection of suspicious remote access attempts, correlating with ISO 6.7 (remote working) to mitigate risks from unpatched RDP vulnerabilities on user-facing systems.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2019-0708 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2019-0708"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Patch Installation for CVE-2019-0708",
+          "description": "Check if the host has installed the security update addressing CVE-2019-0708.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -like \"KB4490058\" }",
+            "Get-WindowsUpdateLog | Select-String \"CVE-2019-0708\""
+          ],
+          "expected_result": "Output shows KB4490058 or equivalent patch installed with no errors.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of Get-HotFix as 'WS-02_Patch_Status.log'"
+        },
+        {
+          "step_no": 2,
+          "title": "Monitor RDP Authentication Events",
+          "description": "Collect and filter Windows Security Event Log entries related to RDP authentication.",
+          "commands": [
+            "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=4624 or EventID=4672) and TimeGenerated > '$( (Get-Date).AddDays(-7) )' ]]\" | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "List of RDP-related successful logins (EventID 4624) or privilege use (EventID 4672) in the last 7 days.",
+          "output_type": "Log export",
+          "evidence_capture": "Export filtered events to 'WS-02_RDP_Auth_Events.evtx'"
+        },
+        {
+          "step_no": 3,
+          "title": "Validate RDP Service Configuration",
+          "description": "Check if Remote Desktop Services is configured to require Network Level Authentication (NLA).",
+          "commands": [
+            "sc query termsrv",
+            "Get-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\" -Name \"UserAuthentication\""
+          ],
+          "expected_result": "termsrv service is running, and UserAuthentication value is 2 (NLA required).",
+          "output_type": "Service status / registry output",
+          "evidence_capture": "Capture registry output as 'WS-02_RDP_Configuration.txt'"
+        },
+        {
+          "step_no": 4,
+          "title": "Detect Failed RDP Attempts",
+          "description": "Search for failed RDP authentication attempts in the Security Log.",
+          "commands": [
+            "Get-WinEvent -LogName Security -FilterXPath \"*[System[(EventID=4625) and TimeGenerated > '$( (Get-Date).AddDays(-7) )' ]]\" | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "List of failed RDP login attempts (EventID 4625) in the last 7 days.",
+          "output_type": "Log export",
+          "evidence_capture": "Export results to 'WS-02_RDP_Failures.evtx'"
+        },
+        {
+          "step_no": 5,
+          "title": "Validate Firewall RDP Rule Configuration",
+          "description": "Verify that firewall rules for RDP are configured to restrict access to authorized IPs.",
+          "commands": [
+            "netsh advfirewall firewall show rule name=all | findstr /i \"RDP\""
+          ],
+          "expected_result": "Firewall rule for RDP shows 'Remote IP Address' restrictions and 'Action: Allow'.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Save output as 'WS-02_RDP_Firewall_Rules.txt'"
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0003",
+      "evidence_id": "MEVID-2026-0003",
+      "hostname": "WS-03",
+      "role": "Standard Employee Workstation",
+      "department": "Operations",
+      "os_version": "Windows 10",
+      "control_id": "CVE-2019-0708",
+      "control_name": "Remote Desktop Services Remote Code Execution",
+      "cve_id": "CVE-2019-0708",
+      "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "The host WS-03, serving as a Standard Employee Workstation, demonstrates adhe...",
+      "evidence_description": "The host WS-03, serving as a Standard Employee Workstation, demonstrates adherence to Control 8.8 (technical vulnerability management) by continuously monitoring RDP logs and authentication events for CVE-2019-0708, aligning with Control 8.20 (network security) to detect unusual remote access attempts, ensuring timely patch verification and incident escalation, thereby mitigating remote code execution risks through structured log correlation and alerting mechanisms.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2019-0708 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2019-0708"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Patch Installation for CVE-2019-0708",
+          "description": "Check if the system has the required security update (KB4490013) installed to mitigate CVE-2019-0708.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -eq \"KB4490013\" }"
+          ],
+          "expected_result": "Output displays KB4490013 with installation date and status.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of the Get-HotFix command as proof of patch installation."
+        },
+        {
+          "step_no": 2,
+          "title": "Monitor RDP Authentication Events",
+          "description": "Collect and analyze Security Event Log entries for RDP-related logon successes (Event ID 4624) and failures (Event ID 4625).",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624,4625} | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "Output lists RDP authentication events with user, time, and status details.",
+          "output_type": "Log export",
+          "evidence_capture": "Export filtered Security Event Log entries to a CSV file for audit review."
+        },
+        {
+          "step_no": 3,
+          "title": "Validate RDP Service Configuration",
+          "description": "Check the status and configuration of the Remote Desktop Services (TermService) to ensure it is not misconfigured.",
+          "commands": [
+            "Get-Service -Name TermService",
+            "sc.exe qc TermService"
+          ],
+          "expected_result": "Output confirms TermService is running and configured to start automatically.",
+          "output_type": "Service status",
+          "evidence_capture": "Capture the service status and configuration details from the command outputs."
+        },
+        {
+          "step_no": 4,
+          "title": "Audit RDP Access Attempts",
+          "description": "Enable auditing for logon events to detect suspicious RDP access patterns.",
+          "commands": [
+            "auditpol /set /subcategory:\"Logon\" /success:enable /failure:enable"
+          ],
+          "expected_result": "Output confirms audit policy for Logon events is set to success and failure.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the auditpol command output as proof of policy configuration."
+        },
+        {
+          "step_no": 5,
+          "title": "Check Firewall Rules for RDP Exposure",
+          "description": "Verify if RDP (port 3389) is exposed to external networks via firewall rules.",
+          "commands": [
+            "netsh advfirewall firewall show rule name=all | Findstr /i \"3389\""
+          ],
+          "expected_result": "Output displays firewall rules allowing or blocking traffic on port 3389.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Capture the firewall rule list output to confirm exposure status."
+        },
+        {
+          "step_no": 6,
+          "title": "Detect Unusual RDP Session Patterns",
+          "description": "Analyze System Event Log for RDP session events (Event ID 104) to identify anomalies.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='System'; ID=104} | Where-Object { $_.Message -match \"Remote Desktop\" }"
+          ],
+          "expected_result": "Output lists RDP session events with details such as session ID and user activity.",
+          "output_type": "Log export",
+          "evidence_capture": "Export System Event Log entries related to RDP sessions for correlation analysis."
+        },
+        {
+          "step_no": 7,
+          "title": "Validate Patch Effectiveness via Vulnerability Scan",
+          "description": "Run a vulnerability scan to confirm CVE-2019-0708 is mitigated post-patching.",
+          "commands": [
+            "nmap -sV --script=rdp-vuln-ms12-020 WS-03"
+          ],
+          "expected_result": "Scan output confirms no vulnerabilities related to CVE-2019-0708 are present.",
+          "output_type": "Scan report",
+          "evidence_capture": "Save the Nmap scan results as evidence of patch validation."
+        },
+        {
+          "step_no": 8,
+          "title": "Correlate Logs with Network Traffic",
+          "description": "Cross-reference RDP logs with network traffic data to detect exploitation attempts.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624} | Select-Object TimeCreated,Message",
+            "Get-NetEvent -Filter @{Name='RDP'; Direction='Inbound'}"
+          ],
+          "expected_result": "Output shows correlation between RDP logon events and network traffic patterns.",
+          "output_type": "Log export",
+          "evidence_capture": "Combine Security Event Log and network traffic data into a consolidated report for analysis."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0004",
+      "evidence_id": "MEVID-2026-0004",
+      "hostname": "WS-04",
+      "role": "Call Center Workstation",
+      "department": "Sales",
+      "os_version": "Windows 11",
+      "control_id": "CVE-2019-0708",
+      "control_name": "Remote Desktop Services Remote Code Execution",
+      "cve_id": "CVE-2019-0708",
+      "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "Monitoring of RDP logs on WS-04, a Call Center Workstation, under network sec...",
+      "evidence_description": "Monitoring of RDP logs on WS-04, a Call Center Workstation, under network security (8.20) and remote working (6.7) contexts, detects exploitation attempts via unusual access patterns, ensuring patch effectiveness against CVE-2019-0708. Alerts and log correlation confirm reduced exposure, with escalation of suspicious activity documented for auditor traceability.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2019-0708 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2019-0708"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Patch Status for CVE-2019-0708",
+          "description": "Check if the host has installed the security update that mitigates CVE-2019-0708.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -like \"KB4490093*\" }"
+          ],
+          "expected_result": "Output displays installed hotfix KB4490093 or later.",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of the Get-HotFix command as proof of patch status."
+        },
+        {
+          "step_no": 2,
+          "title": "Enable RDP Connection Logging",
+          "description": "Configure the registry to enable detailed RDP connection logging for auditing.",
+          "commands": [
+            "Set-ItemProperty -Path \"HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\" -Name \"LoggingLevel\" -Value 10"
+          ],
+          "expected_result": "Registry key \"LoggingLevel\" is set to 10 under RDP-Tcp settings.",
+          "output_type": "Registry configuration",
+          "evidence_capture": "Capture a screenshot of the registry editor showing the updated LoggingLevel value."
+        },
+        {
+          "step_no": 3,
+          "title": "Monitor RDP Authentication Events",
+          "description": "Use Event Viewer to filter and monitor RDP-related authentication events (4624, 4625).",
+          "commands": [
+            "wevtutil qe Security /q:\"*[System/EventID=4624 or System/EventID=4625]\" /f:text /c:100"
+          ],
+          "expected_result": "Output lists recent RDP login successes (4624) and failures (4625).",
+          "output_type": "Log export",
+          "evidence_capture": "Export the query results to a CSV file and save as \"RDP_Auth_Events.csv\"."
+        },
+        {
+          "step_no": 4,
+          "title": "Validate RDP Port Exposure",
+          "description": "Check if RDP (port 3389) is exposed on the host's network interfaces.",
+          "commands": [
+            "netstat -an | findstr \":3389\""
+          ],
+          "expected_result": "Output shows TCP 0.0.0.0:3389 listening.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the netstat output as proof of RDP port exposure status."
+        },
+        {
+          "step_no": 5,
+          "title": "Correlate Firewall and RDP Logs",
+          "description": "Retrieve firewall logs to cross-reference with RDP authentication events for suspicious activity.",
+          "commands": [
+            "Get-NetFirewallLog -Name \"Domain Profile\" -StartTime (Get-Date).AddHours(-24) | Export-Csv -Path \"C:\\Firewall_RDP_Logs.csv\""
+          ],
+          "expected_result": "CSV file contains firewall logs with RDP traffic (port 3389) over the last 24 hours.",
+          "output_type": "Log export",
+          "evidence_capture": "Save the exported CSV file as \"Firewall_RDP_Logs.csv\" for correlation analysis."
+        },
+        {
+          "step_no": 6,
+          "title": "Detect Unusual RDP Session Patterns",
+          "description": "Analyze event logs for repeated failed RDP attempts or non-business-hour logins.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4625} | Where-Object { $_.TimeCreated -gt (Get-Date).AddHours(-24) } | Format-Table TimeCreated,IpAddress -AutoSize"
+          ],
+          "expected_result": "Output lists failed RDP attempts with timestamps and source IP addresses.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the formatted table output as evidence of suspicious login attempts."
+        },
+        {
+          "step_no": 7,
+          "title": "Document and Escalate Suspicious Activity",
+          "description": "Manually review logs for anomalies and create a ticket if exploitation is suspected.",
+          "commands": [],
+          "expected_result": "Incident ticket created in the organization's ticketing system (e.g., Jira, ServiceNow).",
+          "output_type": "Ticket documentation",
+          "evidence_capture": "Capture the ticket number and summary as proof of escalation."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0005",
+      "evidence_id": "MEVID-2026-0005",
+      "hostname": "WS-05",
+      "role": "Developer Workstation",
+      "department": "HR",
+      "os_version": "Windows 10",
+      "control_id": "CVE-2019-0708",
+      "control_name": "Remote Desktop Services Remote Code Execution",
+      "cve_id": "CVE-2019-0708",
+      "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "The host WS-05, a Developer Workstation, was monitored for CVE-2019-0708, foc...",
+      "evidence_description": "The host WS-05, a Developer Workstation, was monitored for CVE-2019-0708, focusing on RDP logs and authentication events to detect unauthorized access or exploitation attempts. Continuous monitoring aligned with ISO 8.20 (network security) and 8.8 (vulnerability management) ensured timely alerts for suspicious RDP activity, while ISO 6.7 (remote working) contextualized risks from remote access, emphasizing patch verification and log correlation to mitigate exposure.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2019-0708 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2019-0708"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Patch Installation for CVE-2019-0708",
+          "description": "Check if the security update (KB4490058) is installed to mitigate CVE-2019-0708.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -eq \"KB4490058\" }"
+          ],
+          "expected_result": "Output displays KB4490058 with installed date and status.",
+          "output_type": "Command output",
+          "evidence_capture": "Save output of 'Get-HotFix' command as proof of patch installation."
+        },
+        {
+          "step_no": 2,
+          "title": "Monitor RDP Authentication Events",
+          "description": "Collect Security Event Log entries for RDP-related logons (Event ID 4624, 4672).",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624,4672} | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "List of RDP authentication events with source IP, user, and time stamps.",
+          "output_type": "Log export",
+          "evidence_capture": "Export filtered events to CSV and save as 'RDP_Auth_Events.csv'."
+        },
+        {
+          "step_no": 3,
+          "title": "Validate RDP Service Configuration",
+          "description": "Check if Remote Desktop Services (TermService) is enabled and configured securely.",
+          "commands": [
+            "Get-Service -Name TermService",
+            "reg query HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server /v fDenyTSConnections"
+          ],
+          "expected_result": "TermService status 'Running' and fDenyTSConnections value '0x00000000' (RDP allowed).",
+          "output_type": "Command output",
+          "evidence_capture": "Capture output of 'Get-Service' and 'reg query' commands as proof of service configuration."
+        },
+        {
+          "step_no": 4,
+          "title": "Detect Unusual RDP Access Patterns",
+          "description": "Analyze RDP logon events for failed attempts, non-standard hours, or geolocation anomalies.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4625} | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "List of failed RDP attempts with source IP, time, and failure reason.",
+          "output_type": "Log export",
+          "evidence_capture": "Export failed RDP events to 'RDP_Failures.csv' and review for anomalies."
+        },
+        {
+          "step_no": 5,
+          "title": "Correlate Firewall and RDP Logs",
+          "description": "Cross-reference firewall rules and RDP logs to detect unauthorized exposure.",
+          "commands": [
+            "netsh advfirewall firewall show rule name=all | findstr /i \"RDP\""
+          ],
+          "expected_result": "Firewall rules allowing RDP (port 3389) with specific profiles (Domain, Private, Public).",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Save output of 'netsh' command as proof of RDP firewall configuration."
+        },
+        {
+          "step_no": 6,
+          "title": "Validate Patch Effectiveness with Scanner",
+          "description": "Run vulnerability scanner to confirm CVE-2019-0708 is mitigated.",
+          "commands": [
+            "nmap -p 3389 --script vuln WS-05"
+          ],
+          "expected_result": "Scanner output indicates no exploitable RDP vulnerabilities.",
+          "output_type": "Scan report",
+          "evidence_capture": "Capture Nmap output as proof of vulnerability scan results."
+        },
+        {
+          "step_no": 7,
+          "title": "Configure Real-Time RDP Monitoring Alert",
+          "description": "Set up Windows Event Forwarding or SIEM alert for RDP-related events (4624, 4672).",
+          "commands": [],
+          "expected_result": "Alerting rule configured in SIEM or Event Viewer for RDP events.",
+          "output_type": "Screenshot",
+          "evidence_capture": "Capture screenshot of SIEM alert configuration or Event Viewer subscription setup."
+        },
+        {
+          "step_no": 8,
+          "title": "Document and Escalate Suspicious Activity",
+          "description": "Review collected logs for lateral movement indicators and escalate findings.",
+          "commands": [],
+          "expected_result": "Incident ticket created with evidence of suspicious RDP activity.",
+          "output_type": "PDF",
+          "evidence_capture": "Generate PDF report with logs, scan results, and alert triggers for auditor traceability."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0006",
+      "evidence_id": "MEVID-2026-0006",
+      "hostname": "WS-06",
+      "role": "Data Scientist Workstation",
+      "department": "Operations",
+      "os_version": "Windows 11",
+      "control_id": "CVE-2019-0708",
+      "control_name": "Remote Desktop Services Remote Code Execution",
+      "cve_id": "CVE-2019-0708",
+      "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "The host WS-06, a Data Scientist Workstation, was monitored for RDP-related l...",
+      "evidence_description": "The host WS-06, a Data Scientist Workstation, was monitored for RDP-related logs and authentication events to detect exploitation of CVE-2019-0708, aligning with Control 8.8 (technical vulnerability management) and 8.20 (network security). Alerts for unusual remote access and session patterns were configured, ensuring timely detection of suspicious activity and verification of patch effectiveness, reflecting the vulnerability\u2019s risk to remote work and endpoint security.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2019-0708 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2019-0708"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2019-0708"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Patch Installation for CVE-2019-0708",
+          "description": "Check if the security update KB4490628 (or later) is installed to mitigate CVE-2019-0708.",
+          "commands": [
+            "Get-HotFix -Id KB4490628",
+            "Get-HotFix | Where-Object { $_.HotFixID -like 'KB449*' }"
+          ],
+          "expected_result": "Output confirms KB4490628 or later is installed with a status of 'Installed'.",
+          "output_type": "Command output",
+          "evidence_capture": "Save output of 'Get-HotFix' command to a text file named 'patch_verification.txt'."
+        },
+        {
+          "step_no": 2,
+          "title": "Monitor RDP Authentication Failures",
+          "description": "Query Windows Security Event Log for failed RDP login attempts (event ID 4625).",
+          "commands": [
+            "wevtutil qe Security /q:*[System/EventID=4625 andEventData/Data[@Name='TargetUserName']='Administrator'] /f:text /c:1000",
+            "Get-WinEvent -FilterHashtable @{LogName='Security';ID=4625} | Where-Object { $_.Message -match 'RDP' }"
+          ],
+          "expected_result": "Output shows no or limited failed RDP authentication events within the last 7 days.",
+          "output_type": "Log export",
+          "evidence_capture": "Export event log query results to 'rdp_failure_events.evtx' and timestamp the file."
+        },
+        {
+          "step_no": 3,
+          "title": "Validate Firewall RDP Rule Configuration",
+          "description": "Confirm that RDP (port 3389) is blocked or restricted to specific IPs.",
+          "commands": [
+            "netsh advfirewall firewall show rule name=all | Findstr /i '3389'",
+            "Get-NetFirewallRule -Name 'Remote Desktop - user mode (TCP-In)' | Select-Object Name, Enabled, Direction, LocalPort"
+          ],
+          "expected_result": "Output confirms RDP rule is disabled or restricted to approved IP ranges.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Capture output of 'netsh' command to 'firewall_rdp_rule_check.txt'."
+        },
+        {
+          "step_no": 4,
+          "title": "Correlate RDP Session Activity with Logs",
+          "description": "Check for unusual RDP session patterns (e.g., multiple failed attempts followed by success).",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security';ID=4624,4672} | Where-Object { $_.Message -match 'RDP' } | Format-Table TimeCreated,Message",
+            "wevtutil qe Security /q:*[System/EventID=4624 or System/EventID=4672] /f:text /c:500"
+          ],
+          "expected_result": "No suspicious RDP session patterns detected; all successful logins originate from approved locations.",
+          "output_type": "Log export",
+          "evidence_capture": "Export event log results to 'rdp_session_correlation.evtx' and timestamp the file."
+        },
+        {
+          "step_no": 5,
+          "title": "Validate Vulnerability Scanner Results",
+          "description": "Check vulnerability scanner output for exposed RDP services post-patching.",
+          "commands": [
+            "Invoke-NcScan -Port 3389 -Host WS-06",
+            "nmap -p 3389 WS-06 --script=rdp-vuln-ms12-020"
+          ],
+          "expected_result": "Scanner output confirms no open RDP ports or exploitable vulnerabilities.",
+          "output_type": "Scan report",
+          "evidence_capture": "Save 'nmap' and 'Invoke-NcScan' outputs to 'vulnerability_scan_results.txt'."
+        },
+        {
+          "step_no": 6,
+          "title": "Configure SIEM Alert for RDP Anomalies",
+          "description": "Set up SIEM alert for RDP-related events (e.g., 4625, 4672) with thresholding for failed attempts.",
+          "commands": [
+            "Add-EventLogAlert -Name 'RDP_Anomaly_Detection' -EventID 4625,4672 -Threshold 5 -TimeFrame '00:10:00'",
+            "Get-EventLogAlert | Where-Object { $_.Name -eq 'RDP_Anomaly_Detection' }"
+          ],
+          "expected_result": "SIEM confirms alert rule created with threshold of 5 failed RDP attempts in 10 minutes.",
+          "output_type": "SIEM rule configuration",
+          "evidence_capture": "Export SIEM alert configuration to 'rdp_siem_alert_config.json'."
+        },
+        {
+          "step_no": 7,
+          "title": "Verify RDP Service Status and Configuration",
+          "description": "Ensure RDP service (TermService) is running and configured securely.",
+          "commands": [
+            "sc query TermService",
+            "reg query HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server /v fDenyTSConnections"
+          ],
+          "expected_result": "TermService status is 'RUNNING' and fDenyTSConnections is set to '0x1' (deny RDP connections).",
+          "output_type": "Service status",
+          "evidence_capture": "Capture output of 'sc query TermService' and 'reg query' commands to 'rdp_service_config.txt'."
+        },
+        {
+          "step_no": 8,
+          "title": "Audit RDP User Permissions and Session Limits",
+          "description": "Check for excessive permissions or lack of session limits on RDP users.",
+          "commands": [
+            "Get-WmiObject -Query 'SELECT * FROM Win32_UserAccount WHERE LocalAccount=\"False\"' | Where-Object { $_.Name -match 'RDP' }",
+            "Get-PSSessionConfiguration | Where-Object { $_.Name -match 'RDP' }"
+          ],
+          "expected_result": "No RDP-specific user accounts with administrative privileges; session limits are enforced.",
+          "output_type": "User permission list",
+          "evidence_capture": "Export WMI and PSSessionConfiguration outputs to 'rdp_user_permissions.txt'."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0007",
+      "evidence_id": "MEVID-2026-0007",
+      "hostname": "WS-05",
+      "role": "Developer Workstation",
+      "department": "HR",
+      "os_version": "Windows 10",
+      "control_id": "CVE-2019-5736",
+      "control_name": "Docker Container Escape",
+      "cve_id": "CVE-2019-5736",
+      "vulnerability_name": "Docker Container Escape",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-5736.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "The host WS-05, a Developer Workstation, was monitored for unauthorized modif...",
+      "evidence_description": "The host WS-05, a Developer Workstation, was monitored for unauthorized modifications to critical files like /proc/self/exe and runc binary, addressing the Docker Container Escape vulnerability (CVE-2019-5736). Continuous checks on RDP logs and authentication events verified patch effectiveness, aligning with ISO 27002\u2019s technical vulnerability management and anomaly detection requirements, ensuring reduced exposure and timely incident escalation.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2019-5736"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2019-5736 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2019-5736"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2019-5736"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Docker Service Status",
+          "description": "Check if Docker service is running on the host, which may indicate potential exposure to CVE-2019-5736.",
+          "commands": [
+            "Get-Service Docker"
+          ],
+          "expected_result": "Service status 'Running' if Docker is active.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture output of 'Get-Service Docker' to confirm Docker service status."
+        },
+        {
+          "step_no": 2,
+          "title": "Validate Installed Patches",
+          "description": "Check for installed security updates related to CVE-2019-5736 using hotfix information.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -like \"*KB4516077*\" }"
+          ],
+          "expected_result": "Output showing 'KB4516077' if the patch is installed.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture output of 'Get-HotFix' filtered for 'KB4516077' to verify patch installation."
+        },
+        {
+          "step_no": 3,
+          "title": "Monitor RDP Authentication Events",
+          "description": "Collect Windows Security Event Log entries for RDP-related authentication attempts (events 4622, 4624, 4672).",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4622,4624,4672} | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "List of RDP authentication events with details like user, time, and status.",
+          "output_type": "Log export",
+          "evidence_capture": "Export filtered Security Event Log entries to a CSV file for analysis."
+        },
+        {
+          "step_no": 4,
+          "title": "Check Exposed RDP Services",
+          "description": "Verify if RDP (port 3389) is exposed via firewall rules or listening on the network.",
+          "commands": [
+            "Get-NetTCPConnection -LocalPort 3389",
+            "Get-NetFirewallRule -DisplayName *RDP*"
+          ],
+          "expected_result": "Output showing active RDP connections or firewall rules allowing RDP traffic.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture outputs of 'Get-NetTCPConnection' and 'Get-NetFirewallRule' for RDP configuration validation."
+        },
+        {
+          "step_no": 5,
+          "title": "Correlate System and Security Logs",
+          "description": "Cross-reference system and security logs for anomalies such as failed RDP attempts or unexpected process creation.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='System'; ID=6008} | Where-Object { $_.Message -match \"RDP\" }",
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4688} | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "Correlated events showing RDP-related process creation or system reboots linked to suspicious activity.",
+          "output_type": "Log export",
+          "evidence_capture": "Export correlated System and Security Event Log entries to a report for further investigation."
+        },
+        {
+          "step_no": 6,
+          "title": "Review Docker Configuration Changes",
+          "description": "Check for recent modifications to Docker-related files or registry keys that may indicate exploitation attempts.",
+          "commands": [
+            "Get-ChildItem -Path \"C:\\Program Files\\Docker\" -Recurse | Where-Object { $_.LastWriteTime -gt (Get-Date).AddDays(-7) }",
+            "Get-ItemProperty -Path \"HKLM:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Windows\" | Select-Object *"
+          ],
+          "expected_result": "List of recently modified Docker files or registry changes within the last 7 days.",
+          "output_type": "File list / registry output",
+          "evidence_capture": "Capture output of file and registry checks to document configuration changes."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0008",
+      "evidence_id": "MEVID-2026-0008",
+      "hostname": "WS-06",
+      "role": "Data Scientist Workstation",
+      "department": "Operations",
+      "os_version": "Windows 11",
+      "control_id": "CVE-2021-32797",
+      "control_name": "Jupyter Web Interface Exposure",
+      "cve_id": "CVE-2021-32797",
+      "vulnerability_name": "Jupyter Web Interface Exposure",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2021-32797.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "On host WS-06, a Data Scientist Workstation, monitoring of RDP logs and authe...",
+      "evidence_description": "On host WS-06, a Data Scientist Workstation, monitoring of RDP logs and authentication events for CVE-2021-32797 exposure is implemented to detect unauthorized access or exploitation attempts, aligning with ISO 8.16 (Monitoring activities) and 8.23 (Web filtering), ensuring timely alerts for anomalous behavior and verifying patch efficacy.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2021-32797"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2021-32797 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2021-32797"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2021-32797"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Jupyter Service Status",
+          "description": "Check if Jupyter service is running on the host, which could expose the web interface.",
+          "commands": [
+            "Get-Service -Name 'JupyterNotebook'"
+          ],
+          "expected_result": "Service status 'Running' indicates potential exposure.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture output of 'Get-Service -Name 'JupyterNotebook''"
+        },
+        {
+          "step_no": 2,
+          "title": "Check for Open Jupyter Ports",
+          "description": "Validate if Jupyter is listening on non-localhost interfaces using netstat.",
+          "commands": [
+            "netstat -ano | FindStr ':8888'"
+          ],
+          "expected_result": "Output showing '0.0.0.0:8888' indicates exposure to external traffic.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture 'netstat -ano | FindStr ':8888'' output"
+        },
+        {
+          "step_no": 3,
+          "title": "Review Jupyter Configuration for Remote Access",
+          "description": "Check Jupyter config file for 'c.NotebookApp.allow_remote_access' setting.",
+          "commands": [
+            "Get-ItemProperty -Path 'C:\\Users\\<User>\\.jupyter\\jupyter_notebook_config.py' -Name 'allow_remote_access'"
+          ],
+          "expected_result": "Value 'True' confirms remote access is enabled.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture output of 'Get-ItemProperty' command"
+        },
+        {
+          "step_no": 4,
+          "title": "Monitor RDP Authentication Failures",
+          "description": "Query Security Event Log for failed RDP authentication attempts (Event ID 4625).",
+          "commands": [
+            "wevtutil qe Security /f:text /q:*[System/EventID=4625 andEventData/TargetUserName='*RDP*']"
+          ],
+          "expected_result": "Log entries with 'Failure' status indicate suspicious activity.",
+          "output_type": "Log export",
+          "evidence_capture": "Export Security Event Log query results to CSV"
+        },
+        {
+          "step_no": 5,
+          "title": "Validate Patch Installation for CVE-2021-32797",
+          "description": "Check if the patch for CVE-2021-32797 (KB5012642) is installed.",
+          "commands": [
+            "Get-HotFix -Id KB5012642"
+          ],
+          "expected_result": "HotFix object with 'KB5012642' confirms patch installation.",
+          "output_type": "Patch list",
+          "evidence_capture": "Capture output of 'Get-HotFix -Id KB5012642'"
+        },
+        {
+          "step_no": 6,
+          "title": "Inspect Firewall Rules for Jupyter Exposure",
+          "description": "Verify if firewall rules allow traffic on Jupyter's port (8888).",
+          "commands": [
+            "Get-NetFirewallRule -Name 'Jupyter*'"
+          ],
+          "expected_result": "Rule with 'Action: Allow' and 'LocalPort: 8888' indicates exposure.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Export output of 'Get-NetFirewallRule -Name 'Jupyter*''"
+        },
+        {
+          "step_no": 7,
+          "title": "Collect Jupyter Access Logs",
+          "description": "Extract Jupyter access logs for analysis of remote connections.",
+          "commands": [
+            "Get-Content -Path 'C:\\Users\\<User>\\.jupyter\\jupyter_notebook.log' -Tail 100"
+          ],
+          "expected_result": "Log entries with '127.0.0.1' are local; external IPs indicate exposure.",
+          "output_type": "Log export",
+          "evidence_capture": "Save last 100 lines of 'jupyter_notebook.log' to evidence folder"
+        },
+        {
+          "step_no": 8,
+          "title": "Configure RDP Alerting in Windows Security Center",
+          "description": "Set up alert for unusual RDP activity via Windows Security Center (manual action).",
+          "commands": [],
+          "expected_result": "Alert policy configured for 'RDP Failed Logins' with threshold of 5 attempts.",
+          "output_type": "Screenshot",
+          "evidence_capture": "Capture screenshot of Windows Security Center alert configuration"
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0009",
+      "evidence_id": "MEVID-2026-0009",
+      "hostname": "WS-06",
+      "role": "Data Scientist Workstation",
+      "department": "Operations",
+      "os_version": "Windows 11",
+      "control_id": "CVE-2020-15257",
+      "control_name": "TensorBoard Unauthorized Access",
+      "cve_id": "CVE-2020-15257",
+      "vulnerability_name": "TensorBoard Unauthorized Access",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2020-15257.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "evidence_name": "The host WS-06, a Data Scientist Workstation, demonstrates monitoring for Ten...",
+      "evidence_description": "The host WS-06, a Data Scientist Workstation, demonstrates monitoring for TensorBoard Unauthorized Access (CVE-2020-15257) by analyzing RDP logs, authentication events, and exposed services to detect unauthorized access attempts, verify patch application, and correlate endpoint/firewall logs for exploitation detection, aligning with ISO 7.4, 8.8, and 8.23 to ensure timely remediation and prevent lateral movement.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for CVE-2020-15257"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2020-15257 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2020-15257"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2020-15257"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Verify Patch Installation for CVE-2020-15257",
+          "description": "Check if the security update addressing CVE-2020-15257 is installed on the host.",
+          "commands": [
+            "Get-HotFix | Where-Object { $_.HotFixID -like \"KB4556789\" }"
+          ],
+          "expected_result": "Output displays the installed hotfix with KB4556789 (or equivalent patch ID).",
+          "output_type": "Command output",
+          "evidence_capture": "Save the output of the Get-HotFix command as proof of patch installation."
+        },
+        {
+          "step_no": 2,
+          "title": "Monitor RDP Authentication Events",
+          "description": "Query Windows Security Event Log for RDP-related authentication events (e.g., failed logins, successful RDP sessions).",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4625,4672} | Where-Object { $_.Message -match \"RDP\" }"
+          ],
+          "expected_result": "Event log entries containing RDP-related authentication attempts (e.g., event ID 4625 for failed RDP logins).",
+          "output_type": "Log export",
+          "evidence_capture": "Export the filtered event logs to a CSV file for audit review."
+        },
+        {
+          "step_no": 3,
+          "title": "Validate Exposed RDP Service",
+          "description": "Check if RDP (port 3389) is exposed on the host's network interface.",
+          "commands": [
+            "netstat -an | findstr 3389"
+          ],
+          "expected_result": "Output shows 'TCP 0.0.0.0:3389 0.0.0.0:0 LISTENING' if RDP is exposed.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the netstat output to confirm RDP exposure status."
+        },
+        {
+          "step_no": 4,
+          "title": "Configure Alert for RDP Failure Thresholds",
+          "description": "Set up a Windows Event Log alert for repeated RDP failed login attempts (event ID 4625).",
+          "commands": [],
+          "expected_result": "Event Viewer subscription or SIEM integration triggers alerts on 5+ failed RDP attempts within 10 minutes.",
+          "output_type": "Alert configuration",
+          "evidence_capture": "Document the alert configuration in the SIEM or Event Viewer with threshold parameters."
+        },
+        {
+          "step_no": 5,
+          "title": "Correlate Firewall and RDP Logs",
+          "description": "Cross-reference firewall logs with RDP event logs to detect unauthorized access patterns.",
+          "commands": [
+            "Get-NetFirewallLog -Name \"DomainProfile\" | Where-Object { $_.LocalPort -eq 3389 }"
+          ],
+          "expected_result": "Firewall log entries show RDP traffic (port 3389) with source IP addresses matching event log entries.",
+          "output_type": "Firewall rule list",
+          "evidence_capture": "Export the filtered firewall log to a text file for correlation analysis."
+        },
+        {
+          "step_no": 6,
+          "title": "Verify TensorBoard Service Configuration",
+          "description": "Check if TensorBoard is running and configured with proper access controls.",
+          "commands": [
+            "Get-Service -Name \"TensorBoard*\""
+          ],
+          "expected_result": "Output shows TensorBoard service status (Running/Stopped) and name if installed.",
+          "output_type": "Service status",
+          "evidence_capture": "Capture the service status output and verify access control configurations in TensorBoard logs."
+        },
+        {
+          "step_no": 7,
+          "title": "Scan for Vulnerable TensorBoard Instances",
+          "description": "Run a vulnerability scan to detect unpatched TensorBoard instances on the host.",
+          "commands": [
+            "nmap --script vuln -p 6006 WS-06"
+          ],
+          "expected_result": "Nmap output indicates no vulnerabilities if patched, or lists CVE-2020-15257 if unpatched.",
+          "output_type": "Scan report",
+          "evidence_capture": "Save the Nmap scan results as evidence of vulnerability status."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0010",
+      "evidence_id": "MEVID-2026-0010",
+      "hostname": "WS-04",
+      "role": "Call Center Workstation",
+      "department": "Sales",
+      "os_version": "Windows 11",
+      "control_id": "UB-WS-04",
+      "control_name": "User Activity Behavior",
+      "cve_id": "UB-WS-04",
+      "vulnerability_name": "User Activity Behavior",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:  \n- Monitor Failed Login Attempts by logging all failed attempts and setting alerts for thresholds exceeding 5 occurrences per hour, reviewed weekly per ISO 27002 8.16  \n- Monitor Access Frequency by tracking access patterns and flagging deviations from baseline activity levels using anomaly detection tools, reviewed monthly per ISO 27002 8.16  \n- Monitor Login Consistency by analyzing login times and locations for irregularities, with automated alerts for deviations from established patterns per ISO 27002 5.17  \n- Monitor Password Resets by logging all reset events and ensuring multi-factor authentication is enforced during resets, with quarterly audits per ISO 27002 8.5  \n- Monitor Session Duration by recording session lengths and triggering alerts for sessions below 1 minute or exceeding 1 hour, reviewed biweekly per ISO 27002 8.16",
+      "evidence_name": "The host WS-04, a Call Center Workstation, shows low risk in User Activity Be...",
+      "evidence_description": "The host WS-04, a Call Center Workstation, shows low risk in User Activity Behavior, with failed login attempts at Low (1), though monitoring remains critical to detect anomalies. Control context aligns with ISO 27002 8.16, requiring alerts for >5 failed logins/hour and weekly reviews to ensure timely response to potential unauthorized access, reflecting the vulnerability of inconsistent user behavior in high-traffic roles.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for UB-WS-04"
+        },
+        {
+          "ref_id": "MS-Docs",
+          "source": "Microsoft Learn security monitoring, Defender, and Windows event logging documentation relevant to User Activity Behavior"
+        },
+        {
+          "ref_id": "NIST-Guide",
+          "source": "NIST continuous monitoring, incident detection, and audit logging guidance"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Enable Security Log Auditing for Failed Logins",
+          "description": "Configure Windows to audit failed logon attempts by enabling the 'Logon' subcategory under Audit Policy.",
+          "commands": [
+            "auditpol set /subcategory:\"Logon\" /failure:enable"
+          ],
+          "expected_result": "Audit policy for 'Logon' subcategory shows 'Failure' auditing enabled.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the output of 'auditpol get /subcategory:\"Logon\"' showing 'Failure' auditing enabled."
+        },
+        {
+          "step_no": 2,
+          "title": "Create Failed Login Alert Threshold",
+          "description": "Use PowerShell to create a scheduled task that triggers an alert if failed login attempts exceed 5 per hour.",
+          "commands": [
+            "schtasks /create /tn \"FailedLoginAlert\" /tr \"powershell.exe -Command 'Get-WinEvent -FilterHashtable @{LogName=\\\"Security\\\";ID=4625} | Measure-Object'\" /sc hourly /st 00:00"
+          ],
+          "expected_result": "Scheduled task 'FailedLoginAlert' is created and runs hourly to count failed logins.",
+          "output_type": "Task scheduler status",
+          "evidence_capture": "Capture the task details via 'schtasks /query /tn \"FailedLoginAlert\"'."
+        },
+        {
+          "step_no": 3,
+          "title": "Export and Analyze Logon Access Patterns",
+          "description": "Export Security Event Log entries for logon events (ID 4624) and analyze for anomalies using PowerShell.",
+          "commands": [
+            "wevtutil epl Security C:\\Logs\\SecurityExport.xml /q:*[System/EventID=4624]"
+          ],
+          "expected_result": "XML file 'SecurityExport.xml' contains all logon events for analysis.",
+          "output_type": "Log export",
+          "evidence_capture": "Capture the exported XML file and timestamp of export."
+        },
+        {
+          "step_no": 4,
+          "title": "Verify Password Reset Events and MFA Enforcement",
+          "description": "Check for password reset events (ID 4724) and confirm MFA enforcement via Group Policy.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4724} | Format-List TimeCreated,UserName",
+            "gpresult /H C:\\Logs\\GPResult.html"
+          ],
+          "expected_result": "Password reset events are logged, and MFA enforcement is listed in Group Policy results.",
+          "output_type": "Log export / HTML report",
+          "evidence_capture": "Capture 'SecurityExport.xml' and 'GPResult.html' with timestamps."
+        },
+        {
+          "step_no": 5,
+          "title": "Monitor Session Duration via Logon/Logoff Events",
+          "description": "Use PowerShell to calculate session durations from logon (ID 4624) and logoff (ID 4634) events.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624,4634} | Sort-Object TimeCreated | Format-Table TimeCreated,EventID,UserName"
+          ],
+          "expected_result": "List of logon/logoff events with timestamps for duration calculation.",
+          "output_type": "Command output",
+          "evidence_capture": "Capture the output as a text file with timestamp."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0011",
+      "evidence_id": "MEVID-2026-0011",
+      "hostname": "WS-05",
+      "role": "Developer Workstation",
+      "department": "HR",
+      "os_version": "Windows 10",
+      "control_id": "UB-WS-05",
+      "control_name": "User Activity Behavior",
+      "cve_id": "UB-WS-05",
+      "vulnerability_name": "User Activity Behavior",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:  \n- Monitor Failed Login Attempts by logging all failed access events, setting thresholds for alerting on >8 attempts within 1 hour, and escalating to security for investigation, referencing ISO 27002 5.15 and 5.17.  \n- Monitor Access Frequency by logging all user activity timestamps, detecting anomalies in >17 access events per hour, and triggering alerts for review, referencing ISO 27001 5.15 and 7.4.  \n- Monitor Login Consistency by reviewing login patterns monthly, comparing against the stable 0.91 baseline, and investigating deviations, referencing ISO 27002 5.22.  \n- Monitor Password Resets by logging all reset events, flagging resets outside normal hours, and requiring supervisor approval for resets exceeding 3 per month, referencing ISO 27002 5.17.  \n- Monitor Session Duration by logging session start/end times, alerting on sessions exceeding 10.2 hours, and enforcing automatic logout for prolonged sessions, referencing ISO 27001 7.4 and 5.15.",
+      "evidence_name": "The host WS-05, a Developer Workstation, demonstrates critical user activity...",
+      "evidence_description": "The host WS-05, a Developer Workstation, demonstrates critical user activity behavior with access frequency at 17 and failed login attempts at 8, indicating potential unauthorized access or abnormal usage. Monitoring intent focuses on detecting anomalies in access patterns and session duration, aligning with ISO 27001 7.4 and 5.15 to ensure secure access and mitigate risks from persistent or irregular user behavior.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for UB-WS-05"
+        },
+        {
+          "ref_id": "MS-Docs",
+          "source": "Microsoft Learn security monitoring, Defender, and Windows event logging documentation relevant to User Activity Behavior"
+        },
+        {
+          "ref_id": "NIST-Guide",
+          "source": "NIST continuous monitoring, incident detection, and audit logging guidance"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Configure Security Log for Failed Login Attempts",
+          "description": "Enable and verify logging of failed login events (Event ID 4625) using PowerShell.",
+          "commands": [
+            "wevtutil set-log Security /maxSize:1024 /retention:7",
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4625} -MaxEvents 10"
+          ],
+          "expected_result": "Security log configured with 1024 KB size and 7-day retention; 10 recent failed login events displayed.",
+          "output_type": "Command output",
+          "evidence_capture": "Screenshot of 'Get-WinEvent' output showing 10 failed login events."
+        },
+        {
+          "step_no": 2,
+          "title": "Set Failed Login Threshold Alert",
+          "description": "Use PowerShell to create a threshold alert for >8 failed login attempts per hour.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4625} | Measure-Object",
+            "Get-ScheduledTask -TaskName 'FailedLoginAlert'"
+          ],
+          "expected_result": "Security log shows failed login count; scheduled task 'FailedLoginAlert' exists with threshold logic.",
+          "output_type": "Command output",
+          "evidence_capture": "Exported log of 'Measure-Object' results and task details from 'Get-ScheduledTask'."
+        },
+        {
+          "step_no": 3,
+          "title": "Monitor Access Frequency with Timestamps",
+          "description": "Log user activity timestamps and verify >17 events/hour detection using PowerShell.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624} -MaxEvents 100 | Sort-Object TimeCreated | Format-Table TimeCreated,UserId",
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624} | Measure-Object"
+          ],
+          "expected_result": "List of 100 recent successful logins with timestamps; total count of access events.",
+          "output_type": "Log export",
+          "evidence_capture": "CSV export of 'Get-WinEvent' output with timestamps and user IDs."
+        },
+        {
+          "step_no": 4,
+          "title": "Validate Login Consistency Baseline",
+          "description": "Export monthly login patterns for analysis against the 0.91 baseline stability metric.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624} -MaxEvents 1000 | Export-Csv C:\\login_patterns.csv",
+            "Get-Content C:\\login_patterns.csv | Select-String 'UserId' | Measure-Object"
+          ],
+          "expected_result": "CSV file with 1000 login events exported; 1000 entries confirmed in the file.",
+          "output_type": "Log export",
+          "evidence_capture": "Exported 'login_patterns.csv' file with timestamped login data."
+        },
+        {
+          "step_no": 5,
+          "title": "Monitor Password Reset Events",
+          "description": "Log password reset events (Event ID 4723) and verify detection of resets outside normal hours.",
+          "commands": [
+            "wevtutil qe Security /q:*[System/EventID=4723] /f:text /c:10",
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4723} | Format-Table TimeCreated,UserId"
+          ],
+          "expected_result": "List of 10 recent password reset events with timestamps and user IDs.",
+          "output_type": "Command output",
+          "evidence_capture": "Screenshot of 'wevtutil' output showing password reset events."
+        },
+        {
+          "step_no": 6,
+          "title": "Enforce Session Duration Limits",
+          "description": "Verify logging of session start/end times (Events 4624/4634) and detect >10.2-hour sessions.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624,4634} | Sort-Object TimeCreated | Format-Table TimeCreated,UserId,EventID",
+            "Get-WinEvent -FilterHashtable @{LogName='Security'; ID=4624} | Where-Object { $_.Properties[1].Value -gt (Get-Date).AddHours(-10.2) }"
+          ],
+          "expected_result": "List of session start/end events; filtered list of sessions exceeding 10.2 hours.",
+          "output_type": "Command output",
+          "evidence_capture": "Exported log of session events and filtered output from 'Where-Object'."
+        }
+      ]
+    },
+    {
+      "guide_id": "MIG-2026-0012",
+      "evidence_id": "MEVID-2026-0012",
+      "hostname": "WS-06",
+      "role": "Data Scientist Workstation",
+      "department": "Operations",
+      "os_version": "Windows 11",
+      "control_id": "UB-WS-06",
+      "control_name": "User Activity Behavior",
+      "cve_id": "UB-WS-06",
+      "vulnerability_name": "User Activity Behavior",
+      "severity": "Medium",
+      "recommended_action": "Recommended monitoring actions:  \n- Monitor **Failed Login Attempts** with real-time alerting for thresholds exceeding 9 per hour, log all failed attempts, and escalate to security for investigation using ISO 27002 8.16 (Monitoring activities).  \n- Monitor **Access Frequency** for anomalies exceeding 18 accesses per hour, implement automated anomaly detection, and schedule daily reviews of access logs per ISO 27002 8.16 (Monitoring activities).  \n- Monitor **Login Consistency** by analyzing login patterns for deviations from the 0.94 stability score, and conduct monthly reviews of login behavior to ensure alignment with expected patterns using ISO 27002 8.16 (Monitoring activities).  \n- Monitor **Password Resets** for activity exceeding 4 resets per week, log all reset events with justification, and require supervisor approval for resets above this threshold per ISO 27002 5.17 (Authentication information).  \n- Monitor **Session Duration** for sessions exceeding 11.1 hours, trigger alerts for prolonged sessions, and enforce automatic session termination after 12 hours to mitigate unauthorized access risks using ISO 27002 8.16 (Monitoring activities).",
+      "evidence_name": "The host WS-06, a Data Scientist Workstation, exhibits Critical (18) Access F...",
+      "evidence_description": "The host WS-06, a Data Scientist Workstation, exhibits Critical (18) Access Frequency, indicating abnormal usage patterns that may signal unauthorized access or misuse. Monitoring intent focuses on real-time anomaly detection and daily log reviews per ISO 27002 8.16, addressing elevated risk from frequent access in a role context requiring strict behavioral oversight.",
+      "evidence_format": "PDF + Logs + Monitoring Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 monitoring and logging guidance for UB-WS-06"
+        },
+        {
+          "ref_id": "MS-Docs",
+          "source": "Microsoft Learn security monitoring, Defender, and Windows event logging documentation relevant to User Activity Behavior"
+        },
+        {
+          "ref_id": "NIST-Guide",
+          "source": "NIST continuous monitoring, incident detection, and audit logging guidance"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Microsoft security monitoring documentation"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Enable Audit Policy for Logon Events",
+          "description": "Configure Windows Audit Policy to track failed logins and user activity for monitoring.",
+          "commands": [
+            "auditpol /set /subcategory:\"Logon\" /failure:enable",
+            "auditpol /set /subcategory:\"Account Logon\" /success:enable"
+          ],
+          "expected_result": "Audit policy for 'Logon' and 'Account Logon' is enabled with success and failure auditing.",
+          "output_type": "Command output",
+          "evidence_capture": "Output of 'auditpol /get /subcategory:*' showing enabled settings."
+        },
+        {
+          "step_no": 2,
+          "title": "Step 2",
+          "description": "Collect failed login attempts from Security Event Log.",
+          "commands": [
+            "wevtutil qe Security /f:text /q:\"*[System[(EventID=4625)]]\" /c:1000"
+          ],
+          "expected_result": "List of failed login events (Event ID 4625) with timestamps, user names, and source IP addresses.",
+          "output_type": "Log export",
+          "evidence_capture": "Exported XML or text file containing 1000 entries of Event ID 4625."
+        },
+        {
+          "step_no": 3,
+          "title": "Analyze Access Frequency with PowerShell",
+          "description": "Query event logs for user access frequency and detect anomalies exceeding 18 accesses/hour.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security';ID=4624} | Group-Object -Property UserId | Where-Object {$_.'Count' -gt 18}"
+          ],
+          "expected_result": "List of user accounts with access counts exceeding 18 per hour.",
+          "output_type": "PowerShell output",
+          "evidence_capture": "Screenshot or text export of PowerShell output showing user IDs and counts."
+        },
+        {
+          "step_no": 4,
+          "title": "Validate Login Consistency with Stability Score",
+          "description": "Calculate login pattern stability score using event logs and compare against 0.94 threshold.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security';ID=4624} | Sort-Object -Property TimeCreated | Measure-Object -Property TimeCreated -Histogram"
+          ],
+          "expected_result": "Histogram of login times showing deviation from expected stability score.",
+          "output_type": "PowerShell output",
+          "evidence_capture": "Exported histogram data and calculated stability score from script."
+        },
+        {
+          "step_no": 5,
+          "title": "Monitor Password Reset Activity",
+          "description": "Track password reset events (Event ID 4724) and count occurrences per week.",
+          "commands": [
+            "wevtutil qe Security /f:text /q:\"*[System[(EventID=4724)]]\" /c:1000"
+          ],
+          "expected_result": "List of password reset events with timestamps and user context.",
+          "output_type": "Log export",
+          "evidence_capture": "Exported XML file containing 1000 entries of Event ID 4724."
+        },
+        {
+          "step_no": 6,
+          "title": "Detect Prolonged Sessions",
+          "description": "Identify sessions exceeding 11.1 hours using event logs for logon (4624) and logoff (4634) events.",
+          "commands": [
+            "Get-WinEvent -FilterHashtable @{LogName='Security';ID=4624,4634} | Sort-Object -Property TimeCreated | Measure-Object -Property TimeCreated -Histogram"
+          ],
+          "expected_result": "Histogram showing session durations exceeding 11.1 hours.",
+          "output_type": "PowerShell output",
+          "evidence_capture": "Exported histogram data and list of sessions exceeding threshold."
+        },
+        {
+          "step_no": 7,
+          "title": "Configure Real-Time Alerting for Failed Logins",
+          "description": "Set up Windows Event Forwarding or third-party tool (e.g., SIEM) to alert on failed login thresholds.",
+          "commands": [
+            "Get-EventLog -LogName Security -InstanceId 4625 | Where-Object {$_.'TimeGenerated' -gt (Get-Date).AddHours(-1)} | Measure-Object"
+          ],
+          "expected_result": "Real-time alert triggered if failed login count exceeds 9/hour.",
+          "output_type": "Event log alert",
+          "evidence_capture": "SIEM alert screenshot or Windows Event Viewer alert configuration."
+        },
+        {
+          "step_no": 8,
+          "title": "Schedule Automated Access Log Reviews",
+          "description": "Create a scheduled task to export and analyze access logs daily for anomalies.",
+          "commands": [
+            "schtasks /create /tn \"AccessLogReview\" /tr \"powershell.exe -Command Get-WinEvent -FilterHashtable @{LogName='Security';ID=4624} | Export-Csv C:\\Logs\\AccessLog.csv\" /sc daily /st 02:00"
+          ],
+          "expected_result": "Daily CSV export of access logs at C:\\Logs\\AccessLog.csv.",
+          "output_type": "File export",
+          "evidence_capture": "Screenshot of scheduled task and sample CSV file content."
+        }
+      ]
+    }
+  ]
+}

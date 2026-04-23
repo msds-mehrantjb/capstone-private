@@ -1,218 +1,11 @@
 {
-  "year": 2026,
-  "networks": [
-    {
-      "network_address": "10.0.0.0",
-      "subnets": [
-        {
-          "subnet": "10.0.0.0/28",
-          "hosts": [
-            {
-              "hostname": "SRV-01",
-              "ip_address": "10.0.0.2",
-              "device_type": "Server",
-              "status": "Active",
-              "role": "Domain Controller",
-              "cia_impact": {
-                "confidentiality": "High",
-                "integrity": "High",
-                "availability": "High"
-              },
-              "detail": {
-                "business_context": {
-                  "department": "",
-                  "business_function": "",
-                  "criticality": ""
-                },
-                "indicator_based_role_detection": {
-                  "detected_roles": [],
-                  "confidence": ""
-                },
-                "ml_role_prediction": {
-                  "predicted_roles": [],
-                  "confidence": ""
-                },
-                "rag_based_role_detection": {
-                  "detected_role": "",
-                  "confidence": ""
-                },
-                "selected_role": {
-                  "role": "",
-                  "method": ""
-                },
-                "device_profile": {
-                  "os_type": "Windows Server",
-                  "os_version": "Microsoft Windows Server 2022 Standard Evaluation",
-                  "is_domain_joined": true
-                },
-                "technical_indicators": {
-                  "open_ports": [
-                    53,
-                    88,
-                    135,
-                    389,
-                    445,
-                    464,
-                    636
-                  ],
-                  "running_services": [
-                    "Active Directory Domain Services",
-                    "DNS Server",
-                    "Kerberos Key Distribution Center",
-                    "LDAP",
-                    "SMB"
-                  ],
-                  "installed_roles": [
-                    "AD DS",
-                    "DNS Server"
-                  ],
-                  "installed_software": [
-                    "Browser",
-                    "Microsoft Edge Update",
-                    "Microsoft Visual C++ (x64)",
-                    "Microsoft Visual C++ (x86)",
-                    "VMware Tools"
-                  ]
-                }
-              }
-            },
-            {
-              "hostname": "WS-01",
-              "ip_address": "10.0.0.10",
-              "device_type": "Workstation",
-              "status": "Active",
-              "role": "User Workstation",
-              "cia_impact": {
-                "confidentiality": "Medium",
-                "integrity": "Medium",
-                "availability": "Low"
-              },
-              "detail": {
-                "business_context": {
-                  "department": "",
-                  "business_function": "",
-                  "criticality": ""
-                },
-                "indicator_based_role_detection": {
-                  "detected_roles": [],
-                  "confidence": ""
-                },
-                "ml_role_prediction": {
-                  "predicted_roles": [],
-                  "confidence": ""
-                },
-                "rag_based_role_detection": {
-                  "detected_role": "",
-                  "confidence": ""
-                },
-                "selected_role": {
-                  "role": "",
-                  "method": ""
-                },
-                "device_profile": {
-                  "os_type": "Windows",
-                  "os_version": "Microsoft Windows 11 Pro",
-                  "is_domain_joined": true
-                },
-                "technical_indicators": {
-                  "open_ports": [
-                    135,
-                    445,
-                    3389
-                  ],
-                  "running_services": [
-                    "Remote Desktop Services",
-                    "SMB",
-                    "Print Spooler"
-                  ],
-                  "installed_roles": [],
-                  "installed_software": [
-                    "Adobe Acrobat Reader",
-                    "Browser",
-                    "Microsoft Edge Update",
-                    "Microsoft Edge WebView2 Runtime",
-                    "Microsoft Office",
-                    "Microsoft Visual C++ (x64)",
-                    "Microsoft Visual C++ (x86)",
-                    "QuickBooks Desktop",
-                    "VMware Tools"
-                  ]
-                }
-              }
-            },
-            {
-              "hostname": "WS-02",
-              "ip_address": "10.0.0.11",
-              "device_type": "Workstation",
-              "status": "Active",
-              "role": "User Workstation",
-              "cia_impact": {
-                "confidentiality": "Medium",
-                "integrity": "Medium",
-                "availability": "Low"
-              },
-              "detail": {
-                "business_context": {
-                  "department": "",
-                  "business_function": "",
-                  "criticality": ""
-                },
-                "indicator_based_role_detection": {
-                  "detected_roles": [],
-                  "confidence": ""
-                },
-                "ml_role_prediction": {
-                  "predicted_roles": [],
-                  "confidence": ""
-                },
-                "rag_based_role_detection": {
-                  "detected_role": "",
-                  "confidence": ""
-                },
-                "selected_role": {
-                  "role": "",
-                  "method": ""
-                },
-                "device_profile": {
-                  "os_type": "Windows",
-                  "os_version": "Microsoft Windows 11 Pro",
-                  "is_domain_joined": true
-                },
-                "technical_indicators": {
-                  "open_ports": [
-                    135,
-                    3389
-                  ],
-                  "running_services": [
-                    "Remote Desktop Services",
-                    "Print Spooler"
-                  ],
-                  "installed_roles": [],
-                  "installed_software": [
-                    "Browser",
-                    "Java Runtime Environment",
-                    "Microsoft Edge Update",
-                    "Microsoft Edge WebView2 Runtime",
-                    "Microsoft Office",
-                    "Microsoft Visual C++ (x64)",
-                    "Microsoft Visual C++ (x86)",
-                    "VMware Tools",
-                    "Workday"
-                  ]
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ],
   "meta": {
     "year": 2026,
     "name": "Asset Inventory & CIA",
     "submitted": false,
     "read_only": false
   },
+  "network_mask": "10.0.0.0",
   "subnets": [
     {
       "id": "Subnet_A",
@@ -225,7 +18,7 @@
         {
           "hostname": "SRV-01",
           "role": "Domain Controller (Active Directory)",
-          "operating_system": "Windows Server 2022",
+          "operating_system": "Windows Server 2019",
           "location": {
             "name": "10.0.0.0/28",
             "ip_address": "10.0.0.2"
@@ -237,7 +30,7 @@
           "detail": {
             "device_profile": {
               "os_type": "Windows Server",
-              "os_version": "Windows Server 2022",
+              "os_version": "Windows Server 2019",
               "is_domain_joined": true,
               "hostname_pattern": "SRV"
             },
@@ -260,14 +53,13 @@
               ],
               "installed_roles": [
                 "AD DS",
-                "DNS Server"
+                "DNS Server",
+                "Active Directory Certificate Services"
               ],
               "installed_software": [
-                "Browser",
-                "Microsoft Edge Update",
-                "Microsoft Visual C++ (x64)",
-                "Microsoft Visual C++ (x86)",
-                "VMware Tools"
+                "Group Policy Management",
+                "RSAT",
+                "AD CS Management Tools"
               ]
             },
             "business_context": {
@@ -376,7 +168,7 @@
         },
         {
           "hostname": "WS-01",
-          "role": "Standard Employee Workstation",
+          "role": "Finance Workstation",
           "operating_system": "Windows 11",
           "location": {
             "name": "10.0.0.0/28",
@@ -395,9 +187,8 @@
             },
             "technical_indicators": {
               "open_ports": [
-                135,
-                445,
-                3389
+                3389,
+                445
               ],
               "running_services": [
                 "Remote Desktop Services",
@@ -406,15 +197,10 @@
               ],
               "installed_roles": [],
               "installed_software": [
-                "Adobe Acrobat Reader",
-                "Browser",
-                "Microsoft Edge Update",
-                "Microsoft Edge WebView2 Runtime",
                 "Microsoft Office",
-                "Microsoft Visual C++ (x64)",
-                "Microsoft Visual C++ (x86)",
                 "QuickBooks Desktop",
-                "VMware Tools"
+                "Adobe Acrobat Reader",
+                "Browser"
               ]
             },
             "business_context": {
@@ -425,23 +211,22 @@
             "indicator_based_role_detection": {
               "detected_roles": [
                 "Standard Employee Workstation",
-                "HR Workstation",
-                "Training Lab Workstation"
+                "VDI Client Workstation"
               ],
               "confidence": "Medium"
             },
             "ml_role_prediction": {
               "predicted_roles": [
-                "Standard Employee Workstation"
+                "Finance Workstation"
               ],
-              "confidence": "0.78"
+              "confidence": "0.4662"
             },
             "rag_based_role_detection": {
               "detected_role": "",
               "confidence": ""
             },
             "selected_role": {
-              "role": "Standard Employee Workstation",
+              "role": "Finance Workstation",
               "method": "ml"
             }
           }
@@ -449,7 +234,7 @@
         {
           "hostname": "WS-02",
           "role": "HR Workstation",
-          "operating_system": "Windows 11",
+          "operating_system": "Windows 10",
           "location": {
             "name": "10.0.0.0/28",
             "ip_address": "10.0.0.11"
@@ -461,30 +246,26 @@
           "detail": {
             "device_profile": {
               "os_type": "Windows",
-              "os_version": "Windows 11",
+              "os_version": "Windows 10",
               "is_domain_joined": true,
               "hostname_pattern": "WS"
             },
             "technical_indicators": {
               "open_ports": [
-                135,
-                3389
+                3389,
+                135
               ],
               "running_services": [
                 "Remote Desktop Services",
-                "Print Spooler"
+                "RPC Endpoint Mapper",
+                "Windows Installer"
               ],
               "installed_roles": [],
               "installed_software": [
-                "Browser",
-                "Java Runtime Environment",
-                "Microsoft Edge Update",
-                "Microsoft Edge WebView2 Runtime",
+                "Workday",
                 "Microsoft Office",
-                "Microsoft Visual C++ (x64)",
-                "Microsoft Visual C++ (x86)",
-                "VMware Tools",
-                "Workday"
+                "Java Runtime Environment",
+                "Browser"
               ]
             },
             "business_context": {
@@ -494,16 +275,17 @@
             },
             "indicator_based_role_detection": {
               "detected_roles": [
+                "Standard Employee Workstation",
                 "HR Workstation",
-                "Standard Employee Workstation"
+                "VDI Client Workstation"
               ],
-              "confidence": "High"
+              "confidence": "Medium"
             },
             "ml_role_prediction": {
               "predicted_roles": [
-                "Standard Employee Workstation"
+                "HR Workstation"
               ],
-              "confidence": "0.5833"
+              "confidence": "0.4718"
             },
             "rag_based_role_detection": {
               "detected_role": "",
@@ -511,7 +293,7 @@
             },
             "selected_role": {
               "role": "HR Workstation",
-              "method": "indicator"
+              "method": "ml"
             }
           }
         },
@@ -568,7 +350,7 @@
               "predicted_roles": [
                 "Standard Employee Workstation"
               ],
-              "confidence": "0.8233"
+              "confidence": "0.5136"
             },
             "rag_based_role_detection": {
               "detected_role": "",
@@ -592,7 +374,7 @@
       "assets": [
         {
           "hostname": "SRV-03",
-          "role": "File Server",
+          "role": "File Transfer Server (SFTP/FTPS)",
           "operating_system": "Windows Server 2016",
           "location": {
             "name": "10.0.0.16/28",
@@ -640,9 +422,9 @@
             },
             "indicator_based_role_detection": {
               "detected_roles": [
-                "File Server"
+                "File Transfer Server (SFTP/FTPS)"
               ],
-              "confidence": "High"
+              "confidence": "Manual"
             },
             "ml_role_prediction": {
               "predicted_roles": [
@@ -656,8 +438,8 @@
               "confidence": ""
             },
             "selected_role": {
-              "role": "File Server",
-              "method": "indicator"
+              "role": "File Transfer Server (SFTP/FTPS)",
+              "method": "manual"
             }
           }
         },
@@ -786,7 +568,7 @@
               "predicted_roles": [
                 "Call Center Workstation"
               ],
-              "confidence": "0.65"
+              "confidence": "0.6867"
             },
             "rag_based_role_detection": {
               "detected_role": "",
@@ -853,7 +635,7 @@
               "predicted_roles": [
                 "Developer Workstation"
               ],
-              "confidence": "0.61"
+              "confidence": "0.6367"
             },
             "rag_based_role_detection": {
               "detected_role": "",
@@ -920,7 +702,7 @@
               "predicted_roles": [
                 "Data Scientist Workstation"
               ],
-              "confidence": "0.69"
+              "confidence": "0.6267"
             },
             "rag_based_role_detection": {
               "detected_role": "",
@@ -934,6 +716,5 @@
         }
       ]
     }
-  ],
-  "network_mask": "10.0.0.0"
+  ]
 }

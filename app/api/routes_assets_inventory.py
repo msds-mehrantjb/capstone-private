@@ -143,6 +143,27 @@ def _system_status_file(year: int) -> Path:
     return _work_dir(year) / "SystemStatus.json"
 
 
+def _dashboard_file() -> Path:
+    return BASE_DIR / "data" / "raw" / "dashboard.json"
+
+
+def _has_submitted_scope_document() -> bool:
+    path = _dashboard_file()
+    if not path.exists():
+        return False
+
+    try:
+        dashboard = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+
+    if not isinstance(dashboard, dict):
+        return False
+
+    scope_file_name = str(dashboard.get("scope_file_name") or "").strip().lower()
+    return bool(scope_file_name) and not re.search(r"-v0\.json$", scope_file_name)
+
+
 def _server_dataset_path() -> Path:
     return _ml_dir() / "server_role_training_dataset.parquet"
 
@@ -268,6 +289,36 @@ def _docker_compose_available() -> tuple[bool, str]:
         return False, str(e)
 
 
+def _docker_desktop_windows_instructions(reason: str = "") -> str:
+    message = (
+        "Docker Desktop is not running, so the Docker lab cannot be started.\n\n"
+        "On Windows:\n"
+        "1. Open Docker Desktop from the Start menu.\n"
+        "2. Wait until Docker Desktop shows that the engine is running.\n"
+        "3. If Docker asks to start or update the WSL 2 backend, allow it and wait until it finishes.\n"
+        "4. Return to this page and run /explore again."
+    )
+    if reason:
+        message += f"\n\nDocker details: {reason}"
+    return message
+
+
+def _docker_engine_running() -> tuple[bool, str]:
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        if result.returncode != 0:
+            return False, (result.stderr or result.stdout or "Docker engine is not running.").strip()
+        return True, "Docker engine is running."
+    except Exception as e:
+        return False, str(e)
+
+
 def _docker_lab_ps_q() -> list[str]:
     compose_file = _docker_compose_file()
 
@@ -297,7 +348,16 @@ def _docker_lab_is_running() -> bool:
 def _ensure_docker_lab_running() -> tuple[bool, str]:
     docker_ok, docker_msg = _docker_available()
     if not docker_ok:
-        return False, f"Docker is not available: {docker_msg}"
+        return False, (
+            "Docker is not available on this machine.\n\n"
+            "On Windows, install Docker Desktop, open it from the Start menu, "
+            "wait until the engine is running, then run /explore again."
+            f"\n\nDocker details: {docker_msg}"
+        )
+
+    engine_ok, engine_msg = _docker_engine_running()
+    if not engine_ok:
+        return False, _docker_desktop_windows_instructions(engine_msg)
 
     compose_ok, compose_msg = _docker_compose_available()
     if not compose_ok:
@@ -316,6 +376,9 @@ def _ensure_docker_lab_running() -> tuple[bool, str]:
         return True, "Docker lab is already running."
 
     try:
+        start_message = (
+            "Docker lab is not running. Starting the Docker lab now...\n"
+        )
         result = subprocess.run(
             ["docker", "compose", "up", "-d", "--build"],
             cwd=str(lab_dir),
@@ -327,13 +390,13 @@ def _ensure_docker_lab_running() -> tuple[bool, str]:
 
         if result.returncode != 0:
             return False, (
-                "Failed to create and start docker lab.\n"
+                "Docker lab was not running, and the app could not start it.\n"
                 f"STDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}"
             )
 
-        return True, "Docker lab created and started successfully."
+        return True, start_message + "Docker lab started successfully. Continuing network exploration."
     except Exception as e:
-        return False, f"Failed to create and start docker lab: {e}"
+        return False, f"Docker lab was not running, and the app could not start it: {e}"
 
 
 def _compose_network_name_to_subnet_id(network_name: str, fallback_idx: int) -> str:
@@ -3073,6 +3136,18 @@ def _choose_winning_role(
     candidates = []
     if indicator_role and indicator_score >= 0.80:
         return indicator_role, "indicator"
+
+    # When indicator confidence is only Medium, prefer a usable ML prediction.
+    # This keeps strong indicator matches authoritative, while letting the model
+    # take over when the deterministic signal is present but not strong enough.
+    if (
+        indicator_role
+        and 0.55 <= indicator_score < 0.80
+        and ml_role
+        and ml_role.lower() != "unassigned"
+        and ml_score > 0
+    ):
+        return ml_role, "ml"
         
     if indicator_role and indicator_role.lower() != "unassigned":
         candidates.append(("indicator", indicator_role, indicator_score))
@@ -3354,10 +3429,27 @@ def _apply_assignroles_updates(inventory: dict) -> dict:
         "kb_files_used": kb_files_used
     }
 
+
+def _role_models_are_ready() -> bool:
+    return _server_role_model_path().exists() and _workstation_role_model_path().exists()
+
+
+def _ensure_role_models_ready(year: int) -> dict | None:
+    if _role_models_are_ready():
+        return None
+
+    return train_role_prediction_model(TrainModelRequest(year=year))
+
 @router.post("/explore")
 def explore_network(payload: dict):
     year = int(payload.get("year", 2026))
     network_input = (payload.get("network_mask") or "").strip()
+
+    if not _has_submitted_scope_document():
+        return {
+            "success": False,
+            "message": "Submit the Scope & Context document first before starting Asset Inventory & CIA."
+        }
 
     if not network_input:
         return {
@@ -3400,9 +3492,13 @@ def explore_network(payload: dict):
 
         _store_discovered_subnets_session(year, discovered_subnets)
 
+        explore_message = _build_docker_explore_message(discovered_subnets)
+        if docker_message and docker_message != "Docker lab is already running.":
+            explore_message = f"{docker_message}\n\n{explore_message}"
+
         return {
             "success": True,
-            "message": _build_docker_explore_message(discovered_subnets),
+            "message": explore_message,
             "subnets": [
                 {
                     "id": subnet["id"],
@@ -3715,6 +3811,8 @@ def assign_roles(payload: dict):
     inventory = _load_inventory_or_blank(year)
     server_kb = _server_roles_kb_path()
     workstation_kb = _workstation_roles_kb_path()
+    auto_train_result = None
+    auto_train_error = ""
     
     if not server_kb and not workstation_kb:
         return {
@@ -3762,6 +3860,28 @@ def assign_roles(payload: dict):
         kb_message = f"assignroles knowledge base step failed: {e}"
         kb_status = "error"
 
+    if not _role_models_are_ready():
+        try:
+            auto_train_result = _ensure_role_models_ready(year)
+        except HTTPException as e:
+            auto_train_error = str(e.detail)
+        except Exception as e:
+            auto_train_error = f"{type(e).__name__}: {e}"
+
+        if auto_train_error:
+            return {
+                "success": False,
+                "message": (
+                    "Role assignment could not continue because the ML role prediction model "
+                    f"was not ready and automatic training failed: {auto_train_error}"
+                ),
+                "kb_status": kb_status,
+                "kb_message": kb_message,
+                "rows_embedded": rows_embedded,
+                "inventory": inventory,
+                "auto_train_error": auto_train_error,
+            }
+
     try:
         update_result = _apply_assignroles_updates(inventory)
     except Exception as e:
@@ -3790,6 +3910,14 @@ def assign_roles(payload: dict):
     "applied to inventory."
     )
 
+    if auto_train_result:
+        training_message = str(
+            auto_train_result.get("message")
+            or "ML role prediction model was trained automatically before role assignment."
+        ).strip()
+        if training_message:
+            final_message = f"{training_message}\n\n{final_message}"
+
     if kb_status == "error":
         final_message = (
             f"Knowledge base rebuild failed, but role assignment still ran. "
@@ -3808,6 +3936,8 @@ def assign_roles(payload: dict):
         "rows_embedded": rows_embedded,
         "aiml_kpi_events_appended": len(role_prediction_events),
         "inventory": inventory,
+        "auto_train_result": auto_train_result,
+        "auto_train_error": auto_train_error,
         **update_result
     }
 
@@ -4025,11 +4155,14 @@ def train_role_prediction_model(payload: TrainModelRequest):
                 if not server_train_df.empty:
                     server_model, server_features, server_class_counts = _train_server_role_pipeline(server_train_df)
                     joblib.dump(server_model, _server_role_model_path())
+                    server_y = server_train_df["role"].astype(str).copy()
+                    server_accuracy = float(server_model.score(server_train_df.drop(columns=["role"]).copy(), server_y))
 
                     results["server_model_path"] = str(_server_role_model_path())
                     results["server_training_rows"] = int(len(server_train_df))
                     results["server_feature_count"] = int(len(server_features))
                     results["server_class_counts"] = server_class_counts
+                    results["server_accuracy_pct"] = round(server_accuracy * 100, 2)
                     results["server_preprocessing"] = server_preprocess_stats
 
     # WORKSTATION MODEL
@@ -4063,19 +4196,40 @@ def train_role_prediction_model(payload: TrainModelRequest):
                 workstation_model = _build_training_pipeline(X_ws)
                 workstation_model.fit(X_ws, y_ws)
                 joblib.dump(workstation_model, _workstation_role_model_path())
+                workstation_accuracy = float(workstation_model.score(X_ws, y_ws))
 
                 results["workstation_model_path"] = str(_workstation_role_model_path())
                 results["workstation_training_rows"] = int(len(workstation_train_df))
                 results["workstation_feature_count"] = int(len(X_ws.columns))
                 results["workstation_features_used"] = list(X_ws.columns)
+                results["workstation_accuracy_pct"] = round(workstation_accuracy * 100, 2)
                 results["workstation_preprocessing"] = workstation_preprocess_stats    
                 
                 if not results:
                     raise HTTPException(status_code=400, detail="No valid training datasets found")
 
+                weighted_accuracy_numerator = 0.0
+                weighted_accuracy_denominator = 0
+                for rows_key, accuracy_key in (
+                    ("server_training_rows", "server_accuracy_pct"),
+                    ("workstation_training_rows", "workstation_accuracy_pct"),
+                ):
+                    rows = int(results.get(rows_key) or 0)
+                    accuracy = results.get(accuracy_key)
+                    if rows > 0 and isinstance(accuracy, (int, float)):
+                        weighted_accuracy_numerator += float(accuracy) * rows
+                        weighted_accuracy_denominator += rows
+
+                overall_accuracy_pct = (
+                    round(weighted_accuracy_numerator / weighted_accuracy_denominator, 2)
+                    if weighted_accuracy_denominator > 0
+                    else None
+                )
+
                 response = {
                     "success": True,
                     "message": "Server and workstation ML role prediction models are ready to use.",
+                    "accuracy_pct": overall_accuracy_pct,
                     **results
                 }
                 _safe_append_aiml_kpi_event(year or 2026, "role_model_training_runs", {
@@ -4084,14 +4238,18 @@ def train_role_prediction_model(payload: TrainModelRequest):
                     "server_training_rows": results.get("server_training_rows"),
                     "server_feature_count": results.get("server_feature_count"),
                     "server_class_counts": results.get("server_class_counts"),
+                    "server_accuracy_pct": results.get("server_accuracy_pct"),
                     "server_model_path": results.get("server_model_path"),
                     "workstation_training_rows": results.get("workstation_training_rows"),
                     "workstation_feature_count": results.get("workstation_feature_count"),
                     "workstation_features_used": results.get("workstation_features_used"),
+                    "workstation_accuracy_pct": results.get("workstation_accuracy_pct"),
+                    "accuracy_pct": overall_accuracy_pct,
+                    "accuracy_source": "training_set_score",
                     "workstation_model_path": results.get("workstation_model_path"),
                     "source_endpoint": "/api/assets/train",
                     "notes": [
-                        "Role model training telemetry does not include accuracy/F1 unless the training route computes it.",
+                        "Role model accuracy is recorded as a weighted training-set score across the server and workstation role models trained in this run.",
                         "Role accuracy and F1 can still be computed from role_prediction_events after /assignroles runs.",
                     ],
                 })
