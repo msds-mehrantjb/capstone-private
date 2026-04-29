@@ -1056,7 +1056,20 @@ def _load_json(path: Path) -> Any:
         return json.load(f)
 
 
+def _is_asset_details_path(path: Path) -> bool:
+    try:
+        normalized = path.resolve(strict=False)
+    except Exception:
+        normalized = Path(path)
+
+    return normalized.name.lower() == "assetdetails.json"
+
+
 def _save_json(path: Path, data: Any) -> None:
+    if _is_asset_details_path(path):
+        raise RuntimeError(
+            "AssetDetails.json is a read-only fallback source and must never be updated."
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
@@ -1355,6 +1368,8 @@ def _extract_detail_from_assetdetails_record(record: dict) -> dict:
 
 
 def _index_asset_details_by_hostname(year: int) -> dict[str, dict]:
+    # AssetDetails.json is a read-only fallback source. It can seed missing host
+    # details, but live assess/explore flows must never write back into it.
     details_path = _asset_details_file(year)
 
     if not details_path.exists():
@@ -1407,6 +1422,48 @@ def _index_asset_details_by_hostname(year: int) -> dict[str, dict]:
                     index[key] = detail
 
     print(f"[assets] indexed {len(index)} host detail records from assetdetails file")
+    return index
+
+
+def _index_inventory_details_by_hostname(inventory: dict) -> dict[str, dict]:
+    index: dict[str, dict] = {}
+
+    for subnet in inventory.get("subnets", []) or []:
+        if not isinstance(subnet, dict):
+            continue
+
+        for asset in subnet.get("assets", []) or []:
+            if not isinstance(asset, dict):
+                continue
+
+            detail = _normalize_detail_payload(
+                asset.get("detail") or {},
+                fallback_hostname=str(asset.get("hostname") or "").strip(),
+            )
+
+            hostname_candidates = [
+                asset.get("hostname"),
+                asset.get("location", {}).get("ip_address") if isinstance(asset.get("location"), dict) else "",
+            ]
+
+            for candidate in hostname_candidates:
+                raw = str(candidate or "").strip()
+                if not raw:
+                    continue
+
+                variants = {
+                    raw,
+                    raw.upper(),
+                    raw.lower(),
+                    raw.replace("_", "-"),
+                    raw.replace("-", "_"),
+                }
+
+                for variant in variants:
+                    key = _normalize_key(variant)
+                    if key:
+                        index[key] = detail
+
     return index
 
 
@@ -3547,12 +3604,15 @@ def assess_subnet(payload: dict):
         }
 
     details_index = _index_asset_details_by_hostname(year)
+    inventory_details_index = _index_inventory_details_by_hostname(inventory)
+    details_index.update(inventory_details_index)
 
     subnet_name = str(selected.get("id", "") or "").strip()
     subnet_label = str(selected.get("label", "") or "").strip()
     hosts = list(selected.get("hosts", []) or [])
 
     assets = []
+    scan_failures: list[dict[str, str]] = []
 
     for idx, host in enumerate(hosts, start=1):
         hostname = _service_name_to_hostname(str(host.get("service", "") or "").strip())
@@ -3567,6 +3627,7 @@ def assess_subnet(payload: dict):
         detail = _lookup_asset_detail(host, hostname, details_index)
 
         target_host = _get_matching_target_host(hostname, ip_address)
+        live_scan_applied = False
         if target_host:
             try:
                 scanned_record = _assess_target_host_with_scanner(hostname, ip_address, target_host)
@@ -3574,6 +3635,7 @@ def assess_subnet(payload: dict):
                 print(f"[DEBUG] scanned_record for {hostname}: {json.dumps(scanned_record, indent=2, default=str)}")
 
                 detail = _merge_scanner_detail(detail, scanned_record)
+                live_scan_applied = True
 
                 print(
                     f"[DEBUG] merged os_version for {hostname}: "
@@ -3582,6 +3644,11 @@ def assess_subnet(payload: dict):
             except Exception as e:
                 print(f"[ASSESS][SCAN FAILED] {hostname} {ip_address}: {e}")
                 traceback.print_exc()
+                scan_failures.append({
+                    "hostname": hostname,
+                    "ip_address": ip_address,
+                    "error": str(e),
+                })
         else:
             print(f"[WARN] No target host match for {hostname} ({ip_address})")
 
@@ -3639,13 +3706,24 @@ def assess_subnet(payload: dict):
 
     _sync_assets_cia_status(year, inventory)
 
+    message = f"Subnet {subnet_name} assessed successfully."
+    if scan_failures:
+        failed_hosts = ", ".join(
+            f"{entry['hostname']} ({entry['error']})" for entry in scan_failures
+        )
+        message = (
+            f"{message} Live VM refresh failed for: {failed_hosts}. "
+            "Cached asset details were used for those hosts."
+        )
+
     return {
         "success": True,
-        "message": f"Subnet {subnet_name} assessed successfully.",
+        "message": message,
         "inventory": inventory,
         "subnet_id": subnet_name,
         "replaced": replaced,
-        "host_count": len(assets)
+        "host_count": len(assets),
+        "scan_failures": scan_failures,
     }
 
 

@@ -12,6 +12,7 @@ const ActionPlanImplementation = lazy(() => import("./pages/ActionPlanImplementa
 const MonitoringImprovement = lazy(() => import("./pages/MonitoringImprovement"));
 const FinalDeliverables = lazy(() => import("./pages/FinalDeliverables"));
 const AIMLDashboard = lazy(() => import("./pages/AIMLDashboard"));
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
 
 type RouteKey =
   | "dashboard"
@@ -57,8 +58,7 @@ export default function App() {
   useEffect(() => {
     (window as any).downloadGuidePdf = async (guideId: string) => {
       try {
-        const backendBase = "http://127.0.0.1:8000";
-        const url = `${backendBase}/api/final-deliveries/action-plan-implementation/guide/${encodeURIComponent(guideId)}/pdf`;
+        const url = `${API_BASE}/api/final-deliveries/action-plan-implementation/guide/${encodeURIComponent(guideId)}/pdf`;
 
         const response = await fetch(url);
         if (!response.ok) {

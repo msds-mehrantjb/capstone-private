@@ -18,7 +18,7 @@
         {
           "hostname": "SRV-01",
           "role": "Domain Controller (Active Directory)",
-          "operating_system": "Windows Server 2019",
+          "operating_system": "Windows Server 2022",
           "location": {
             "name": "10.0.0.0/28",
             "ip_address": "10.0.0.2"
@@ -30,7 +30,7 @@
           "detail": {
             "device_profile": {
               "os_type": "Windows Server",
-              "os_version": "Windows Server 2019",
+              "os_version": "Windows Server 2022",
               "is_domain_joined": true,
               "hostname_pattern": "SRV"
             },
@@ -53,13 +53,14 @@
               ],
               "installed_roles": [
                 "AD DS",
-                "DNS Server",
-                "Active Directory Certificate Services"
+                "DNS Server"
               ],
               "installed_software": [
-                "Group Policy Management",
-                "RSAT",
-                "AD CS Management Tools"
+                "Browser",
+                "Microsoft Edge Update",
+                "Microsoft Visual C++ (x64)",
+                "Microsoft Visual C++ (x86)",
+                "VMware Tools"
               ]
             },
             "business_context": {
@@ -374,7 +375,7 @@
       "assets": [
         {
           "hostname": "SRV-03",
-          "role": "File Transfer Server (SFTP/FTPS)",
+          "role": "File Server",
           "operating_system": "Windows Server 2016",
           "location": {
             "name": "10.0.0.16/28",
@@ -422,9 +423,9 @@
             },
             "indicator_based_role_detection": {
               "detected_roles": [
-                "File Transfer Server (SFTP/FTPS)"
+                "File Server"
               ],
-              "confidence": "Manual"
+              "confidence": "High"
             },
             "ml_role_prediction": {
               "predicted_roles": [
@@ -438,8 +439,8 @@
               "confidence": ""
             },
             "selected_role": {
-              "role": "File Transfer Server (SFTP/FTPS)",
-              "method": "manual"
+              "role": "File Server",
+              "method": "indicator"
             }
           }
         },

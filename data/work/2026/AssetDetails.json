@@ -44,13 +44,14 @@
                   ],
                   "installed_roles": [
                     "AD DS",
-                    "DNS Server",
-                    "Active Directory Certificate Services"
+                    "DNS Server"
                   ],
                   "installed_software": [
-                    "Group Policy Management",
-                    "RSAT",
-                    "AD CS Management Tools"
+                    "Browser",
+                    "Microsoft Edge Update",
+                    "Microsoft Visual C++ (x64)",
+                    "Microsoft Visual C++ (x86)",
+                    "VMware Tools"
                   ]
                 },
                 "business_context": {
@@ -59,44 +60,26 @@
                   "criticality": "Critical"
                 },
                 "indicator_based_role_detection": {
-                  "detected_roles": [],
-                  "confidence": ""
+                  "detected_roles": [
+                    "Domain Controller (Active Directory)",
+                    "DNS Server",
+                    "File Server"
+                  ],
+                  "confidence": "Very High"
                 },
                 "ml_role_prediction": {
-                  "predicted_roles": [],
-                  "confidence": ""
+                  "predicted_roles": [
+                    "Domain Controller (Active Directory)"
+                  ],
+                  "confidence": "0.85"
                 },
                 "rag_based_role_detection": {
                   "detected_role": "",
                   "confidence": ""
                 },
                 "selected_role": {
-                  "role": "",
-                  "method": ""
-                },
-                "existing_control": {
-                  "Identity & Access Management": [
-                    "Password Policies (complexity, rotation)",
-                    "Active Directory Domain Services (AD DS)",
-                    "Group Policy Objects (GPO)",
-                    "Role-Based Access Control (RBAC)"
-                  ],
-                  "Endpoint Security Controls": [
-                    "Antivirus / Anti-malware",
-                    "Secure Boot"
-                  ],
-                  "Network Security Controls": [
-                    "Windows Firewall (Host-based)"
-                  ],
-                  "Logging, Monitoring & Detection": [
-                    "Windows Event Logging"
-                  ],
-                  "Vulnerability & Patch Management": [
-                    "Patch Management (WSUS / SCCM)"
-                  ],
-                  "Physical & Environmental Controls": [
-                    "Server Room Access Control"
-                  ]
+                  "role": "Domain Controller",
+                  "method": "scanner.py"
                 }
               },
               "user_behavior": {}

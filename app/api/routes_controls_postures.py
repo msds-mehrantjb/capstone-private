@@ -51,7 +51,13 @@ def _asset_inventory_file(year: int) -> Path:
 
 
 def _asset_details_file(year: int) -> Path:
-    return _work_dir(year) / "assetdetails.json"
+    work = _work_dir(year)
+    lower_name = work / "assetdetails.json"
+    proper_name = work / "AssetDetails.json"
+
+    if lower_name.exists():
+        return lower_name
+    return proper_name
 
 
 def _system_status_file(year: int) -> Path:

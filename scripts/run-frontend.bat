@@ -9,7 +9,7 @@ call venv\Scripts\activate
 
 REM Run frontend
 cd app
-npm run dev
+npm run dev -- --host localhost --port 5174
 
 popd
 pause

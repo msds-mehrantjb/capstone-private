@@ -8,7 +8,7 @@ REM Activate venv
 call venv\Scripts\activate
 
 REM Run FastAPI
-python -m uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload --port 8002
 
 popd
 pause
