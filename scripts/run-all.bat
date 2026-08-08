@@ -48,7 +48,7 @@ echo.
 echo ==============================================
 echo Capstone startup completed
 echo ==============================================
-echo Ollama:  http://localhost:11434
+echo Ollama:  http://127.0.0.1:11434
 echo Backend: http://localhost:8002
 echo API Docs: http://localhost:8002/docs
 echo Frontend: http://localhost:5174
@@ -78,7 +78,7 @@ if not errorlevel 1 (
 echo [INFO] Ollama is installed but not responding. Starting Ollama server...
 start "Ollama Service" /MIN cmd /c "ollama serve"
 
-echo [INFO] Waiting for Ollama API on http://localhost:11434 ...
+echo [INFO] Waiting for Ollama to become ready on http://127.0.0.1:11434 ...
 for /L %%I in (1,1,30) do (
   call :ollama_health
   if not errorlevel 1 (
@@ -89,13 +89,29 @@ for /L %%I in (1,1,30) do (
 )
 
 echo [ERROR] Ollama did not become ready.
-echo Check the Ollama window or run: ollama serve
+echo Try these commands manually:
+echo   ollama list
+echo   ollama serve
 exit /b 1
 
 
 :ollama_health
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r = Invoke-WebRequest -UseBasicParsing 'http://localhost:11434/api/tags' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
-exit /b %errorlevel%
+REM Primary Windows readiness check: this verifies both the CLI and local Ollama API.
+ollama list >nul 2>&1
+if not errorlevel 1 exit /b 0
+
+REM HTTP fallback. Use 127.0.0.1 instead of localhost to avoid IPv4/IPv6 resolution issues.
+where curl.exe >nul 2>&1
+if not errorlevel 1 (
+  curl.exe --silent --fail --max-time 2 http://127.0.0.1:11434/api/tags >nul 2>&1
+  if not errorlevel 1 exit /b 0
+)
+
+REM Final fallback for Windows systems where curl.exe is unavailable.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r = Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:11434/api/tags' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if not errorlevel 1 exit /b 0
+
+exit /b 1
 
 
 :ensure_ollama_model
