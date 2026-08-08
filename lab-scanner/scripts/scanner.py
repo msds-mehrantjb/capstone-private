@@ -7,8 +7,9 @@ from typing import Any, Dict, List, Optional
 import winrm
 import traceback
 
-CONFIG = Path(r"C:\Users\mehra\Capstone-main\lab-scanner\config\targets.json")
-OUTPUT = Path(r"C:\Users\mehra\Capstone-main\data\work\2026\AssetInventory.json")
+BASE_DIR = Path(__file__).resolve().parents[2]
+CONFIG = BASE_DIR / "lab-scanner" / "config" / "targets.json"
+OUTPUT = BASE_DIR / "data" / "work" / "2026" / "AssetInventory.json"
 NMAP_EXE = r"C:\Program Files (x86)\Nmap\nmap.exe"
 
 
