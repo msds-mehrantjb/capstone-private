@@ -7,6 +7,7 @@ for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 set "VENV_PYTHON=%ROOT_DIR%\venv\Scripts\python.exe"
 set "OLLAMA_MODEL=qwen3:14b"
 set "OLLAMA_EMBED_MODEL=nomic-embed-text"
+set "PIP_DISABLE_PIP_VERSION_CHECK=1"
 
 cls
 echo ==============================================
@@ -121,16 +122,16 @@ if not errorlevel 1 (
   goto :ensure_env_file
 )
 
-echo [INFO] Installing/updating backend dependencies from requirements.txt ...
-"%VENV_PYTHON%" -m pip install --upgrade pip
-if errorlevel 1 (
-  echo [ERROR] Failed to upgrade pip.
-  exit /b 1
-)
+echo [INFO] Backend dependencies are missing.
+call :ensure_pypi_access
+if errorlevel 1 exit /b 1
 
-"%VENV_PYTHON%" -m pip install -r "%ROOT_DIR%\requirements.txt"
+echo [INFO] Installing backend dependencies from requirements.txt ...
+"%VENV_PYTHON%" -m pip install --retries 1 --timeout 15 -r "%ROOT_DIR%\requirements.txt"
 if errorlevel 1 (
   echo [ERROR] Failed to install Python dependencies.
+  echo Test PyPI manually with:
+  echo   "%VENV_PYTHON%" -m pip install --retries 1 --timeout 15 -r "%ROOT_DIR%\requirements.txt"
   exit /b 1
 )
 
@@ -154,6 +155,55 @@ if errorlevel 1 (
   exit /b 1
 )
 echo [OK] Created app\.env.
+exit /b 0
+
+
+:ensure_pypi_access
+echo [INFO] Checking DNS resolution for pypi.org...
+"%VENV_PYTHON%" -c "import socket; socket.getaddrinfo('pypi.org', 443)" >nul 2>&1
+if not errorlevel 1 (
+  echo [OK] pypi.org resolves.
+  goto :check_pypi_https
+)
+
+echo [WARN] DNS lookup for pypi.org failed.
+echo [INFO] Flushing Windows DNS cache and retrying once...
+ipconfig /flushdns >nul 2>&1
+
+timeout /t 2 /nobreak >nul
+"%VENV_PYTHON%" -c "import socket; socket.getaddrinfo('pypi.org', 443)" >nul 2>&1
+if errorlevel 1 (
+  echo [ERROR] Windows still cannot resolve pypi.org.
+  echo.
+  echo This is a DNS/network problem, not a Python or Capstone problem.
+  echo Run these commands in PowerShell to diagnose it:
+  echo   Resolve-DnsName pypi.org
+  echo   nslookup pypi.org
+  echo   Test-NetConnection pypi.org -Port 443
+  echo.
+  echo Also check VPN, proxy, firewall, DNS filtering, or temporary network outages.
+  exit /b 1
+)
+
+echo [OK] DNS resolution recovered after flushing the cache.
+
+:check_pypi_https
+where curl.exe >nul 2>&1
+if errorlevel 1 (
+  echo [OK] DNS works. curl.exe is unavailable, so HTTPS preflight is skipped.
+  exit /b 0
+)
+
+curl.exe --silent --fail --location --max-time 10 https://pypi.org/simple/ >nul 2>&1
+if errorlevel 1 (
+  echo [ERROR] pypi.org resolves, but HTTPS access to PyPI failed.
+  echo Check VPN, proxy, firewall, SSL inspection, or outbound HTTPS filtering.
+  echo Test manually with:
+  echo   curl.exe -I https://pypi.org/simple/
+  exit /b 1
+)
+
+echo [OK] PyPI HTTPS access is available.
 exit /b 0
 
 
