@@ -26,7 +26,7 @@ call :ensure_node
 if errorlevel 1 goto :startup_failed
 
 echo.
-echo [3/8] Checking frontend dependencies...
+echo [3/8] Synchronizing frontend dependencies...
 call :ensure_frontend
 if errorlevel 1 goto :startup_failed
 
@@ -276,21 +276,26 @@ if not exist "%ROOT_DIR%\app\package.json" (
   exit /b 1
 )
 
-if exist "%ROOT_DIR%\app\node_modules\.bin\vite.cmd" (
-  echo [OK] Frontend node_modules exists.
-  exit /b 0
-)
-
-echo [INFO] Frontend dependencies are missing. Running npm install...
+echo [INFO] Running npm install to synchronize package.json and node_modules...
 pushd "%ROOT_DIR%\app" || exit /b 1
-call npm install
+call npm install --no-audit --no-fund
 if errorlevel 1 (
   popd
   echo [ERROR] npm install failed.
+  echo Check DNS/network access to the npm registry and run again.
   exit /b 1
 )
+
+call npm ls react-markdown remark-gfm rehype-raw --depth=0 >nul 2>&1
+if errorlevel 1 (
+  popd
+  echo [ERROR] Required markdown packages are still missing after npm install.
+  echo Expected: react-markdown, remark-gfm, rehype-raw
+  exit /b 1
+)
+
 popd
-echo [OK] Frontend dependencies installed.
+echo [OK] Frontend dependencies are synchronized.
 exit /b 0
 
 
