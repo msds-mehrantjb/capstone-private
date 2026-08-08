@@ -7,6 +7,7 @@ for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 set "VENV_PYTHON=%ROOT_DIR%\venv\Scripts\python.exe"
 set "OLLAMA_MODEL=qwen3:14b"
 set "OLLAMA_EMBED_MODEL=nomic-embed-text"
+set "API_BASE_URL=http://127.0.0.1:8002"
 set "PIP_DISABLE_PIP_VERSION_CHECK=1"
 
 cls
@@ -57,17 +58,17 @@ for %%P in (8002 5174) do (
 )
 
 echo.
-echo [8/8] Starting backend and frontend in separate windows...
-start "Capstone Backend" /D "%ROOT_DIR%" cmd /k ""%VENV_PYTHON%" -m uvicorn app.main:app --reload --port 8002"
-start "Capstone Frontend" /D "%ROOT_DIR%\app" cmd /k "npm run dev -- --host localhost --port 5174"
+echo [8/8] Starting backend, verifying API, then starting frontend...
+call :start_application
+if errorlevel 1 goto :startup_failed
 
 echo.
 echo ==============================================
 echo Capstone startup completed
 echo ==============================================
 echo Ollama:   http://127.0.0.1:11434
-echo Backend:  http://localhost:8002
-echo API Docs: http://localhost:8002/docs
+echo Backend:  %API_BASE_URL%
+echo API Docs: %API_BASE_URL%/docs
 echo Frontend: http://localhost:5174
 echo Docker Engine: running
 echo.
@@ -138,23 +139,29 @@ if errorlevel 1 (
 echo [OK] Backend dependencies installed.
 
 :ensure_env_file
-if exist "%ROOT_DIR%\app\.env" (
-  echo [OK] app\.env exists.
+if not exist "%ROOT_DIR%\app\.env" (
+  echo [INFO] app\.env is missing. Creating local defaults...
+  > "%ROOT_DIR%\app\.env" (
+    echo OLLAMA_URL=http://127.0.0.1:11434/api/generate
+    echo OLLAMA_MODEL=%OLLAMA_MODEL%
+    echo OLLAMA_EMBED_URL=http://127.0.0.1:11434/api/embeddings
+    echo OLLAMA_EMBED_MODEL=%OLLAMA_EMBED_MODEL%
+    echo VITE_API_BASE_URL=%API_BASE_URL%
+  )
+  if errorlevel 1 (
+    echo [ERROR] Failed to create app\.env.
+    exit /b 1
+  )
+  echo [OK] Created app\.env.
   exit /b 0
 )
 
-echo [INFO] app\.env is missing. Creating local Ollama defaults...
-> "%ROOT_DIR%\app\.env" (
-  echo OLLAMA_URL=http://127.0.0.1:11434/api/generate
-  echo OLLAMA_MODEL=%OLLAMA_MODEL%
-  echo OLLAMA_EMBED_URL=http://127.0.0.1:11434/api/embeddings
-  echo OLLAMA_EMBED_MODEL=%OLLAMA_EMBED_MODEL%
-)
+echo [OK] app\.env exists.
+findstr /B /C:"VITE_API_BASE_URL=" "%ROOT_DIR%\app\.env" >nul 2>&1
 if errorlevel 1 (
-  echo [ERROR] Failed to create app\.env.
-  exit /b 1
+  echo VITE_API_BASE_URL=%API_BASE_URL%>>"%ROOT_DIR%\app\.env"
+  echo [OK] Added VITE_API_BASE_URL=%API_BASE_URL% to app\.env.
 )
-echo [OK] Created app\.env.
 exit /b 0
 
 
@@ -407,6 +414,51 @@ for /L %%I in (1,1,60) do (
 
 echo [ERROR] Docker Engine did not become ready.
 echo Open Docker Desktop and check its status, then run this script again.
+exit /b 1
+
+
+:start_application
+pushd "%ROOT_DIR%" || exit /b 1
+"%VENV_PYTHON%" -c "from app.main import app; assert app is not None" >nul 2>&1
+if errorlevel 1 (
+  popd
+  echo [ERROR] Backend import preflight failed.
+  echo Run this command to see the Python error:
+  echo   "%VENV_PYTHON%" -c "from app.main import app"
+  exit /b 1
+)
+popd
+
+echo [INFO] Starting FastAPI backend on %API_BASE_URL% ...
+start "Capstone Backend" /D "%ROOT_DIR%" cmd /k ""%VENV_PYTHON%" -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8002"
+
+echo [INFO] Waiting for backend health endpoint...
+for /L %%I in (1,1,30) do (
+  call :backend_health
+  if not errorlevel 1 goto :backend_ready
+  timeout /t 2 /nobreak >nul
+)
+
+echo [ERROR] Backend did not become healthy at %API_BASE_URL%/health.
+echo Check the Capstone Backend window for the Python/Uvicorn error.
+exit /b 1
+
+:backend_ready
+echo [OK] Backend health check passed.
+echo [INFO] Starting Vite frontend with VITE_API_BASE_URL=%API_BASE_URL% ...
+start "Capstone Frontend" /D "%ROOT_DIR%\app" cmd /k "set VITE_API_BASE_URL=%API_BASE_URL%&& npm run dev -- --host localhost --port 5174"
+exit /b 0
+
+
+:backend_health
+where curl.exe >nul 2>&1
+if not errorlevel 1 (
+  curl.exe --silent --fail --max-time 2 %API_BASE_URL%/health >nul 2>&1
+  if not errorlevel 1 exit /b 0
+)
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $r = Invoke-WebRequest -UseBasicParsing '%API_BASE_URL%/health' -TimeoutSec 2; if ($r.StatusCode -eq 200) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if not errorlevel 1 exit /b 0
 exit /b 1
 
 
