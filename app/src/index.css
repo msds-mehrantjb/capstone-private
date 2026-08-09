@@ -26,6 +26,20 @@
     height: 71px !important;
   }
 
+  /* Asset Inventory & CIA: use the same 12px vertical ShellCard spacing as
+     Monitoring & Improvement. The upper row contributes the 12px gap; lower
+     rows no longer add another 12px on top. */
+  div[class*="1.66fr"][class*="grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]"]
+    > div[class*="col-[3]"][class*="row-[3]"],
+  div[class*="1.66fr"][class*="grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]"]
+    > div[class*="col-[3]"][class*="row-[4]"],
+  div[class*="1.66fr"][class*="grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]"]
+    > div[class*="col-[3]"][class*="row-[5]"],
+  div[class*="1.66fr"][class*="grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]"]
+    > div[class*="col-[4]"][class*="row-[3/6]"] {
+    padding-top: 0 !important;
+  }
+
   /* Dashboard sidebar: use the same bottom-button position as the other pages. */
   div[class*="grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]"]
     aside
