@@ -62,7 +62,7 @@ Repository Data Store
   - data/knowledge_base
   - data/ml
   - data/models
-  - app/chroma_db
+  - app/chroma_db (runtime-generated local vector store)
 ```
 
 ## Technology Stack
@@ -80,23 +80,24 @@ Repository Data Store
 
 ```text
 capstone-private/
+├── .github/                     # GitHub automation and workflow configuration
 ├── app/
 │   ├── main.py                 # FastAPI entry point
 │   ├── api/                    # Backend routes and workflow generators
 │   ├── agent/                  # Agent-related backend code
 │   ├── behavior/               # User behavior collection / aggregation
 │   ├── rag/                    # Retrieval, embeddings, Chroma integration
-│   ├── chroma_db/              # Local Chroma vector database
+│   ├── chroma_db/              # Runtime-generated local Chroma storage; not application source
 │   ├── src/                    # React frontend source
 │   ├── package.json            # Frontend dependencies and scripts
 │   └── .env                    # Local runtime configuration; created if missing
 ├── data/
-│   ├── work/                   # Year-based working JSON files
-│   ├── docs/                   # Supporting documents
+│   ├── work/                   # Year-based working JSON and evidence files
+│   ├── docs/                   # Supporting project and design documents
 │   ├── knowledge_base/         # Reference knowledge sources
-│   ├── ml/                     # ML support files and caches
-│   ├── models/                 # Persisted model artifacts
-│   ├── raw/                    # Raw source data
+│   ├── ml/                     # ML datasets, scripts, and model artifacts
+│   ├── models/                 # Persisted embedding/model artifacts
+│   ├── raw/                    # Raw/sample input data
 │   └── docker_lab/             # Optional simulated network lab containers
 ├── docs/
 │   └── images/                 # README / documentation images
@@ -111,11 +112,37 @@ capstone-private/
 └── README.md
 ```
 
+## Folder Documentation
+
+Every tracked project folder and subfolder contains its own `README.md` describing that directory's purpose, important files, dependencies, and any generated-data cautions.
+
+Useful starting points:
+
+- [`app/README.md`](app/README.md) — application overview
+- [`app/api/README.md`](app/api/README.md) — FastAPI route layer
+- [`app/api/sections/README.md`](app/api/sections/README.md) — Final Deliverables section builders
+- [`app/agent/README.md`](app/agent/README.md) — agent runtime and collection flow
+- [`app/behavior/README.md`](app/behavior/README.md) — behavior collection and aggregation
+- [`app/rag/README.md`](app/rag/README.md) — RAG and Chroma integration
+- [`app/src/README.md`](app/src/README.md) — React frontend source
+- [`app/src/pages/README.md`](app/src/pages/README.md) — workflow page components
+- [`data/README.md`](data/README.md) — data hierarchy
+- [`data/knowledge_base/README.md`](data/knowledge_base/README.md) — reference datasets
+- [`data/ml/README.md`](data/ml/README.md) — ML datasets/training utilities
+- [`data/work/README.md`](data/work/README.md) — year-based working audit state
+- [`data/docker_lab/README.md`](data/docker_lab/README.md) — Docker network lab
+- [`lab-scanner/README.md`](lab-scanner/README.md) — scanner workflow
+- [`scripts/README.md`](scripts/README.md) — startup/setup helper scripts
+- [`docs/README.md`](docs/README.md) — documentation assets
+
+Generated or runtime-oriented folders also contain README files that explain when their contents should **not** be manually edited.
+
 ## Windows Requirements
 
 The recommended `scripts\run-all.bat` launcher expects:
 
 - **Windows 10/11**
+- **Git** for cloning and updating the repository
 - **Python 3.11** or the Python launcher with Python 3.11 available
 - **Node.js + npm**
 - **Ollama** available in `PATH`
@@ -231,7 +258,15 @@ Frontend:
 .\scripts\run-frontend.bat
 ```
 
-For the fully validated environment, prefer `run-all.bat` because it performs the dependency, Ollama, Docker, port, and backend-health checks first.
+When starting the frontend separately, make sure `app\.env` already contains:
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8002
+```
+
+Also start the backend first if the frontend workflow needs API access. The standalone frontend helper does not perform the full dependency, Ollama, Docker, or backend-health preflight performed by `run-all.bat`.
+
+For the fully validated environment, prefer `run-all.bat`.
 
 ## Docker Desktop and Docker Lab
 
@@ -288,7 +323,9 @@ Supporting knowledge and model artifacts are stored under:
 - `data/knowledge_base/`
 - `data/ml/`
 - `data/models/`
-- `app/chroma_db/`
+- `app/chroma_db/` when local Chroma persistence is created at runtime
+
+Do not manually edit generated Chroma/HNSW index internals unless you are intentionally rebuilding or repairing the local vector store.
 
 ## Network / Scanner Notes
 
@@ -378,8 +415,9 @@ After startup, verify:
 4. FastAPI health succeeds at `http://127.0.0.1:8002/health`.
 5. FastAPI documentation opens at `http://127.0.0.1:8002/docs`.
 6. The Vite frontend loads at `http://localhost:5174`.
-7. Required `data/` and `app/chroma_db/` directories are available.
-8. Workflow pages can read and write the current audit state.
+7. Required `data/` directories are available.
+8. Runtime Chroma storage is created when RAG workflows require it.
+9. Workflow pages can read and write the current audit state.
 
 ## Notes
 
@@ -387,4 +425,6 @@ After startup, verify:
 - Several workflow stages depend on data produced by earlier lifecycle stages.
 - Ollama is required for local AI/RAG-assisted functionality.
 - The current full startup launcher requires Docker Desktop/Engine, but Docker lab containers are only started when explicitly requested.
+- Runtime/generated data should not be treated as application source code.
+- Folder-level README files are the preferred place for detailed subsystem-specific notes.
 - `run-all.bat` is the recommended source of truth for local Windows startup behavior.
