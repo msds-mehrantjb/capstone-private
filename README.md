@@ -1,25 +1,48 @@
-# Capstone
+# ISO 27001 Audit Readiness Platform
 
-Agent-based ISO 27001 audit and risk assessment for Windows-based environments, using a local FastAPI backend, a React/Vite frontend, local retrieval pipelines, and local LLM inference.
+AI-assisted ISO 27001 audit readiness platform for managing scope, assets, risks, controls, monitoring, evidence, AI/ML metrics, and final compliance deliverables.
 
-This repository supports an end-to-end audit workflow that starts with scope definition and continues through:
+The application provides an end-to-end ISO/IEC 27001:2022 audit workflow with a React/Vite frontend, FastAPI backend, local RAG pipelines, local LLM inference through Ollama, and persistent JSON/CSV working data.
 
-- Asset Inventory & CIA
-- Threats & Vulnerabilities
-- Existing Controls & Postures
-- Risk Analysis
-- Risk Evaluation / Treatment
-- Annex A & SoA
-- Action Plan / Implementation
-- Monitoring & Improvement
-- Final Deliverables
-- AI/ML Dashboard
+## Dashboard Preview
 
-The project is designed to run locally and store working data as JSON/CSV files under the repository so the audit state remains persistent across sessions.
+![ISO 27001 Audit Readiness Dashboard](docs/images/iso27001-dashboard.jpg)
 
----
+## Audit Lifecycle
 
-## Current Architecture
+The platform supports the following workflow:
+
+1. Scope & Context
+2. Asset Inventory & CIA
+3. Threats & Vulnerabilities
+4. Existing Controls & Posture
+5. Risk Analysis
+6. Risk Evaluation / Treatment
+7. Annex A & SoA
+8. Action Plan / Implementation
+9. Monitoring & Improvement
+10. Final Deliverables
+
+It also includes an **AI/ML Performance Dashboard** for model, RAG, LLM, dataset, and trust/reliability metrics.
+
+## Key Capabilities
+
+- ISO 27001 audit lifecycle tracking and readiness dashboard
+- Asset inventory, CIA classification, and infrastructure assessment
+- Threat and vulnerability analysis
+- Existing-control and security-posture review
+- Risk analysis and treatment workflows
+- Annex A applicability and Statement of Applicability support
+- Action-plan implementation tracking
+- Monitoring, improvement, and evidence management
+- Final audit deliverables and PDF export
+- Local AI assistant with command-driven workflow support
+- RAG-backed recommendations using a local vector database
+- Local Ollama-based LLM inference
+- AI/ML performance and dataset provenance dashboard
+- Optional Docker-based simulated network lab
+
+## Architecture
 
 ```text
 React + Vite Frontend (app/src)
@@ -27,10 +50,10 @@ React + Vite Frontend (app/src)
         v
 FastAPI Backend (app/api, app/main.py)
         |
-        +-- Audit workflow routes
+        +-- ISO 27001 workflow routes
         +-- Local JSON/CSV data management
         +-- RAG / Chroma integration
-        +-- Local Ollama-based generation
+        +-- Ollama generation and embeddings
         +-- ML training / KPI telemetry
         |
         v
@@ -42,165 +65,157 @@ Repository Data Store
   - app/chroma_db
 ```
 
----
+## Technology Stack
 
-## Main Technology Stack
-
-- Frontend: React 19 + Vite 7 + TypeScript
-- Backend: FastAPI + Uvicorn
-- ML/Data: pandas, scikit-learn, joblib, pyarrow
-- Local vector store: ChromaDB
-- Orchestration / agent tooling: LangGraph, LangChain Community
-- Local LLM runtime: Ollama
-- Data storage: JSON, CSV, local files in `data/`
-
----
+- **Frontend:** React 19, TypeScript, Vite 7, Tailwind CSS
+- **Backend:** FastAPI, Uvicorn, Python 3.11
+- **ML / Data:** pandas, scikit-learn, joblib, pyarrow
+- **Vector Store:** ChromaDB
+- **RAG / Agent Tooling:** LangGraph, LangChain Community
+- **Local LLM Runtime:** Ollama
+- **Storage:** JSON, CSV, and local repository files
+- **Optional Lab:** Docker Desktop / Docker Compose, Nmap, WinRM
 
 ## Repository Layout
 
 ```text
-Capstone-main/
+capstone-private/
 ├── app/
 │   ├── main.py                 # FastAPI entry point
-│   ├── api/                    # Backend routes and section generators
+│   ├── api/                    # Backend routes and workflow generators
 │   ├── agent/                  # Agent-related backend code
-│   ├── behavior/               # User behavior collection + aggregation utilities
+│   ├── behavior/               # User behavior collection / aggregation
 │   ├── rag/                    # Retrieval, embeddings, Chroma integration
 │   ├── chroma_db/              # Local Chroma vector database
 │   ├── src/                    # React frontend source
-│   ├── package.json            # Frontend scripts and dependencies
-│   └── .env                    # Local secrets / configuration
+│   ├── package.json            # Frontend dependencies and scripts
+│   └── .env                    # Local runtime configuration
 ├── data/
 │   ├── work/                   # Year-based working JSON files
 │   ├── docs/                   # Supporting documents
-│   ├── knowledge_base/         # Reference CSVs and supporting knowledge files
-│   ├── ml/                     # Embedding caches and ML support files
+│   ├── knowledge_base/         # Reference knowledge sources
+│   ├── ml/                     # ML support files and caches
 │   ├── models/                 # Persisted model artifacts
 │   ├── raw/                    # Raw source data
-│   └── docker_lab/             # Local lab-related files
-├── scripts/                    # Helper scripts / batch files
-├── lab-scanner/                # Local lab scanning utilities
-├── venv/                       # Project virtual environment
+│   └── docker_lab/             # Optional simulated network lab
+├── docs/
+│   └── images/                 # README / documentation images
+├── scripts/                    # Setup and startup scripts
+├── lab-scanner/                # Local network scanning utilities
 ├── requirements.txt            # Python dependencies
-├── AGENTS.md                   # Repo-specific coding/runtime guidance
+├── AGENTS.md                   # Repository-specific guidance
 └── README.md
 ```
 
----
+## Requirements
 
-## Environment Requirements
+For the main application:
 
-- Windows-oriented local development environment
-- Python 3.11
-- Project virtual environment at `venv/`
-- Node/npm for the frontend
-- Ollama running locally for generation/embedding features
+- Windows 10/11 development environment
+- Python **3.11**
+- Node.js + npm
+- Ollama
+- Git
 
-Important:
+Optional features additionally use:
 
-- Use the repository virtual environment, not Conda/base Python
-- Frontend environment values live in `app/.env`
+- Docker Desktop / Docker Compose
+- Nmap
+- WinRM-enabled Windows lab hosts
 
----
+## Ollama Models
 
-## Python Dependencies
+The application currently expects:
 
-Python dependencies are listed in [requirements.txt](/C:/Users/mehra/Capstone-main/requirements.txt).
-
-Core packages currently include:
-
-- `fastapi`
-- `uvicorn[standard]`
-- `python-dotenv`
-- `pydantic`
-- `requests`
-- `numpy`
-- `pandas`
-- `pyarrow`
-- `scikit-learn`
-- `joblib`
-- `chromadb`
-- `sentence-transformers`
-- `langgraph`
-- `langchain-community`
-- `ollama`
-- `python-multipart`
-- `pyyaml`
-- `python-nmap`
-
-Frontend dependencies are defined in [app/package.json](/C:/Users/mehra/Capstone-main/app/package.json).
-
----
-
-## Setup
-
-### 1. Activate the project virtual environment
-
-```powershell
-.\venv\Scripts\Activate.ps1
+```text
+qwen3:14b
+nomic-embed-text
 ```
 
-### 2. Install backend dependencies if needed
+Install them with:
 
 ```powershell
-.\venv\Scripts\python.exe -m pip install -r requirements.txt
+ollama pull qwen3:14b
+ollama pull nomic-embed-text
+ollama list
 ```
 
-### 3. Install frontend dependencies if needed
+Ollama should be available locally at:
+
+```text
+http://127.0.0.1:11434
+```
+
+## First-Time Setup
+
+From the repository root:
 
 ```powershell
-cd app
-npm install
-cd ..
+cd C:\Users\mehra\capstone-private
+.\scripts\setup-project.bat
 ```
 
-### 4. Make sure Ollama is available locally
+The setup process creates the Python 3.11 virtual environment, installs Python dependencies, and installs frontend packages.
 
-The backend routes that use generation or embeddings expect a local Ollama service. By default, the code uses:
+Python dependencies are defined in [`requirements.txt`](requirements.txt), and frontend dependencies are defined in [`app/package.json`](app/package.json).
 
-- `http://localhost:11434/api/generate`
-- `http://localhost:11434/api/embeddings`
+## Running the Application
 
-If your setup differs, update `app/.env` accordingly.
-
----
-
-## Running the Project
-
-### Backend
-
-Run from the repository root:
+The recommended launcher is:
 
 ```powershell
-.\venv\Scripts\python.exe -m uvicorn app.main:app --reload
+cd C:\Users\mehra\capstone-private
+.\scripts\run-all.bat
 ```
 
-Then open:
+The startup script performs preflight checks for the local environment and starts the required application services.
 
-- [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+### Application URLs
 
-### Frontend
+- **Frontend:** `http://localhost:5174`
+- **Backend:** `http://127.0.0.1:8002`
+- **FastAPI Docs:** `http://127.0.0.1:8002/docs`
+- **Backend Health:** `http://127.0.0.1:8002/health`
+- **Ollama:** `http://127.0.0.1:11434`
 
-Run from the `app` folder:
+### Start Services Separately
+
+Backend:
 
 ```powershell
-cd app
-npm run dev
+.\scripts\run-backend.bat
 ```
 
-Then open the Vite URL shown in the terminal, typically:
+Frontend:
 
-- [http://127.0.0.1:5173](http://127.0.0.1:5173)
+```powershell
+.\scripts\run-frontend.bat
+```
 
----
+## Docker Lab
 
-## Data Model Notes
+Docker is **not required just to open the main application**. It is used for the optional simulated enterprise-network lab under:
 
-This project stores most workflow state as local JSON files under:
+```text
+data/docker_lab/
+```
 
-- `data/work/<year>/`
+Start the lab separately when required:
 
-Common files in the yearly work folder include:
+```powershell
+cd data\docker_lab
+docker compose up -d --build
+```
+
+## Working Data
+
+Most audit workflow state is stored under:
+
+```text
+data/work/<year>/
+```
+
+Common files include:
 
 - `SystemStatus.json`
 - `AssetInventory.json`
@@ -215,68 +230,41 @@ Common files in the yearly work folder include:
 - `AIMLKPIInputs.json`
 - `AIMLDashboard.json`
 
-Supporting sources are stored in:
+Supporting knowledge and model artifacts are stored under:
 
 - `data/knowledge_base/`
 - `data/ml/`
 - `data/models/`
+- `app/chroma_db/`
 
----
-
-## Behavior Data Collection
-
-User behavior monitoring support lives under:
-
-- [app/behavior](/C:/Users/mehra/Capstone-main/app/behavior)
-
-This includes:
-
-- workstation behavior agent artifacts
-- aggregation logic for `UserBehaviorActivity.json`
-- supporting documentation for the behavior agent
-
-The central aggregation path feeds Risk Analysis and AI/ML telemetry workflows.
-
----
-
-## Frontend Build
-
-To produce a production frontend build:
+## Frontend Production Build
 
 ```powershell
 cd app
 npm run build
 ```
 
-Output is written to:
+The production frontend is written to:
 
-- `app/dist/`
-
----
+```text
+app/dist/
+```
 
 ## Verification Checklist
 
 After startup, verify:
 
-1. Backend responds at `/docs`
-2. Frontend Vite app loads
-3. Required local data folders exist:
-   - `data/work`
-   - `data/knowledge_base`
-   - `data/ml`
-   - `data/models`
-   - `app/chroma_db`
-4. Ollama is available if you are using:
-   - recommendation flows
-   - evidence auto-fill
-   - guide generation
-   - AI/ML snapshot generation
-   - RAG-backed commands
-
----
+1. Ollama responds locally.
+2. `qwen3:14b` and `nomic-embed-text` are installed.
+3. FastAPI health returns successfully at `/health`.
+4. FastAPI documentation opens at `/docs`.
+5. The Vite frontend loads on port `5174`.
+6. Required `data/` and `app/chroma_db/` directories are available.
+7. Workflow pages can read and write the current audit state.
 
 ## Notes
 
-- The project is intentionally file-driven: many workflow pages read and write local JSON directly through the backend routes.
-- Some pages depend on earlier workflow stages being completed enough to create downstream JSON files.
-- Docker lab actions are local-only unless you intentionally extend them.
+- The platform is intentionally local-first and file-driven.
+- Several workflow stages depend on data produced by earlier lifecycle stages.
+- Ollama is required for local AI/RAG-assisted functionality.
+- Docker is optional and is only needed for the simulated lab workflow.
