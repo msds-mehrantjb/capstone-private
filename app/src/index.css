@@ -1,1 +1,45 @@
 @import "tailwindcss";
+
+/* Asset Inventory & CIA desktop layout
+   Keep the inventory card inside the remaining viewport instead of letting
+   its old 460px minimum height push the table below the visible screen. */
+@media (min-width: 1280px) {
+  div[class*="1.66fr"][class*="grid-rows"] {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  div[class*="1.66fr"][class*="grid-rows"]
+    > div[class*="col-[3]"][class*="row-[5]"] {
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  div[class*="1.66fr"][class*="grid-rows"]
+    > div[class*="col-[3]"][class*="row-[5]"]
+    > div[class*="min-h-[460px]"] {
+    min-width: 0;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
+  div[class*="1.66fr"][class*="grid-rows"]
+    > div[class*="col-[3]"][class*="row-[5]"]
+    > div
+    > div[class*="overflow-y-auto"] {
+    min-width: 0;
+    min-height: 0;
+    max-width: 100%;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain;
+  }
+
+  div[class*="1.66fr"][class*="grid-rows"]
+    > div[class*="col-[3]"][class*="row-[5]"] table {
+    width: 100%;
+    max-width: 100%;
+  }
+}
