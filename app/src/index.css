@@ -86,7 +86,6 @@
     justify-content: space-between;
   }
 
-  /* Slightly larger spacing and typography than the previous compact pass. */
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="gap-4"] {
@@ -106,7 +105,6 @@
     line-height: 1.15 !important;
   }
 
-  /* KPI cards. */
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     button > div[class*="h-full"][class*="p-4"]
@@ -140,7 +138,6 @@
     height: 19px !important;
   }
 
-  /* Datasets / RAG / LLM section: use more of the available lower space. */
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] {
@@ -219,17 +216,5 @@
     div[class*="h-[28vh]"] svg {
     width: 17px !important;
     height: 17px !important;
-  }
-}
-
-/* Dashboard desktop: make Start New Audit match the Audit Scope card height. */
-@media (min-width: 1280px) {
-  div[class*="grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]"][class*="grid-cols-[280px"]
-    > div[class*="row-[2]"]
-    div[class*="min-h-[71px]"][class*="justify-end"]
-    > button {
-    height: 71px !important;
-    min-height: 71px !important;
-    align-self: stretch;
   }
 }
