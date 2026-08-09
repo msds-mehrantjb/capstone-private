@@ -13,13 +13,13 @@
 
   /* Monitoring & Improvement: match the Create New Monitoring / Improvement
      Table button container to the 71px Audit Scope card. */
-  div[class*="1.66fr"][class*="grid-rows"]
+  div[class*="1.7fr"][class*="grid-rows"]
     > div[class*="col-[4]"][class*="row-[2]"]
     > div[class*="h-14"] {
     height: 71px !important;
   }
 
-  div[class*="1.66fr"][class*="grid-rows"]
+  div[class*="1.7fr"][class*="grid-rows"]
     > div[class*="col-[4]"][class*="row-[2]"]
     > div[class*="h-14"]
     > button[class*="h-full"] {
