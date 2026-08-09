@@ -1,35 +1,39 @@
 /* Global active left-navigation treatment.
    Every workflow page marks its active step with the sky badge classes, so
-   this selector gives the whole active menu row a stronger, consistent cue. */
+   this selector gives the whole selected menu row a strong, consistent cue. */
 aside nav button:has(> span[class*="bg-sky-500/15"]) {
   position: relative;
   background: linear-gradient(
     90deg,
-    rgb(14 165 233 / 0.30),
-    rgb(79 70 229 / 0.20)
+    rgb(2 132 199 / 0.52),
+    rgb(79 70 229 / 0.34)
   ) !important;
+  border: 1px solid rgb(56 189 248 / 0.78) !important;
   color: rgb(255 255 255) !important;
   box-shadow:
-    inset 4px 0 0 rgb(56 189 248),
-    0 0 0 1px rgb(56 189 248 / 0.45),
-    0 6px 18px rgb(14 165 233 / 0.12) !important;
+    inset 5px 0 0 rgb(34 211 238),
+    0 0 0 1px rgb(56 189 248 / 0.34),
+    0 5px 20px rgb(14 165 233 / 0.22) !important;
 }
 
 aside nav button:has(> span[class*="bg-sky-500/15"]) > span:first-child {
-  background-color: rgb(14 165 233 / 0.32) !important;
-  color: rgb(224 242 254) !important;
-  box-shadow: 0 0 0 1px rgb(125 211 252 / 0.55) !important;
+  background-color: rgb(2 132 199 / 0.82) !important;
+  color: rgb(255 255 255) !important;
+  box-shadow:
+    0 0 0 1px rgb(125 211 252 / 0.90),
+    0 0 12px rgb(56 189 248 / 0.32) !important;
 }
 
 aside nav button:has(> span[class*="bg-sky-500/15"]) > span:last-child {
   color: rgb(255 255 255) !important;
-  font-weight: 700;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 8px rgb(2 132 199 / 0.25);
 }
 
 aside nav button:has(> span[class*="bg-sky-500/15"]):hover {
   background: linear-gradient(
     90deg,
-    rgb(14 165 233 / 0.38),
-    rgb(79 70 229 / 0.26)
+    rgb(2 132 199 / 0.60),
+    rgb(79 70 229 / 0.42)
   ) !important;
 }
