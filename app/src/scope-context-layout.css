@@ -1,0 +1,10 @@
+/* Scope & Context desktop spacing.
+   Match Monitoring & Improvement: the upper row keeps its 12px bottom
+   padding and the lower row contributes no top padding, yielding a 12px
+   vertical gap between ShellCards. */
+@media (min-width: 1280px) {
+  div[class*="grid-rows-[89px_95px_minmax(0,1fr)]"]
+    > div[class*="row-[3]"] {
+    padding-top: 0 !important;
+  }
+}
