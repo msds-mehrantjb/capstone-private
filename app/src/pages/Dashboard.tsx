@@ -96,7 +96,7 @@ const STEP_TO_SECTION_KEY: Record<number, string> = {
   9: "monitoring_improvement",
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8002";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const sep = path.includes("?") ? "&" : "?";
@@ -231,14 +231,14 @@ function KpiCard({
           </div>
           <div className="mt-2 text-sm text-slate-300">{subtitle}</div>
 
-            {showProgress && typeof progressPct === "number" && (
-              <div className="mt-3 h-2 w-full rounded-full bg-white/10">
-                <div
-                  className={`h-2 rounded-full ${fill}`}
-                  style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
-                />
-              </div>
-            )}
+          {showProgress && typeof progressPct === "number" && (
+            <div className="mt-3 h-2 w-full rounded-full bg-white/10">
+              <div
+                className={`h-2 rounded-full ${fill}`}
+                style={{ width: `${Math.max(0, Math.min(100, progressPct))}%` }}
+              />
+            </div>
+          )}
         </div>
 
         <div className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl ${badge}`}>
@@ -293,7 +293,7 @@ export default function Dashboard() {
   useEffect(() => {
     const syncSelectedStep = () => {
       const h = (window.location.hash || "").toLowerCase();
-    
+
       if (h.startsWith("#/scope")) setSelectedStep(1);
       else if (h.startsWith("#/assets")) setSelectedStep(2);
       else if (h.startsWith("#/threats")) setSelectedStep(3);
@@ -394,8 +394,9 @@ export default function Dashboard() {
     ((dashboardRaw?.kpis?.readiness_score?.value ?? 0) /
       Math.max(1, dashboardRaw?.kpis?.readiness_score?.max ?? 100)) *
     100;
+
   return (
-    <div className="min-h-screen bg-[#070A12] text-slate-50">
+    <div className="min-h-screen bg-[#070A12] text-slate-50 xl:h-screen xl:min-h-0 xl:overflow-hidden">
       {/* Mobile / small screens */}
       <div className="xl:hidden">
         <aside className="border-b border-white/10 bg-[#060815]">
@@ -442,20 +443,20 @@ export default function Dashboard() {
             })}
           </nav>
 
-            <div className="px-4 pb-4 space-y-2">
-              <button
-                onClick={() => (window.location.hash = "#/ai-ml")}
-                className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
-              >
-                AI/ML Dashboard
-              </button>
-              <button
-                onClick={() => (window.location.hash = "#/dashboard")}
-                className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
-              >
-                Dashboard
-              </button>
-            </div>
+          <div className="space-y-2 px-4 pb-4">
+            <button
+              onClick={() => (window.location.hash = "#/ai-ml")}
+              className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+            >
+              AI/ML Dashboard
+            </button>
+            <button
+              onClick={() => (window.location.hash = "#/dashboard")}
+              className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+            >
+              Dashboard
+            </button>
+          </div>
         </aside>
 
         <main className="px-4 py-4">
@@ -497,7 +498,7 @@ export default function Dashboard() {
                 className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
                 onClick={onStartNewAudit}
               >
-                <Plus className="h-14 w-4" />
+                <Plus className="h-4 w-4" />
                 Start New Audit
               </button>
             </div>
@@ -532,14 +533,18 @@ export default function Dashboard() {
                       </span>
                     </>
                   }
-                  subtitle={
-                    <>
-                      {dashboardRaw.kpis.readiness_score?.label ?? "NA"}
-                    </>
-                  }
+                  subtitle={<>{dashboardRaw.kpis.readiness_score?.label ?? "NA"}</>}
                   icon={<BadgeCheck className="h-6 w-6" />}
-                  accent={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
-                  progressTone={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
+                  accent={
+                    getReadinessTone(readinessPct) === "sky"
+                      ? "amber"
+                      : getReadinessTone(readinessPct)
+                  }
+                  progressTone={
+                    getReadinessTone(readinessPct) === "sky"
+                      ? "amber"
+                      : getReadinessTone(readinessPct)
+                  }
                   progressPct={readinessPct}
                 />
                 <KpiCard
@@ -594,16 +599,16 @@ export default function Dashboard() {
               </div>
             ) : null}
 
-            <ShellCard className="p-6">
+            <ShellCard className="p-4">
               <div className="flex items-center justify-between">
                 <div className="text-lg font-semibold">ISO 27001 Audit Lifecycle</div>
               </div>
 
-              <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
                 {lifecycle.map((s) => (
                   <div
                     key={s.step}
-                    className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10"
+                    className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-2 ring-1 ring-white/10"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-xs ring-1 ring-white/10">
@@ -632,10 +637,10 @@ export default function Dashboard() {
       </div>
 
       {/* Desktop / large screens */}
-      <div className="hidden xl:grid xl:min-h-screen xl:grid-cols-[280px_minmax(24px,4vw)_minmax(0,1fr)] xl:grid-rows-[auto_auto_auto_auto_minmax(420px,1fr)]">
+      <div className="hidden xl:grid xl:h-full xl:min-h-0 xl:overflow-hidden xl:grid-cols-[280px_minmax(24px,4vw)_minmax(0,1fr)] xl:grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]">
         {/* Section 1 */}
-        <aside className="col-[1] row-[1/6] border-r border-white/10 bg-[#060815]">
-          <div className="flex h-full flex-col">
+        <aside className="col-[1] row-[1/6] min-h-0 border-r border-white/10 bg-[#060815]">
+          <div className="flex h-full min-h-0 flex-col">
             <div className="px-6 py-6">
               <div className="flex items-center gap-3">
                 <div className="grid h-10 w-10 place-items-center rounded-xl bg-sky-500/15 ring-1 ring-sky-500/25">
@@ -679,7 +684,7 @@ export default function Dashboard() {
               })}
             </nav>
 
-            <div className="p-4 space-y-2">
+            <div className="mb-4 space-y-2 p-4">
               <button
                 onClick={() => (window.location.hash = "#/ai-ml")}
                 className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
@@ -740,7 +745,7 @@ export default function Dashboard() {
                 className="inline-flex h-fit items-center gap-2 rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
                 onClick={onStartNewAudit}
               >
-                <Plus className="h-14 w-4" />
+                <Plus className="h-4 w-4" />
                 Start New Audit
               </button>
             </div>
@@ -782,14 +787,18 @@ export default function Dashboard() {
                     </span>
                   </>
                 }
-                subtitle={
-                  <>
-                    {dashboardRaw.kpis.readiness_score?.label ?? "NA"}
-                  </>
-                }
+                subtitle={<>{dashboardRaw.kpis.readiness_score?.label ?? "NA"}</>}
                 icon={<BadgeCheck className="h-6 w-6" />}
-                accent={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
-                progressTone={getReadinessTone(readinessPct) === "sky" ? "amber" : getReadinessTone(readinessPct)}
+                accent={
+                  getReadinessTone(readinessPct) === "sky"
+                    ? "amber"
+                    : getReadinessTone(readinessPct)
+                }
+                progressTone={
+                  getReadinessTone(readinessPct) === "sky"
+                    ? "amber"
+                    : getReadinessTone(readinessPct)
+                }
                 progressPct={readinessPct}
               />
 
@@ -862,17 +871,17 @@ export default function Dashboard() {
         )}
 
         {/* Section 7 */}
-        <div className="col-[3] row-[5] p-3 pt-0">
-          <ShellCard className="flex h-full min-h-[460px] flex-col p-6">
+        <div className="col-[3] row-[5] min-h-0 p-3 pt-0">
+          <ShellCard className="flex h-full min-h-0 flex-col p-4">
             <div className="flex items-center justify-between">
               <div className="text-lg font-semibold">ISO 27001 Audit Lifecycle</div>
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
               {lifecycle.map((s) => (
                 <div
                   key={s.step}
-                  className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-3 ring-1 ring-white/10"
+                  className="flex min-w-0 items-center justify-between gap-3 rounded-xl bg-white/5 px-4 py-2 ring-1 ring-white/10"
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <div className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-white/10 text-xs ring-1 ring-white/10">
@@ -891,7 +900,7 @@ export default function Dashboard() {
             </div>
 
             {err ? (
-              <div className="mt-5 rounded-xl bg-rose-500/10 px-4 py-3 text-sm text-rose-200 ring-1 ring-rose-500/20">
+              <div className="mt-3 rounded-xl bg-rose-500/10 px-4 py-3 text-sm text-rose-200 ring-1 ring-rose-500/20">
                 Error: {err}
               </div>
             ) : null}
@@ -900,7 +909,11 @@ export default function Dashboard() {
       </div>
 
       {confirmOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-black/60 px-4"
+          role="dialog"
+          aria-modal="true"
+        >
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b1020] p-5 shadow-2xl ring-1 ring-white/10">
             <div className="text-lg font-semibold text-slate-100">Start a new audit?</div>
             <div className="mt-2 text-sm text-slate-300">
