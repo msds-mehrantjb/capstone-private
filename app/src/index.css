@@ -44,9 +44,8 @@
   }
 
   /* AI/ML dashboard desktop layout.
-     The page previously combined a 420px minimum content row, a 460px
-     minimum shell, and a 28vh datasets card. Compact the dashboard so all
-     sections fit inside the visible main shell without a vertical scrollbar. */
+     Fit all sections inside the visible viewport while using the available
+     height instead of leaving a large unused block below the content. */
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"] {
     min-width: 0;
     min-height: 0;
@@ -82,45 +81,46 @@
     min-width: 0;
     min-height: 0 !important;
     overflow: hidden !important;
-    gap: 6px !important;
-    padding: 8px !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    justify-content: space-between;
   }
 
-  /* Compact all section and KPI-card spacing inside the AI/ML main shell. */
+  /* Slightly larger spacing and typography than the previous compact pass. */
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="gap-4"] {
-    gap: 6px !important;
+    gap: 8px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="p-4"] {
-    padding: 8px !important;
+    padding: 10px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"] h2[class*="text-xl"] {
-    margin-bottom: 4px !important;
-    font-size: 13px !important;
+    margin-bottom: 6px !important;
+    font-size: 15px !important;
     line-height: 1.15 !important;
   }
 
-  /* KPI cards: smaller labels, values and icon blocks. */
+  /* KPI cards. */
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     button > div[class*="h-full"][class*="p-4"]
     div[class*="text-sm"][class*="text-slate-300"] {
-    font-size: 10px !important;
-    line-height: 1.15 !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     button > div[class*="h-full"][class*="p-4"]
     div[class*="text-3xl"] {
-    margin-top: 3px !important;
-    font-size: 20px !important;
+    margin-top: 4px !important;
+    font-size: 24px !important;
     line-height: 1 !important;
   }
 
@@ -128,96 +128,96 @@
     > div[class*="row-[5]"]
     button > div[class*="h-full"][class*="p-4"]
     div[class*="h-12"][class*="w-12"] {
-    width: 32px !important;
-    height: 32px !important;
-    border-radius: 10px !important;
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 11px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     button > div[class*="h-full"][class*="p-4"] svg {
-    width: 17px !important;
-    height: 17px !important;
+    width: 19px !important;
+    height: 19px !important;
   }
 
-  /* Datasets / RAG / LLM section: fixed compact footprint rather than 28vh. */
+  /* Datasets / RAG / LLM section: use more of the available lower space. */
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] {
-    height: 178px !important;
+    height: 210px !important;
     min-height: 0 !important;
     overflow: hidden !important;
-    padding: 8px !important;
+    padding: 10px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] h2 {
     margin: 0 !important;
-    font-size: 14px !important;
-    line-height: 1.1 !important;
+    font-size: 16px !important;
+    line-height: 1.15 !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] div[class*="mb-3"] {
-    margin-bottom: 5px !important;
+    margin-bottom: 7px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] h3 {
-    margin-bottom: 5px !important;
-    font-size: 12px !important;
+    margin-bottom: 6px !important;
+    font-size: 14px !important;
     line-height: 1.15 !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] div[class*="gap-3"] {
-    gap: 4px !important;
+    gap: 6px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] span[class*="text-sm"] {
-    font-size: 10px !important;
-    line-height: 1.15 !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] span[class*="text-lg"] {
-    font-size: 12px !important;
+    font-size: 14px !important;
     line-height: 1.1 !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] div[class*="px-3"][class*="py-2"] {
-    padding: 4px 7px !important;
+    padding: 5px 8px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] div[class*="text-sm"][class*="leading-6"] {
-    padding: 4px 7px !important;
-    font-size: 10px !important;
-    line-height: 1.2 !important;
+    padding: 5px 8px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] div[class*="h-12"][class*="w-12"] {
-    width: 30px !important;
-    height: 30px !important;
-    border-radius: 9px !important;
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
   }
 
   div[class*="minmax(420px,1fr)"][class*="grid-cols-[280px"]
     > div[class*="row-[5]"]
     div[class*="h-[28vh]"] svg {
-    width: 15px !important;
-    height: 15px !important;
+    width: 17px !important;
+    height: 17px !important;
   }
 }
