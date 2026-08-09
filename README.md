@@ -40,7 +40,7 @@ It also includes an **AI/ML Performance Dashboard** for model, RAG, LLM, dataset
 - RAG-backed recommendations using a local vector database
 - Local Ollama-based LLM inference
 - AI/ML performance and dataset provenance dashboard
-- Optional Docker-based simulated network lab
+- Optional Docker Compose simulated network lab
 
 ## Architecture
 
@@ -74,7 +74,7 @@ Repository Data Store
 - **RAG / Agent Tooling:** LangGraph, LangChain Community
 - **Local LLM Runtime:** Ollama
 - **Storage:** JSON, CSV, and local repository files
-- **Optional Lab:** Docker Desktop / Docker Compose, Nmap, WinRM
+- **Lab / Scanning:** Docker Desktop / Docker Compose, Nmap, WinRM
 
 ## Repository Layout
 
@@ -89,7 +89,7 @@ capstone-private/
 │   ├── chroma_db/              # Local Chroma vector database
 │   ├── src/                    # React frontend source
 │   ├── package.json            # Frontend dependencies and scripts
-│   └── .env                    # Local runtime configuration
+│   └── .env                    # Local runtime configuration; created if missing
 ├── data/
 │   ├── work/                   # Year-based working JSON files
 │   ├── docs/                   # Supporting documents
@@ -97,42 +97,71 @@ capstone-private/
 │   ├── ml/                     # ML support files and caches
 │   ├── models/                 # Persisted model artifacts
 │   ├── raw/                    # Raw source data
-│   └── docker_lab/             # Optional simulated network lab
+│   └── docker_lab/             # Optional simulated network lab containers
 ├── docs/
 │   └── images/                 # README / documentation images
-├── scripts/                    # Setup and startup scripts
+├── scripts/
+│   ├── run-all.bat             # Recommended Windows startup launcher
+│   ├── run-backend.bat         # Backend-only launcher
+│   ├── run-frontend.bat        # Frontend-only launcher
+│   └── setup-project.bat       # Manual/legacy setup helper
 ├── lab-scanner/                # Local network scanning utilities
 ├── requirements.txt            # Python dependencies
 ├── AGENTS.md                   # Repository-specific guidance
 └── README.md
 ```
 
-## Requirements
+## Windows Requirements
 
-For the main application:
+The recommended `scripts\run-all.bat` launcher expects:
 
-- Windows 10/11 development environment
-- Python **3.11**
-- Node.js + npm
-- Ollama
-- Git
+- **Windows 10/11**
+- **Python 3.11** or the Python launcher with Python 3.11 available
+- **Node.js + npm**
+- **Ollama** available in `PATH`
+- **Docker Desktop / Docker CLI**
+- **Internet/DNS access** for first-time Python, npm, and Ollama model downloads
 
-Optional features additionally use:
+Additional lab/scanning workflows may require:
 
-- Docker Desktop / Docker Compose
-- Nmap
-- WinRM-enabled Windows lab hosts
+- **Nmap**
+- **WinRM-enabled Windows lab hosts**
 
-## Ollama Models
+### What the startup script installs or configures automatically
 
-The application currently expects:
+`run-all.bat` is the authoritative startup workflow and performs these checks in order:
+
+1. Verifies Python 3.11.
+2. Creates `venv\` if it does not exist.
+3. Checks backend Python imports and installs `requirements.txt` when dependencies are missing.
+4. Checks DNS and HTTPS access to PyPI before attempting a Python dependency install.
+5. Creates `app\.env` with local defaults if it is missing.
+6. Verifies Node.js and npm.
+7. If Node.js is missing and `winget` is available, offers to install the current Node.js LTS release.
+8. Runs `npm install --no-audit --no-fund` to synchronize frontend dependencies.
+9. Verifies Ollama is installed and starts `ollama serve` when Ollama is not responding.
+10. Verifies the required Ollama models and downloads missing models automatically.
+11. Verifies Docker CLI/Engine and starts Docker Desktop when the engine is not responding.
+12. Stops existing development servers listening on ports `8002` and `5174`.
+13. Performs a backend import preflight.
+14. Starts FastAPI on port `8002`.
+15. Waits for `/health` to succeed.
+16. Starts Vite on port `5174` with `VITE_API_BASE_URL=http://127.0.0.1:8002`.
+
+The script **does not install Python, Ollama, or Docker Desktop automatically**. It reports what is missing and stops. Node.js is the exception: when `winget` is available, the launcher can offer to install Node.js LTS.
+
+## Ollama
+
+The application currently expects these local models:
 
 ```text
 qwen3:14b
 nomic-embed-text
 ```
 
-Install them with:
+The startup script checks both models and automatically runs `ollama pull` if either is missing.
+
+You can also install or verify them manually:
 
 ```powershell
 ollama pull qwen3:14b
@@ -140,37 +169,43 @@ ollama pull nomic-embed-text
 ollama list
 ```
 
-Ollama should be available locally at:
+Ollama should respond locally at:
 
 ```text
 http://127.0.0.1:11434
 ```
 
-## First-Time Setup
+## Environment Configuration
 
-From the repository root:
+The launcher creates `app\.env` if it does not already exist. Its local defaults are equivalent to:
 
-```powershell
-cd C:\Users\mehra\capstone-private
-.\scripts\setup-project.bat
+```env
+OLLAMA_URL=http://127.0.0.1:11434/api/generate
+OLLAMA_MODEL=qwen3:14b
+OLLAMA_EMBED_URL=http://127.0.0.1:11434/api/embeddings
+OLLAMA_EMBED_MODEL=nomic-embed-text
+VITE_API_BASE_URL=http://127.0.0.1:8002
 ```
 
-The setup process creates the Python 3.11 virtual environment, installs Python dependencies, and installs frontend packages.
+If `app\.env` already exists but does not contain `VITE_API_BASE_URL`, the launcher appends the backend URL automatically.
 
-Python dependencies are defined in [`requirements.txt`](requirements.txt), and frontend dependencies are defined in [`app/package.json`](app/package.json).
+Do not commit secrets or machine-specific credentials to `app\.env`.
 
-## Running the Application
+## Quick Start
 
-The recommended launcher is:
+Clone the repository, open PowerShell or Command Prompt in the repository root, and run:
 
 ```powershell
-cd C:\Users\mehra\capstone-private
 .\scripts\run-all.bat
 ```
 
-The startup script performs preflight checks for the local environment and starts the required application services.
+For a normal first run, **you do not need to run `setup-project.bat` first**. `run-all.bat` creates the virtual environment and synchronizes backend/frontend dependencies as needed.
+
+The first run can take several minutes because Python packages, npm packages, or Ollama models may need to be downloaded.
 
 ### Application URLs
+
+After startup succeeds:
 
 - **Frontend:** `http://localhost:5174`
 - **Backend:** `http://127.0.0.1:8002`
@@ -178,7 +213,11 @@ The startup script performs preflight checks for the local environment and start
 - **Backend Health:** `http://127.0.0.1:8002/health`
 - **Ollama:** `http://127.0.0.1:11434`
 
-### Start Services Separately
+The launcher opens separate **Capstone Backend** and **Capstone Frontend** terminal windows and waits for the backend health check before starting the frontend.
+
+## Start Components Separately
+
+For troubleshooting or development, the existing helper scripts can start components separately.
 
 Backend:
 
@@ -192,19 +231,33 @@ Frontend:
 .\scripts\run-frontend.bat
 ```
 
-## Docker Lab
+For the fully validated environment, prefer `run-all.bat` because it performs the dependency, Ollama, Docker, port, and backend-health checks first.
 
-Docker is **not required just to open the main application**. It is used for the optional simulated enterprise-network lab under:
+## Docker Desktop and Docker Lab
+
+The current `run-all.bat` launcher **requires the Docker CLI and a running Docker Engine**. If Docker Desktop is installed but the engine is stopped, the launcher attempts to start Docker Desktop and waits for the engine to become ready.
+
+This Docker requirement is part of the current startup preflight. However, the simulated lab containers themselves remain optional.
+
+The launcher **does not automatically run** `docker compose up` for the lab.
+
+The optional lab is located under:
 
 ```text
 data/docker_lab/
 ```
 
-Start the lab separately when required:
+Start it manually when needed:
 
 ```powershell
 cd data\docker_lab
 docker compose up -d --build
+```
+
+Stop the lab with:
+
+```powershell
+docker compose down
 ```
 
 ## Working Data
@@ -237,6 +290,18 @@ Supporting knowledge and model artifacts are stored under:
 - `data/models/`
 - `app/chroma_db/`
 
+## Network / Scanner Notes
+
+The lab scanner uses repository-relative paths for its configuration and generated asset inventory, so the repository can be moved without relying on an old hard-coded workspace path.
+
+Scanner-related functionality can additionally depend on:
+
+- Nmap
+- WinRM connectivity and credentials
+- The configured lab/network targets
+
+Docker lab startup and scanner execution are separate from launching the main web application.
+
 ## Frontend Production Build
 
 ```powershell
@@ -250,21 +315,76 @@ The production frontend is written to:
 app/dist/
 ```
 
+## Troubleshooting
+
+### `pip` cannot reach PyPI / `getaddrinfo failed`
+
+The launcher checks DNS resolution for `pypi.org`, flushes the Windows DNS cache once, and retries. If DNS still fails, it stops instead of waiting through long pip retries.
+
+Useful PowerShell diagnostics:
+
+```powershell
+Resolve-DnsName pypi.org
+nslookup pypi.org
+Test-NetConnection pypi.org -Port 443
+```
+
+Also check VPN, proxy, firewall, DNS filtering, or outbound HTTPS restrictions.
+
+### `npm` is not recognized
+
+Run the launcher again. If Node.js is missing and `winget` is available, it will offer to install Node.js LTS. After a new Node installation, you may need to close the terminal and open a new one so the updated `PATH` is visible.
+
+### Ollama is installed but not responding
+
+Try:
+
+```powershell
+ollama list
+ollama serve
+```
+
+The launcher uses `ollama list` as its primary readiness check and also checks the local API.
+
+### Docker Engine is not responding
+
+Open Docker Desktop and wait until the engine is running, then execute:
+
+```powershell
+.\scripts\run-all.bat
+```
+
+### Backend does not become healthy
+
+Check the **Capstone Backend** terminal window. You can also run the import preflight manually:
+
+```powershell
+.\venv\Scripts\python.exe -c "from app.main import app"
+```
+
+Then verify:
+
+```text
+http://127.0.0.1:8002/health
+```
+
 ## Verification Checklist
 
 After startup, verify:
 
-1. Ollama responds locally.
+1. Ollama responds at `127.0.0.1:11434`.
 2. `qwen3:14b` and `nomic-embed-text` are installed.
-3. FastAPI health returns successfully at `/health`.
-4. FastAPI documentation opens at `/docs`.
-5. The Vite frontend loads on port `5174`.
-6. Required `data/` and `app/chroma_db/` directories are available.
-7. Workflow pages can read and write the current audit state.
+3. Docker Engine is running.
+4. FastAPI health succeeds at `http://127.0.0.1:8002/health`.
+5. FastAPI documentation opens at `http://127.0.0.1:8002/docs`.
+6. The Vite frontend loads at `http://localhost:5174`.
+7. Required `data/` and `app/chroma_db/` directories are available.
+8. Workflow pages can read and write the current audit state.
 
 ## Notes
 
-- The platform is intentionally local-first and file-driven.
+- The platform is local-first and file-driven.
 - Several workflow stages depend on data produced by earlier lifecycle stages.
 - Ollama is required for local AI/RAG-assisted functionality.
-- Docker is optional and is only needed for the simulated lab workflow.
+- The current full startup launcher requires Docker Desktop/Engine, but Docker lab containers are only started when explicitly requested.
+- `run-all.bat` is the recommended source of truth for local Windows startup behavior.
