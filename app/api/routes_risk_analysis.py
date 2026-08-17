@@ -550,7 +550,7 @@ def _load_system_status_or_default(year: int) -> dict:
                 "scope_context": {"status": "Not Started"},
                 "assets_cia": {"status": "Not Started"},
                 "risk_analysis": {"status": "Not Started"},
-                "risk_evaluation_treatment": {"status": "Blocked"},
+                "risk_evaluation_treatment": {"status": "Not Started"},
             },
         }
 
@@ -577,7 +577,7 @@ def _load_system_status_or_default(year: int) -> dict:
         data["sections"]["risk_analysis"] = {"status": "Not Started"}
 
     if not isinstance(data["sections"].get("risk_evaluation_treatment"), dict):
-        data["sections"]["risk_evaluation_treatment"] = {"status": "Blocked"}
+        data["sections"]["risk_evaluation_treatment"] = {"status": "Not Started"}
 
     return data
 
@@ -1530,30 +1530,64 @@ def collect_user_activity_behavior(payload: AnalysisRequest):
             for host_result in result.get("hosts", [])
             if str(host_result.get("status", "")).strip().lower() == "ok"
         )
+        live_fallback_hosts = [
+            host_result.get("hostname", "")
+            for host_result in result.get("hosts", [])
+            if str(host_result.get("status", "")).strip().lower() == "populated_from_assetdetails_live_host"
+        ]
+        unreachable_fallback_hosts = [
+            host_result.get("hostname", "")
+            for host_result in result.get("hosts", [])
+            if str(host_result.get("status", "")).strip().lower() == "populated_from_assetdetails_unreachable_host"
+        ]
+        unreachable_hosts = [
+            host_result.get("hostname", "")
+            for host_result in result.get("hosts", [])
+            if str(host_result.get("status", "")).strip().lower() == "unreachable"
+        ]
+        live_non_workstation_targets = [
+            target.get("hostname", "")
+            for target in result.get("non_workstation_targets", [])
+            if bool(target.get("reachable"))
+        ]
         populated_hosts = len(result.get("backfilled_hosts", []))
+        live_detected_hosts = live_fallback_hosts + [
+            host_result.get("hostname", "")
+            for host_result in result.get("hosts", [])
+            if str(host_result.get("status", "")).strip().lower() == "ok"
+        ]
 
-        if collected_hosts > 0 and populated_hosts > 0:
-            message = (
-                "User activity behavior data collection completed.\n"
-                f"Collected live records for {collected_hosts} workstation host(s) and "
-                f"populated {populated_hosts} workstation host(s) from AssetDetails."
-            )
-        elif collected_hosts > 0:
-            message = (
-                "User activity behavior data collection completed.\n"
-                f"Collected live records for {collected_hosts} workstation host(s)."
-            )
-        elif populated_hosts > 0:
-            message = (
-                "User activity behavior data collection completed.\n"
-                f"Populated {populated_hosts} workstation host(s) from AssetDetails because "
-                "current lab-host behavior data was unavailable."
-            )
+        lines = ["User activity behavior data collection completed."]
+
+        if live_detected_hosts:
+            lines.append("Live workstation hosts detected:")
+            lines.extend(f"- {hostname}" for hostname in live_detected_hosts if str(hostname).strip())
+
+        if live_non_workstation_targets:
+            lines.append("Live non-workstation lab hosts detected (outside UAB scope):")
+            lines.extend(f"- {hostname}" for hostname in live_non_workstation_targets if str(hostname).strip())
+
+        if collected_hosts > 0:
+            lines.append(f"Direct live behavior records collected from {collected_hosts} workstation host(s).")
         else:
-            message = (
-                "User activity behavior data collection completed, but no workstation "
-                "records were collected or populated."
-            )
+            lines.append("Direct live behavior records collected from 0 workstation host(s).")
+
+        if live_fallback_hosts:
+            lines.append("Live workstation hosts populated from AssetDetails because direct behavior-file access failed:")
+            lines.extend(f"- {hostname}" for hostname in live_fallback_hosts if str(hostname).strip())
+
+        if unreachable_fallback_hosts:
+            lines.append("Configured workstation hosts populated from AssetDetails after reachability checks failed:")
+            lines.extend(f"- {hostname}" for hostname in unreachable_fallback_hosts if str(hostname).strip())
+
+        if unreachable_hosts:
+            lines.append("Configured workstation hosts unreachable and not populated:")
+            lines.extend(f"- {hostname}" for hostname in unreachable_hosts if str(hostname).strip())
+
+        if not live_detected_hosts and populated_hosts <= 0 and not unreachable_hosts:
+            lines.append("No workstation records were collected or populated.")
+
+        message = "\n".join(lines)
 
         return {
             "success": True,
@@ -1562,6 +1596,10 @@ def collect_user_activity_behavior(payload: AnalysisRequest):
             "total_records": result.get("total_records", 0),
             "collected_hosts": collected_hosts,
             "populated_hosts": populated_hosts,
+            "live_detected_hosts": len(live_detected_hosts),
+            "live_fallback_hosts": live_fallback_hosts,
+            "live_non_workstation_targets": live_non_workstation_targets,
+            "unreachable_hosts": unreachable_hosts,
             "details": result,
         }
     except Exception as e:

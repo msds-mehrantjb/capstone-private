@@ -1026,8 +1026,8 @@ def _load_system_status_or_default(year: int) -> dict:
                 "existing_controls_postures": {"status": "Not Started"},
                 "risk_analysis": {"status": "Not Started"},
                 "risk_evaluation_treatment": {"status": "Not Started"},
-                "annex_a_soa": {"status": "Blocked"},
-                "action_plan_implementation": {"status": "Blocked"},
+                "annex_a_soa": {"status": "Not Started"},
+                "action_plan_implementation": {"status": "Not Started"},
             },
         }
 
@@ -1051,8 +1051,8 @@ def _load_system_status_or_default(year: int) -> dict:
         "existing_controls_postures": {"status": "Not Started"},
         "risk_analysis": {"status": "Not Started"},
         "risk_evaluation_treatment": {"status": "Not Started"},
-        "annex_a_soa": {"status": "Blocked"},
-        "action_plan_implementation": {"status": "Blocked"},
+        "annex_a_soa": {"status": "Not Started"},
+        "action_plan_implementation": {"status": "Not Started"},
     }
 
     for section_name, default_value in defaults.items():

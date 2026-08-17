@@ -954,11 +954,11 @@ def _set_submit_status_flow(year: int) -> None:
     if "threat_vul" not in sections or not isinstance(sections["threat_vul"], dict):
         sections["threat_vul"] = {}
 
-    sections["scope_context"]["status"] = "Blocked"
+    sections["scope_context"]["status"] = "Completed"
     sections["assets_cia"]["status"] = "Completed"
 
-    if sections["threat_vul"].get("status") != "Completed":
-        sections["threat_vul"]["status"] = "In Progress"
+    if sections["threat_vul"].get("status") not in {"Completed", "In Progress"}:
+        sections["threat_vul"]["status"] = "Not Started"
 
     system_doc["sections"] = sections
     _save_json(_system_status_file(year), system_doc)
@@ -4121,8 +4121,8 @@ def submit_inventory(payload: SubmitRequest):
     sections = status.get("sections", {})
     
     # After successful submit
-    sections.setdefault("scope_context", {})["status"] = "In Progress"
-    sections.setdefault("assets_cia", {})["status"] = "In Progress"
+    sections.setdefault("scope_context", {})["status"] = "Completed"
+    sections.setdefault("assets_cia", {})["status"] = "Completed"
     
     if sections.get("threats_vulns", {}).get("status") == "Blocked":
         sections["threats_vulns"]["status"] = "Not Started"

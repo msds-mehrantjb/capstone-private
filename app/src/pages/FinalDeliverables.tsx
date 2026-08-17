@@ -3,6 +3,7 @@ import { ShieldCheck, ChevronDown } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
+import type { CSSProperties } from "react";
 
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
@@ -68,7 +69,7 @@ const FINAL_TABS: Array<{ key: FinalTabKey; label: string; href: string }> = [
   },
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const sep = path.includes("?") ? "&" : "?";
@@ -201,7 +202,48 @@ function TabButton({
   );
 }
 
-function MarkdownPrintReady({ content }: { content: string }) {
+function extractMarkdownNodeText(node: any): string {
+  if (!node) return "";
+  if (typeof node === "string") return node;
+  if (Array.isArray(node)) {
+    return node.map((child) => extractMarkdownNodeText(child)).join(" ");
+  }
+  if (typeof node.value === "string") return node.value;
+  if (Array.isArray(node.children)) {
+    return node.children.map((child: any) => extractMarkdownNodeText(child)).join(" ");
+  }
+  return "";
+}
+
+function parseInlineStyle(styleValue: unknown): CSSProperties | undefined {
+  if (!styleValue) return undefined;
+  if (typeof styleValue === "object") return styleValue as CSSProperties;
+  if (typeof styleValue !== "string") return undefined;
+
+  const style: Record<string, string> = {};
+
+  for (const declaration of styleValue.split(";")) {
+    const [rawName, ...rawValueParts] = declaration.split(":");
+    const name = rawName?.trim();
+    const value = rawValueParts.join(":").trim();
+    if (!name || !value) continue;
+
+    const camelName = name.replace(/-([a-z])/g, (_, letter: string) =>
+      letter.toUpperCase()
+    );
+    style[camelName] = value;
+  }
+
+  return Object.keys(style).length ? (style as CSSProperties) : undefined;
+}
+
+function MarkdownPrintReady({
+  content,
+  section,
+}: {
+  content: string;
+  section: FinalTabKey;
+}) {
   return (
     <div className="h-full w-full overflow-y-scroll rounded-xl bg-[#0b1020] p-4">
       <div className="w-full rounded-lg bg-white px-10 py-10 text-black shadow-2xl">
@@ -280,8 +322,30 @@ function MarkdownPrintReady({ content }: { content: string }) {
             thead: ({ children }) => (
               <thead className="bg-slate-100">{children}</thead>
             ),
+            tr: ({ children, ...props }: any) => {
+              const { node, ref, style, ...rowProps } = props;
+              void ref;
+
+              const rowText = extractMarkdownNodeText(node)
+                .replace(/\s+/g, " ")
+                .trim();
+              const isMediumRiskRow =
+                section === "risk-treatment-plan" &&
+                /\bMedium\b/.test(rowText) &&
+                /\bMonitor\b/.test(rowText);
+
+              return (
+                <tr
+                  {...rowProps}
+                  className={isMediumRiskRow ? "bg-amber-100/80" : undefined}
+                  style={parseInlineStyle(style)}
+                >
+                  {children}
+                </tr>
+              );
+            },
             th: ({ children, ...props }: any) => {
-              const { node, ref, ...cellProps } = props;
+              const { node, ref, style, ...cellProps } = props;
               void node;
               void ref;
 
@@ -294,27 +358,35 @@ function MarkdownPrintReady({ content }: { content: string }) {
                   className={`border border-slate-300 px-3 py-2 font-semibold text-black ${
                     isGroupedHeader ? "bg-slate-200 text-center" : "text-left"
                   }`}
+                  style={parseInlineStyle(style)}
                 >
                   {children}
                 </th>
               );
             },
             td: ({ children, ...props }: any) => {
-              const { node, ref, ...cellProps } = props;
-              void node;
+              const { node, ref, style, ...cellProps } = props;
               void ref;
 
               const value = String(children ?? "").trim();
               const isConfidence =
                 value.match(/^\d+(\.\d+)?$/) ||
                 ["Very High", "High", "Medium", "Low"].includes(value);
+              const rowText = extractMarkdownNodeText(node?.parent)
+                .replace(/\s+/g, " ")
+                .trim();
+              const isMediumRiskRow =
+                section === "risk-treatment-plan" &&
+                /\bMedium\b/.test(rowText) &&
+                /\bMonitor\b/.test(rowText);
 
               return (
                 <td
                   {...cellProps}
                   className={`border border-slate-300 px-3 py-2 align-top text-black ${
                     isConfidence ? "text-center" : "text-left"
-                  }`}
+                  } ${isMediumRiskRow ? "bg-amber-100/80" : ""}`}
+                  style={parseInlineStyle(style)}
                 >
                   {children}
                 </td>
@@ -625,6 +697,7 @@ export default function FinalDeliverables() {
                       ) : (
                         <MarkdownPrintReady
                           content={sectionData?.markdown ?? "No content available."}
+                          section={activeTab}
                         />
                       )}
                     </div>
@@ -801,6 +874,7 @@ export default function FinalDeliverables() {
                   ) : (
                     <MarkdownPrintReady
                       content={sectionData?.markdown ?? "No content available."}
+                      section={activeTab}
                     />
                   )}
                 </div>

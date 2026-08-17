@@ -4,6 +4,10 @@ import {
   ChevronDown,
   Send,
 } from "lucide-react";
+import CommandHelpMessage, {
+  isCommandHelpMessage,
+} from "../components/CommandHelpMessage";
+import StepStatusBadge from "../components/StepStatusBadge";
 
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
@@ -57,6 +61,28 @@ type ActionPlanHost = {
   vulnerability_name?: string;
   evidence?: ActionPlanEvidence[];
 };
+
+function hasMeaningfulEvidence(ev: ActionPlanEvidence | null | undefined): boolean {
+  if (!ev || typeof ev !== "object") return false;
+
+  return Boolean(
+    (ev.responsible && ev.responsible.trim() !== "") ||
+      (ev.resources && ev.resources.trim() !== "") ||
+      (ev.date && ev.date.trim() !== "") ||
+      (ev.url && ev.url.trim() !== "") ||
+      (ev.desc && ev.desc.trim() !== "")
+  );
+}
+
+function getMeaningfulEvidence(
+  evidence: ActionPlanEvidence[] | null | undefined
+): Array<{ ev: ActionPlanEvidence; rawIndex: number }> {
+  if (!Array.isArray(evidence)) return [];
+
+  return evidence
+    .map((ev, rawIndex) => ({ ev, rawIndex }))
+    .filter(({ ev }) => hasMeaningfulEvidence(ev));
+}
 
 type SystemStatusDTO = {
   meta: { name: string; version: string };
@@ -124,14 +150,6 @@ type EvidenceDefaultsResponse = {
   inventory?: AnnexInventoryResponse;
 };
 
-type AddEvidenceAllResponse = {
-  success?: boolean;
-  message?: string;
-  added_count?: number;
-  failed_count?: number;
-  inventory?: AnnexInventoryResponse;
-};
-
   type EditEvidenceForm = {
     responsible: string;
     date: string;
@@ -183,15 +201,6 @@ async function apiAddEvidence(
   );
 }
 
-async function apiAddEvidenceAll(year: number): Promise<AddEvidenceAllResponse> {
-  return apiPostJSONBody<AddEvidenceAllResponse>(
-    "/api/action-plan-implementation/add-evidence-all",
-    {
-      year,
-    }
-  );
-}
-
 async function apiEditEvidence(
   year: number,
   control_id: string,
@@ -219,7 +228,7 @@ async function apiEditEvidence(
   );
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
@@ -332,7 +341,19 @@ async function apiSubmitActionPlan(year: number, confirm = false): Promise<Annex
 }
 
 async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>("/api/system/status");
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>("/api/system/status");
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
@@ -1198,6 +1219,38 @@ export default function ActionPlanImplentation() {
       return;
     }
 
+    const pendingRows = controls.flatMap((control) => {
+      const controlId = (control.control || control.control_id || "").trim();
+      if (!controlId || !Array.isArray(control.hosts)) {
+        return [];
+      }
+
+      return control.hosts
+        .filter((host) => {
+          const hostname = (host.hostname || "").trim();
+          return hostname && getMeaningfulEvidence(host.evidence).length === 0;
+        })
+        .map((host) => ({
+          control,
+          controlId,
+          hostname: (host.hostname || "").trim(),
+          vulnerabilityName: (host.vulnerability_name || "").trim(),
+          evidence: buildAutoEvidenceForm(control, host),
+        }));
+    });
+
+    if (pendingRows.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Every host row already has at least one evidence item.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
     setSending(true);
     setMessages((prev) => [
       ...prev,
@@ -1209,21 +1262,66 @@ export default function ActionPlanImplentation() {
     ]);
 
     try {
-      const data = await apiAddEvidenceAll(YEAR);
+      let addedCount = 0;
+      let failedCount = 0;
+      const failedItems: string[] = [];
 
-      if (data?.success === false && (data.added_count || 0) === 0) {
-        throw new Error(data.message || "Failed to generate evidence for all hosts.");
+      for (let index = 0; index < pendingRows.length; index += 1) {
+        const row = pendingRows[index];
+
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: `Generating evidence ${index + 1} of ${pendingRows.length} for ${row.hostname} under control ${row.controlId}...`,
+          };
+          return updated;
+        });
+
+        try {
+          const data = await apiAddEvidence(
+            YEAR,
+            row.controlId,
+            row.hostname,
+            row.vulnerabilityName,
+            row.evidence
+          );
+
+          if (Array.isArray(data?.inventory?.controls)) {
+            setControls(data.inventory.controls);
+          }
+
+          if (data?.success === false) {
+            failedCount += 1;
+            failedItems.push(`${row.controlId} / ${row.hostname}`);
+          } else {
+            addedCount += 1;
+          }
+        } catch (error) {
+          failedCount += 1;
+          failedItems.push(`${row.controlId} / ${row.hostname}`);
+
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              content:
+                error instanceof Error
+                  ? `${error.message} Continuing with the remaining host rows.`
+                  : "Failed to generate evidence for one host row. Continuing with the remaining host rows.",
+            };
+            return updated;
+          });
+        }
       }
-
-      setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
 
       setMessages((prev) => {
         const updated = [...prev];
+        const failurePreview =
+          failedItems.length > 0 ? ` Failed rows: ${failedItems.slice(0, 5).join(", ")}${failedItems.length > 5 ? ", ..." : ""}` : "";
         updated[updated.length - 1] = {
           role: "assistant",
-          content:
-            data.message ||
-            "Evidence generation completed for all Action Plan host rows.",
+          content: `Evidence generation completed. Added ${addedCount} evidence item(s) across ${pendingRows.length} host row(s). Failed ${failedCount}.${failurePreview}`,
         };
         return updated;
       });
@@ -1576,7 +1674,6 @@ export default function ActionPlanImplentation() {
   const actionPlanStatus: StepStatus = useMemo(() => {
     const backendStatus = systemStatus?.sections?.action_plan_implementation?.status;
     if (backendStatus === "Completed") return "Completed";
-    if (backendStatus === "Blocked") return "Blocked";
     if (backendStatus === "In Progress") return "In Progress";
     if (controls.length > 0) return "In Progress";
     return "Not Started";
@@ -2071,22 +2168,7 @@ export default function ActionPlanImplentation() {
                           </div>
                         ) : (
                           c.hosts.map((host, hostIdx) => {
-                            const validEvidence = Array.isArray(host.evidence)
-                              ? host.evidence
-                                  .map((ev, rawIndex) => ({ ev, rawIndex }))
-                                  .filter(
-                                    ({ ev }) =>
-                                      ev &&
-                                      typeof ev === "object" &&
-                                      (
-                                        (ev.responsible && ev.responsible.trim() !== "") ||
-                                        (ev.resources && ev.resources.trim() !== "") ||
-                                        (ev.date && ev.date.trim() !== "") ||
-                                        (ev.url && ev.url.trim() !== "") ||
-                                        (ev.desc && ev.desc.trim() !== "")
-                                      )
-                                  )
-                              : [];                        
+                            const validEvidence = getMeaningfulEvidence(host.evidence);
                             return (
                               <React.Fragment key={`${c.control}-${hostIdx}`}>
                                 <div
@@ -2167,17 +2249,24 @@ export default function ActionPlanImplentation() {
           <div className="space-y-3">
             {messages.map((m, idx) => {
               const isUser = m.role === "user";
+              const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
 
               return (
                 <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                    className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                      isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                    } ${
                       isUser
-                        ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                        : "bg-white/5 text-slate-200 ring-white/10"
+                        ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                        : "w-full bg-white/5 text-slate-200 ring-white/10"
                     }`}
                   >
-                    <div>{m.content}</div>
+                    {isCommandMessage ? (
+                      <CommandHelpMessage content={m.content} />
+                    ) : (
+                      <div>{m.content}</div>
+                    )}
 
                     {!isUser &&
                     m.confirmAction === pendingAssistantAction &&
@@ -2368,10 +2457,7 @@ export default function ActionPlanImplentation() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-slate-300">({controlCount} controls)</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                      {actionPlanStatus}
-                    </span>
+                    <StepStatusBadge status={actionPlanStatus} />
                   </div>
                 </div>
               </div>
@@ -2505,10 +2591,7 @@ export default function ActionPlanImplentation() {
 
                   <span className="text-sm text-slate-300">- ({controlCount} controls)</span>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                    {actionPlanStatus}
-                  </span>
+                  <StepStatusBadge status={actionPlanStatus} />
                 </div>
               </div>
             </div>

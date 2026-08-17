@@ -34,6 +34,12 @@ def build_risk_register_markdown(year: int) -> str:
                 return "No"
         return "NA"
 
+    def _to_float(value):
+        try:
+            return float(str(value).strip())
+        except (TypeError, ValueError):
+            return None
+
     def _make_html_table(headers, rows):
         if not rows:
             return "<p><em>No data available.</em></p>"
@@ -63,9 +69,36 @@ def build_risk_register_markdown(year: int) -> str:
 </table>
 """
 
-    def _make_group_table_html(hostname, role, rows, headers, host_span=1):
-        def td(v):
-            return f'<td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_escape_md(v)}</td>'
+    def _make_group_table_html(
+        hostname,
+        role,
+        rows,
+        headers,
+        host_span=1,
+        risk_level_index=None,
+        risk_score_index=None,
+    ):
+        def _row_bg(row_values):
+            if risk_level_index is not None and risk_level_index < len(row_values):
+                risk_value = _to_text(row_values[risk_level_index], "").lower()
+                if risk_value == "critical":
+                    return "#fdecea"  # light red
+                if risk_value == "high":
+                    return "#fff1db"  # light orange
+            if risk_score_index is not None and risk_score_index < len(row_values):
+                risk_score = _to_float(row_values[risk_score_index])
+                if risk_score is not None:
+                    if risk_score >= 15:
+                        return "#fdecea"  # critical
+                    if risk_score >= 10:
+                        return "#fff1db"  # high
+            return "white"
+
+        def td(v, bg_color):
+            return (
+                f'<td style="background-color: {bg_color}; padding: 8px; border: 1px solid #999; '
+                f'vertical-align: top; text-align: left;">{_escape_md(v)}</td>'
+            )
 
         header_cells = "".join(
             f'<th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left;">{_escape_md(h)}</th>'
@@ -73,7 +106,9 @@ def build_risk_register_markdown(year: int) -> str:
         )
 
         body_rows = "".join(
-            "<tr>" + "".join(td(v) for v in row) + "</tr>"
+            f'<tr style="background-color: {_row_bg(row)};">'
+            + "".join(td(v, _row_bg(row)) for v in row)
+            + "</tr>"
             for row in rows
         )
 
@@ -203,6 +238,7 @@ def build_risk_register_markdown(year: int) -> str:
                 group_rows,
                 register_headers,
                 host_span=1,
+                risk_level_index=5,
             )
         )
 
@@ -214,6 +250,7 @@ def build_risk_register_markdown(year: int) -> str:
                 group_rows,
                 analysis_headers,
                 host_span=1,
+                risk_level_index=5,
             )
         )
 

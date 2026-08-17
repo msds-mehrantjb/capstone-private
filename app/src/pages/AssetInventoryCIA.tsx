@@ -11,6 +11,10 @@ import {
   Send,
   HelpCircle,
 } from "lucide-react";
+import CommandHelpMessage, {
+  isCommandHelpMessage,
+} from "../components/CommandHelpMessage";
+import StepStatusBadge from "../components/StepStatusBadge";
 
 type RoleOptionsResponse = {
   success?: boolean;
@@ -206,7 +210,7 @@ type SubmitResponse = {
   train_error?: string;
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
@@ -243,7 +247,19 @@ async function apiGetRoleOptions(): Promise<RoleOptionsResponse> {
 }
 
 async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>("/api/system/status");
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>("/api/system/status");
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
@@ -474,7 +490,7 @@ export default function AssetInventoryCIA() {
         "/assess      → Scan a subnet and discover hosts\n" +
         "/setstatus   → Set host status (Active / Not Active / Unknown)\n" +
         "/assignroles → Detect server roles and assign CIA\n" +
-        "/details      → Show detailed host information\n" +
+        "/details     → Show detailed host information\n" +
         "/train       → Train the ML role prediction model\n" +
         "/delete      → Remove a host from the table\n" +
         "/submit      → Submit Asset Inventory & CIA results\n" +
@@ -738,7 +754,7 @@ export default function AssetInventoryCIA() {
     }
 
     try {
-      if (assetsCiaStatus === "Not Started" || assetsCiaStatus === "Blocked") {
+      if (assetsCiaStatus === "Not Started") {
         openConfirm(
           "A new inventory assessment will be started.\n\nDo you want to continue?",
           "new-inventory"
@@ -1339,7 +1355,7 @@ export default function AssetInventoryCIA() {
               "/assess      → Scan a subnet and discover hosts\n" +
               "/setstatus   → Set host status (Active / Not Active / Unknown)\n" +
               "/assignroles → Detect server roles and assign CIA\n" +
-              "/details      → Show detailed host information\n" +
+              "/details     → Show detailed host information\n" +
               "/train       → Train the ML role prediction model\n" +
               "/delete      → Remove a host from the table\n" +
               "/submit      → Submit Asset Inventory & CIA results\n" +
@@ -1655,10 +1671,7 @@ export default function AssetInventoryCIA() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-slate-300">({assetCount} assets)</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                      {assetsCiaStatus}
-                    </span>
+                    <StepStatusBadge status={assetsCiaStatus} />
                   </div>
                 </div>
               </div>
@@ -1839,16 +1852,23 @@ export default function AssetInventoryCIA() {
                   <div className="space-y-3">
                     {messages.map((m, idx) => {
                       const isUser = m.role === "user";
+                      const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
                       return (
                         <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                           <div
-                            className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                            className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                              isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                            } ${
                               isUser
-                                ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                                : "bg-white/5 text-slate-200 ring-white/10"
+                                ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                                : "w-full bg-white/5 text-slate-200 ring-white/10"
                             }`}
                           >
-                            {m.content}
+                            {isCommandMessage ? (
+                              <CommandHelpMessage content={m.content} />
+                            ) : (
+                              m.content
+                            )}
                           </div>
                         </div>
                       );
@@ -2025,8 +2045,8 @@ export default function AssetInventoryCIA() {
 
                     {sending ? (
                       <div className="flex justify-start">
-                        <div className="max-w-[90%] rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
-                          …
+                        <div className="w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
+                          â€¦
                         </div>
                       </div>
                     ) : null}
@@ -2160,10 +2180,7 @@ export default function AssetInventoryCIA() {
 
                   <span className="text-sm text-slate-300">- ({assetCount} assets)</span>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                    {assetsCiaStatus}
-                  </span>
+                  <StepStatusBadge status={assetsCiaStatus} />
                 </div>
               </div>
             </div>
@@ -2353,16 +2370,23 @@ export default function AssetInventoryCIA() {
                 <div className="space-y-3">
                   {messages.map((m, idx) => {
                     const isUser = m.role === "user";
+                    const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
                     return (
                       <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                          className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                            isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                          } ${
                             isUser
-                              ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                              : "bg-white/5 text-slate-200 ring-white/10"
+                              ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                              : "w-full bg-white/5 text-slate-200 ring-white/10"
                           }`}
                         >
-                          {m.content}
+                          {isCommandMessage ? (
+                            <CommandHelpMessage content={m.content} />
+                          ) : (
+                            m.content
+                          )}
                         </div>
                       </div>
                     );

@@ -5,6 +5,10 @@ import {
   Plus,
   Send,
 } from "lucide-react";
+import CommandHelpMessage, {
+  isCommandHelpMessage,
+} from "../components/CommandHelpMessage";
+import StepStatusBadge from "../components/StepStatusBadge";
 
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
@@ -107,7 +111,7 @@ type AnnexInfoResponse = {
   } | null;
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
@@ -224,7 +228,19 @@ async function apiSubmitAnnex(year: number, confirm = false): Promise<AnnexSubmi
 }
 
 async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>("/api/system/status");
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>("/api/system/status");
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
@@ -585,7 +601,6 @@ export default function AnnexASoA() {
   const annexStatus: StepStatus = useMemo(() => {
     const backendStatus = systemStatus?.sections?.annex_a_soa?.status;
     if (backendStatus === "Completed") return "Completed";
-    if (backendStatus === "Blocked") return "Blocked";
     if (backendStatus === "In Progress") return "In Progress";
     if (controls.length > 0) return "In Progress";
     return "Not Started";
@@ -1259,15 +1274,15 @@ export default function AnnexASoA() {
           content:
             "Annex A & SoA — Command Mode\n\n" +
             "Available commands:\n" +
-            "/create: Initialize a new Annex A & SoA table\n" +
-            "/reset: Reset all implementation status values\n" +
-            "/delete: Delete the selected row\n" +
-            "/recommend: Recommend missing controls not already in the table\n" +
-            "/add: Add a control from the recommendation list\n" +
-            "/info: Show information about a control\n" +
-            "/submit: Finalize and lock the table\n" +
-            "/commands: Display available commands\n" +
-            "/help: Provide an overview of this section",
+            "/create     → Initialize a new Annex A & SoA table\n" +
+            "/reset      → Reset all implementation status values\n" +
+            "/delete     → Delete the selected row\n" +
+            "/recommend  → Recommend missing controls not already in the table\n" +
+            "/add        → Add a control from the recommendation list\n" +
+            "/info       → Show information about a control\n" +
+            "/submit     → Finalize and lock the table\n" +
+            "/commands   → Display available commands\n" +
+            "/help       → Provide an overview of this section",
         },
       ]);
       scrollChatToBottom();
@@ -1401,6 +1416,7 @@ export default function AnnexASoA() {
           <div className="space-y-3">
             {messages.map((m, idx) => {
               const isUser = m.role === "user";
+              const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
 
               return (
                 <div
@@ -1408,13 +1424,19 @@ export default function AnnexASoA() {
                   className={`flex ${isUser ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                    className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                      isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                    } ${
                       isUser
-                        ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                        : "bg-white/5 text-slate-200 ring-white/10"
+                        ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                        : "w-full bg-white/5 text-slate-200 ring-white/10"
                     }`}
                   >
-                    <div>{m.content}</div>
+                    {isCommandMessage ? (
+                      <CommandHelpMessage content={m.content} />
+                    ) : (
+                      <div>{m.content}</div>
+                    )}
 
                         {!isUser &&
                         m.confirmAction === pendingAssistantAction &&
@@ -1567,10 +1589,7 @@ export default function AnnexASoA() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-slate-300">({controlCount} controls)</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                      {annexStatus}
-                    </span>
+                    <StepStatusBadge status={annexStatus} />
                   </div>
                 </div>
               </div>
@@ -1715,10 +1734,7 @@ export default function AnnexASoA() {
 
                   <span className="text-sm text-slate-300">- ({controlCount} controls)</span>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                    {annexStatus}
-                  </span>
+                  <StepStatusBadge status={annexStatus} />
                 </div>
               </div>
             </div>

@@ -135,7 +135,7 @@ const LEFT_MENU_STEPS = [
   { step: 10, name: "Final Deliverables", href: "#/final-deliverables" },
 ] as const;
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 const fallbackKpiData: AimlGroupDTO[] = [
   {
@@ -228,9 +228,21 @@ async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
 }
 
 async function apiGetSystemStatus(year: number): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>(
-    `/api/system/status?year=${encodeURIComponent(String(year))}`
-  );
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>(
+        `/api/system/status?year=${encodeURIComponent(String(year))}`
+      );
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiGetAimlDashboard(year: number): Promise<AimlDashboardDTO> {
@@ -919,6 +931,10 @@ function DashboardSections({ aimlData }: { aimlData: AimlDashboardDTO | null }) 
 
   const rag = aimlData?.rag ?? {};
   const llm = aimlData?.llm ?? {};
+  const llmDeploymentLabel =
+    llm.deployment_style?.trim() && llm.deployment_style !== "Local LLM - Llama"
+      ? llm.deployment_style
+      : "Local/Llama";
 
   return (
     <>
@@ -1027,7 +1043,7 @@ function DashboardSections({ aimlData }: { aimlData: AimlDashboardDTO | null }) 
                     subtitle=""
                     icon={<Sparkles className="h-5 w-5" />}
                     lines={[
-                      `Deployment Style: ${llm.deployment_style ?? "Local LLM - Llama"}`,
+                      `LLM: ${llmDeploymentLabel}`,
                       `Model: ${llm.model ?? "Qwen 33"}`,
                       `Parameters: ${llm.parameters ?? "14B"}`,
                       

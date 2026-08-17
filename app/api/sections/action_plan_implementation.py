@@ -1,3 +1,6 @@
+import os
+
+
 def build_action_plan_implementation_markdown(
     year: int,
     include_guide_column: bool = True,
@@ -27,6 +30,14 @@ def build_action_plan_implementation_markdown(
     def _text_to_html(value):
         text = _safe(value, "-")
         return _esc(text).replace("\n", "<br>")
+
+    def _api_base_url() -> str:
+        return (
+            os.getenv("VITE_API_BASE_URL")
+            or os.getenv("CAPSTONE_API_BASE_URL")
+            or os.getenv("API_BASE_URL")
+            or "http://127.0.0.1:8003"
+        ).rstrip("/")
 
     def _normalize_text(value) -> str:
         if value is None:
@@ -97,7 +108,7 @@ def build_action_plan_implementation_markdown(
             return "-"
     
         pdf_url = (
-            f"http://127.0.0.1:8000"
+            f"{_api_base_url()}"
             f"/api/final-deliveries/action-plan-implementation/guide/{_esc(guide_id)}/pdf"
         )
     

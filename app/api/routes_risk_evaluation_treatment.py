@@ -276,8 +276,8 @@ def _load_system_status_or_default(year: int) -> dict:
                 "scope_context": {"status": "Not Started"},
                 "assets_cia": {"status": "Not Started"},
                 "risk_analysis": {"status": "Not Started"},
-                "risk_evaluation_treatment": {"status": "Blocked"},
-                "annex_a_soa": {"status": "Blocked"},
+                "risk_evaluation_treatment": {"status": "Not Started"},
+                "annex_a_soa": {"status": "Not Started"},
             },
         }
 
@@ -298,8 +298,8 @@ def _load_system_status_or_default(year: int) -> dict:
         "scope_context": {"status": "Not Started"},
         "assets_cia": {"status": "Not Started"},
         "risk_analysis": {"status": "Not Started"},
-        "risk_evaluation_treatment": {"status": "Blocked"},
-        "annex_a_soa": {"status": "Blocked"},
+        "risk_evaluation_treatment": {"status": "Not Started"},
+        "annex_a_soa": {"status": "Not Started"},
     }
 
     for key, value in defaults.items():

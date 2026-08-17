@@ -1,3 +1,289 @@
 {
-  "cves": []
+  "cves": [
+    {
+      "CVE": "CVE-2019-0708",
+      "vulnerability": "Remote Desktop Services Remote Code Execution",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring is required for Remote Desktop Services Remote Code Execution on WS-01 because the risk is currently evaluated as Medium and was selected for ongoing monitoring instead of immediate treatment. Tracking security events, exposure, patch status, and remediation evidence helps confirm the risk stays controlled and supports ISO 27001 continual improvement.",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "hosts": [
+        {
+          "hostname": "WS-01",
+          "ip_address": "10.0.0.10",
+          "role": "Finance Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-004",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0002",
+              "responsible": "Endpoint Administrator + Security Monitoring Team",
+              "resources": "Host: WS-01 | Role: Finance Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Monitoring evidence for WS-01 under CVE-2019-0708: Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-0708.."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-02",
+          "ip_address": "10.0.0.11",
+          "role": "HR Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-005",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0003",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-02 / HR Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-02 shows monitoring activities implemented for Remote Desktop Services Remote Code Execution under control CVE-2019-0708, supporting recommended monitoring actions:\n- continuously monitor rdp-related logs and authentication events for hosts affected by cve-2019-0708.\n- configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- review exposed rdp services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- correlate endpoint, firewall, and windows event logs to detect exploitation attempts or abnormal lateral movement.\n- escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-03",
+          "ip_address": "10.0.0.12",
+          "role": "Standard Employee Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-006",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0004",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-03 / Standard Employee Workstation",
+              "date": "",
+              "url": "",
+              "desc": "The host WS-03, a Standard Employee Workstation, is monitored for CVE-2019-0708 under control context 8.8 and 8.21, focusing on RDP-related logs, authentication events, and patch status to detect exploitation attempts or abnormal lateral movement, ensuring vulnerability exposure remains mitigated through continuous tracking and correlation with network logs, aligning with ISO 27001\u2019s continual improvement requirements for remote access security."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-04",
+          "ip_address": "10.0.0.26",
+          "role": "Call Center Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-011",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0005",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-04 / Call Center Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-04 shows monitoring activities implemented for Remote Desktop Services Remote Code Execution under control CVE-2019-0708, supporting recommended monitoring actions:\n- continuously monitor rdp-related logs and authentication events for hosts affected by cve-2019-0708.\n- configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- review exposed rdp services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- correlate endpoint, firewall, and windows event logs to detect exploitation attempts or abnormal lateral movement.\n- escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-05",
+          "ip_address": "10.0.0.27",
+          "role": "Developer Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-012",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0006",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-05 / Developer Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-05 shows monitoring activities implemented for Remote Desktop Services Remote Code Execution under control CVE-2019-0708, supporting recommended monitoring actions:\n- continuously monitor rdp-related logs and authentication events for hosts affected by cve-2019-0708.\n- configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- review exposed rdp services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- correlate endpoint, firewall, and windows event logs to detect exploitation attempts or abnormal lateral movement.\n- escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        },
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Remote Desktop Services Remote Code Execution",
+          "risk": "Medium",
+          "riskid": "R-014",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0007",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-06 / Data Scientist Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-06 shows monitoring activities implemented for Remote Desktop Services Remote Code Execution under control CVE-2019-0708, supporting recommended monitoring actions:\n- continuously monitor rdp-related logs and authentication events for hosts affected by cve-2019-0708.\n- configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- review exposed rdp services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- correlate endpoint, firewall, and windows event logs to detect exploitation attempts or abnormal lateral movement.\n- escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2019-5736",
+      "vulnerability": "Docker Container Escape",
+      "implementation_status": "In Progress",
+      "justification": "Ongoing monitoring of Docker Container Escape (CVE-2019-5736) on WS-05, a Developer Workstation with Medium CIA rating, is required to detect unauthorized host binary modifications via runc vulnerabilities, review exposure through container execution paths, track remediation progress, collect evidence of exploitation attempts, and align with ISO 27001 continual improvement by ensuring timely mitigation of high-severity vulnerabilities that could compromise system integrity and confidentiality.",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2019-5736.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "hosts": [
+        {
+          "hostname": "WS-05",
+          "ip_address": "10.0.0.27",
+          "role": "Developer Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Docker Container Escape",
+          "risk": "Medium",
+          "riskid": "R-013",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0008",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-05 / Developer Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-05 shows monitoring activities implemented for Docker Container Escape under control CVE-2019-5736, supporting recommended monitoring actions:\n- continuously monitor rdp-related logs and authentication events for hosts affected by cve-2019-5736.\n- configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- review exposed rdp services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- correlate endpoint, firewall, and windows event logs to detect exploitation attempts or abnormal lateral movement.\n- escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2021-32797",
+      "vulnerability": "Jupyter Web Interface Exposure",
+      "implementation_status": "In Progress",
+      "justification": "Ongoing monitoring of the Jupyter Web Interface Exposure vulnerability (CVE-2021-32797) on Host WS-06, a Data Scientist Workstation with Medium CIA rating, is required to ensure timely detection of untrusted notebook execution attempts, review exposure through form validation bypasses, track remediation progress via evidence collection, and align with ISO 27001 continual improvement by maintaining risk mitigation effectiveness against this HIGH severity vulnerability with CVSS vector AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:N/A:N.",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2021-32797.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "hosts": [
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "Jupyter Web Interface Exposure",
+          "risk": "Medium",
+          "riskid": "R-015",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0009",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-06 / Data Scientist Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-06 shows monitoring activities implemented for Jupyter Web Interface Exposure under control CVE-2021-32797, supporting recommended monitoring actions:\n- continuously monitor rdp-related logs and authentication events for hosts affected by cve-2021-32797.\n- configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- review exposed rdp services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- correlate endpoint, firewall, and windows event logs to detect exploitation attempts or abnormal lateral movement.\n- escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "CVE-2020-15257",
+      "vulnerability": "TensorBoard Unauthorized Access",
+      "implementation_status": "In Progress",
+      "justification": "Monitoring is required for TensorBoard Unauthorized Access on WS-06 because the risk is currently evaluated as Medium and was selected for ongoing monitoring instead of immediate treatment. Tracking security events, exposure, patch status, and remediation evidence helps confirm the risk stays controlled and supports ISO 27001 continual improvement.",
+      "recommended_action": "Recommended monitoring actions:\n- Continuously monitor RDP-related logs and authentication events for hosts affected by CVE-2020-15257.\n- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.\n- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
+      "hosts": [
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "TensorBoard Unauthorized Access",
+          "risk": "Medium",
+          "riskid": "R-016",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0010",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-06 / Data Scientist Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-06 shows monitoring activities implemented for TensorBoard Unauthorized Access under control CVE-2020-15257, supporting recommended monitoring actions:\n- continuously monitor rdp-related logs and authentication events for hosts affected by cve-2020-15257.\n- configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.\n- review exposed rdp services regularly to verify patch effectiveness and confirm reduced attack exposure.\n- correlate endpoint, firewall, and windows event logs to detect exploitation attempts or abnormal lateral movement.\n- escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "UB-WS-05",
+      "vulnerability": "User Activity Behavior",
+      "implementation_status": "In Progress",
+      "justification": "Ongoing monitoring of User Activity Behavior on WS-05 is essential to detect anomalies that could indicate unauthorized access or malicious actions, ensuring timely exposure review and remediation tracking. This supports evidence collection for incident response and aligns with ISO 27001 continual improvement by refining controls based on real-world behavior patterns and emerging threats.",
+      "recommended_action": "Recommended monitoring actions:  \n- Monitor failed login attempts by logging all events and setting alerts for any non-zero occurrences, ensuring alignment with ISO 27001 8.16 (Monitoring activities) to detect anomalies and trigger immediate investigation.  \n- Track access frequency by establishing baseline thresholds for normal usage and alerting on deviations, supported by ISO 27001 5.15 (Access control) to ensure authorized access and identify unauthorized activity.  \n- Analyze login consistency by logging login times, locations, and devices, and flagging inconsistent patterns through ISO 27001 8.16 (Monitoring activities) for anomaly detection and potential unauthorized access.  \n- Log all password reset events and implement alerts for resets without proper justification, leveraging ISO 27001 5.15 (Access control) to prevent unauthorized account compromises.  \n- Monitor session duration by defining acceptable thresholds and escalating alerts for prolonged sessions, using ISO 27001 8.16 (Monitoring activities) to detect potential misuse or unauthorized activity.",
+      "hosts": [
+        {
+          "hostname": "WS-05",
+          "ip_address": "10.0.0.27",
+          "role": "Developer Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Medium",
+          "riskid": "R-021",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0011",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-05 / Developer Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Evidence for WS-05 shows monitoring activities implemented for User Activity Behavior under control UB-WS-05, supporting recommended monitoring actions:  \n- monitor failed login attempts by logging all events and setting alerts for any non-zero occurrences, ensuring alignment with iso 27001 8.16 (monitoring activities) to detect anomalies and trigger immediate investigation.  \n- track access frequency by establishing baseline thresholds for normal usage and alerting on deviations, supported by iso 27001 5.15 (access control) to ensure authorized access and identify unauthorized activity.  \n- analyze login consistency by logging login times, locations, and devices, and flagging inconsistent patterns through iso 27001 8.16 (monitoring activities) for anomaly detection and potential unauthorized access.  \n- log all password reset events and implement alerts for resets without proper justification, leveraging iso 27001 5.15 (access control) to prevent unauthorized account compromises.  \n- monitor session duration by defining acceptable thresholds and escalating alerts for prolonged sessions, using iso 27001 8.16 (monitoring activities) to detect potential misuse or unauthorized activity. and follow-up review by the ISMS auditor team."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "CVE": "UB-WS-06",
+      "vulnerability": "User Activity Behavior",
+      "implementation_status": "In Progress",
+      "justification": "Ongoing monitoring of User Activity Behavior on Host WS-06, a Data Scientist Workstation with Medium CIA rating, is essential to detect anomalies that could indicate unauthorized access or data manipulation. Regular exposure reviews ensure that potential risks are identified and addressed promptly, while remediation tracking guarantees that any identified issues are resolved effectively. Evidence collection supports the continual improvement of ISO 27001 controls by providing data for analysis and refinement of security measures, ensuring alignment with organizational objectives and regulatory requirements.",
+      "recommended_action": "Recommended monitoring actions:  \n- Monitor Failed Login Attempts by logging all failed access events, set alert thresholds for any increase above baseline (0), and review logs weekly to detect unauthorized access attempts, referencing ISO 27001:2022 8.16 (Monitoring activities).  \n- Track Access Frequency by analyzing login patterns, flagging deviations from normal usage (e.g., spikes in activity), and escalate anomalies for investigation, aligning with ISO 27001:2022 5.15 (Access control).  \n- Audit Login Consistency by verifying user authentication sources and times, ensuring consistency with defined policies, and escalating irregularities to security teams, referencing ISO 27001:2022 5.1 (Policies for information security).  \n- Log Password Resets by recording all reset events, correlating with user activity logs, and reviewing resets monthly to detect potential account compromise, in line with ISO 27001:2022 5.34 (Privacy and PII protection).  \n- Analyze Session Duration by tracking active session lengths, setting alerts for sessions exceeding predefined thresholds, and reviewing logs quarterly to identify unauthorized data access, referencing ISO 27001:2022 8.16 (Monitoring activities).",
+      "hosts": [
+        {
+          "hostname": "WS-06",
+          "ip_address": "10.0.0.28",
+          "role": "Data Scientist Workstation",
+          "CIA rating": "Medium",
+          "vulnerability_name": "User Activity Behavior",
+          "risk": "Medium",
+          "riskid": "R-022",
+          "evaluation": "Monitor",
+          "treatment": "-",
+          "evidence": [
+            {
+              "evidence_id": "MEVID-2026-0012",
+              "responsible": "Endpoint Security Team / ISMS Auditor Team",
+              "resources": "WS-06 / Data Scientist Workstation",
+              "date": "",
+              "url": "",
+              "desc": "Monitoring of User Activity Behavior on host WS-06, a Data Scientist Workstation with Medium CIA rating, ensures detection of unauthorized access attempts through failed login tracking, access frequency analysis, and session duration review, aligning with ISO 27001:2022 8.16 and 5.15 to address vulnerabilities in user behavior and access control policies."
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

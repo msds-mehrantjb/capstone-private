@@ -16,13 +16,6 @@ ASSET_DETAILS_FILE = BASE_DIR / "data" / "work" / "2026" / "AssetDetails.json"
 REMOTE_RELATIVE_PATH = r"C$\ProgramData\BehaviorAgent\UserBehaviorActivity.json"
 
 
-def connect_unc(ip):
-    cmd = [
-        "net", "use", f"\\\\{ip}\\C$",
-        "/user:CORP\\Administrator", "YourPassword"
-    ]
-    subprocess.run(cmd, capture_output=True)
-    
 def ensure_parent(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -88,17 +81,103 @@ def build_unc_from_ip(ip_address: str) -> str:
     return f"\\\\{ip_address}\\{REMOTE_RELATIVE_PATH}"
 
 
-def read_remote_behavior(ip_address: str) -> list:
-    connect_unc(ip_address)
+def _escape_ps_single_quoted(value: str) -> str:
+    return str(value).replace("'", "''")
 
+
+def _test_host_reachable(ip_address: str) -> bool:
+    command = (
+        f"try {{ "
+        f"if (Test-NetConnection -ComputerName '{_escape_ps_single_quoted(ip_address)}' -Port 445 -InformationLevel Quiet) "
+        f"{{ exit 0 }} else {{ exit 1 }} "
+        f"}} catch {{ exit 1 }}"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except Exception:
+        return False
+
+    return result.returncode == 0
+
+
+def _read_remote_behavior_with_credentials(ip_address: str, username: str, password: str) -> tuple[list, str]:
+    escaped_ip = _escape_ps_single_quoted(ip_address)
+    escaped_user = _escape_ps_single_quoted(username)
+    escaped_password = _escape_ps_single_quoted(password)
+
+    command = f"""
+$sec = ConvertTo-SecureString '{escaped_password}' -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential('{escaped_user}', $sec)
+$driveName = 'UAB' + [System.Guid]::NewGuid().ToString('N').Substring(0, 8)
+$root = '\\\\{escaped_ip}\\C$'
+$path = $null
+
+try {{
+    New-PSDrive -Name $driveName -PSProvider FileSystem -Root $root -Credential $cred -ErrorAction Stop | Out-Null
+    $path = '{{0}}:' -f $driveName
+    $path = Join-Path $path 'ProgramData\\BehaviorAgent\\UserBehaviorActivity.json'
+
+    if (-not (Test-Path -LiteralPath $path)) {{
+        Write-Output '__ERROR__:Behavior activity file not found on remote host.'
+        exit 3
+    }}
+
+    Get-Content -LiteralPath $path -Raw -Encoding UTF8
+    exit 0
+}} catch {{
+    Write-Output ('__ERROR__:' + $_.Exception.Message)
+    exit 2
+}} finally {{
+    if (Get-PSDrive -Name $driveName -ErrorAction SilentlyContinue) {{
+        Remove-PSDrive -Name $driveName -Force -ErrorAction SilentlyContinue
+    }}
+}}
+""".strip()
+
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except Exception as exc:
+        return [], str(exc)
+
+    stdout = (result.stdout or "").strip()
+    stderr = (result.stderr or "").strip()
+
+    if stdout.startswith("__ERROR__:"):
+        return [], stdout.replace("__ERROR__:", "", 1).strip()
+
+    if result.returncode == 0 and stdout:
+        try:
+            doc = json.loads(stdout)
+            return normalize_records(doc), ""
+        except Exception as exc:
+            return [], f"Failed to parse remote behavior JSON: {exc}"
+
+    error_text = stderr or stdout or f"PowerShell exited with code {result.returncode}"
+    return [], error_text
+
+
+def read_remote_behavior(ip_address: str, username: str, password: str) -> tuple[list, str, bool]:
     unc = build_unc_from_ip(ip_address)
     print(f"[DEBUG] Reading: {unc}")
 
-    doc = load_json_unc(unc, {"records": []})
-    records = normalize_records(doc)
+    records, error = _read_remote_behavior_with_credentials(ip_address, username, password)
+    reachable = _test_host_reachable(ip_address)
+
+    if error:
+        print(f"[DEBUG] Remote behavior read failed for {ip_address}: {error}")
 
     print(f"[DEBUG] Records found at {ip_address}: {len(records)}")
-    return records
+    return records, error, reachable
 
 
 def load_targets() -> list:
@@ -279,10 +358,25 @@ def sync_workstations_from_assetdetails(final_records: list, remote_hostnames_wi
     return synced_records, synced
 
 def merge_many_hosts(retention_days: int = 30) -> dict:
+    all_targets = load_targets()
     targets = [
-        h for h in load_targets()
+        h for h in all_targets
         if str(h.get("hostname", "")).strip().upper().startswith("WS-")
     ]
+    non_workstation_targets = []
+
+    for host in all_targets:
+        hostname = str(host.get("hostname", "")).strip().upper()
+        ip_address = str(host.get("ip_address", "")).strip()
+
+        if not hostname or hostname.startswith("WS-"):
+            continue
+
+        non_workstation_targets.append({
+            "hostname": hostname,
+            "ip_address": ip_address,
+            "reachable": _test_host_reachable(ip_address) if ip_address else False,
+        })
 
     central_doc = load_json_file(CENTRAL_FILE, {"records": []})
     central_records = normalize_records(central_doc)
@@ -296,6 +390,8 @@ def merge_many_hosts(retention_days: int = 30) -> dict:
     for host in targets:
         hostname = host.get("hostname", "Unknown")
         ip_address = str(host.get("ip_address", "")).strip()
+        username = str(host.get("username", "")).strip()
+        password = str(host.get("password", "")).strip()
 
         if not ip_address:
             results.append({
@@ -306,7 +402,7 @@ def merge_many_hosts(retention_days: int = 30) -> dict:
             })
             continue
 
-        remote_records = read_remote_behavior(ip_address)
+        remote_records, remote_error, reachable = read_remote_behavior(ip_address, username, password)
 
         for r in remote_records:
             if not str(r.get("hostname", "")).strip():
@@ -321,17 +417,23 @@ def merge_many_hosts(retention_days: int = 30) -> dict:
         if remote_records:
             remote_hostnames_with_data.add(normalized_hostname)
             host_status = "ok"
+        elif template_map.get(normalized_hostname) and reachable:
+            host_status = "populated_from_assetdetails_live_host"
         elif template_map.get(normalized_hostname):
-            host_status = "populated_from_assetdetails"
+            host_status = "populated_from_assetdetails_unreachable_host"
         else:
-            host_status = "no_remote_records"
+            host_status = "no_remote_records" if reachable else "unreachable"
 
-        results.append({
+        host_result = {
             "hostname": hostname,
             "ip_address": ip_address,
             "status": host_status,
             "records_merged": len(remote_records),
-        })
+            "reachable": reachable,
+        }
+        if remote_error:
+            host_result["error"] = remote_error
+        results.append(host_result)
 
     # Step 2: apply retention
     retained_records = apply_retention(list(merged.values()), retention_days)
@@ -355,6 +457,7 @@ def merge_many_hosts(retention_days: int = 30) -> dict:
         "asset_details_file": str(ASSET_DETAILS_FILE),
         "total_records": len(final_records),
         "hosts": results,
+        "non_workstation_targets": non_workstation_targets,
         "backfilled_hosts": backfilled,
         "backfilled_count": len(backfilled),
     }

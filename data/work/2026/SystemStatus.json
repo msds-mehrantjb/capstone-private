@@ -1,41 +1,59 @@
 {
   "meta": {
-    "name": "System Status",
+    "name": "SystemStatus",
     "version": "1.0"
   },
+  "updated_at": "2026-08-17T20:28:39.265034Z",
+  "year": 2026,
   "sections": {
     "scope_context": {
-      "status": "In Progress",
-      "scope_file_name": "2026-Scope-Draft-v0.json"
+      "status": "Completed",
+      "scope_file_name": "2026-Scope-v13.json"
     },
     "assets_cia": {
-      "status": "In Progress"
+      "status": "Completed"
     },
     "threats_vulns": {
-      "status": "Not Started"
+      "status": "Completed"
     },
     "existing_controls_postures": {
-      "status": "Not Started"
+      "status": "Completed"
     },
     "risk_analysis": {
-      "status": "Not Started"
+      "status": "Completed"
     },
     "risk_evaluation_treatment": {
-      "status": "Not Started"
+      "status": "Completed"
     },
     "annex_a_soa": {
-      "status": "Not Started"
+      "status": "Completed"
     },
     "action_plan_implementation": {
-      "status": "Not Started"
+      "status": "In Progress"
     },
     "monitoring_improvement": {
-      "status": "Not Started"
+      "status": "In Progress"
+    },
+    "reports": {
+      "status": "In Progress"
     },
     "controls_posture": {
-      "status": "Not Started"
+      "status": "Completed"
+    },
+    "risk_evaluation": {
+      "status": "Completed"
+    },
+    "risk_treatment": {
+      "status": "Completed"
+    },
+    "soa": {
+      "status": "Completed"
+    },
+    "action_plan": {
+      "status": "In Progress"
+    },
+    "monitoring": {
+      "status": "In Progress"
     }
-  },
-  "year": 2026,
-  "updated_at": "2026-04-28T22:53:36.769077Z"
+  }
 }

@@ -32,6 +32,8 @@ def build_risk_treatment_plan_markdown(year: int) -> str:
         # 🎨 Determine row color
         if treatment == "mitigate":
             bg_color = "#fdecea"  # light red
+        elif risk == "medium" or evaluation == "monitor":
+            bg_color = "#fde68a"  # stronger amber
         elif risk == "low" and evaluation == "accept":
             bg_color = "#e8f5e9"  # light green
         else:
@@ -40,7 +42,7 @@ def build_risk_treatment_plan_markdown(year: int) -> str:
         return (
             f'<tr style="background-color: {bg_color};">'
             + "".join(
-                f'<td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left !important;">{c}</td>'
+                f'<td style="background-color: {bg_color}; padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left !important;">{c}</td>'
                 for c in cells
             )
             + "</tr>"

@@ -3,31 +3,23 @@
     {
       "hostname": "SRV-01",
       "ip_address": "10.0.0.2",
-      "role": "Domain Controller (Active Directory)",
-      "CIA rating": "Critical",
-      "existing_controls": {
-        "Identity & Access Management": [
-          "Password Policies (complexity, rotation)",
-          "Active Directory Domain Services (AD DS)",
-          "Group Policy Objects (GPO)",
-          "Role-Based Access Control (RBAC)"
-        ],
-        "Endpoint Security Controls": [
-          "Antivirus / Anti-malware"
-        ],
-        "Network Security Controls": [
-          "DNS Security (DNS filtering / logging)"
-        ],
-        "Logging, Monitoring & Detection": [
-          "Windows Event Logging"
-        ],
-        "Vulnerability & Patch Management": [
-          "Patch Management (WSUS / SCCM)"
-        ],
-        "Physical & Environmental Controls": [
-          "Server Room Access Control"
-        ]
-      }
+      "role": "Unknown",
+      "CIA rating": "Medium",
+      "existing_controls": {}
+    },
+    {
+      "hostname": "WS-01",
+      "ip_address": "10.0.0.10",
+      "role": "Unknown",
+      "CIA rating": "Medium",
+      "existing_controls": {}
+    },
+    {
+      "hostname": "WS-02",
+      "ip_address": "10.0.0.11",
+      "role": "Unknown",
+      "CIA rating": "Medium",
+      "existing_controls": {}
     }
   ]
 }

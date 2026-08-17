@@ -1,10 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ShieldCheck,
   ChevronDown,
   Send,
   Plus,
 } from "lucide-react";
+import CommandHelpMessage, {
+  isCommandHelpMessage,
+} from "../components/CommandHelpMessage";
+import StepStatusBadge, {
+  normalizeStepStatus,
+} from "../components/StepStatusBadge";
 
 interface Section {
   id: string;
@@ -30,6 +36,9 @@ interface ScopeData {
 }
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+type SystemStatusDTO = {
+  sections: Record<string, { status?: string; scope_file_name?: string }>;
+};
 
 type AgentCommand =
   | "help"
@@ -54,9 +63,27 @@ interface AgentResponse {
   load_options?: LoadOption[] | null;
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 const YEAR = 2026;
 const BASELINE_SCOPE_FILE = `${YEAR}-Scope-Draft-v0.json`;
+
+async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE}/api/system/status?year=${YEAR}&_ts=${Date.now()}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as SystemStatusDTO;
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
+}
 
 function renderWithPlaceholders(text: string) {
   const parts = (text ?? "").split(/(\[[^\]]+\])/g);
@@ -100,13 +127,14 @@ function ShellCard({
 export default function ScopeContext() {
   const [data, setData] = useState<ScopeData | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [systemStatus, setSystemStatus] = useState<SystemStatusDTO | null>(null);
   const [selectedStep, setSelectedStep] = useState<number>(1);
 
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
       content:
-        "Scope & Context — Command Mode\n\n" +
+        "Scope & Context - Command Mode\n\n" +
         "Available commands:\n" +
         "/fill      → Fill the scope document in conversation mode\n" +
         "/autofill  → Load a specified version of the scope document or samples\n" +
@@ -179,6 +207,17 @@ export default function ScopeContext() {
   }, []);
 
   useEffect(() => {
+    (async () => {
+      try {
+        const status = await apiGetSystemStatus();
+        setSystemStatus(status);
+      } catch {
+        setSystemStatus(null);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
     if (!data?.meta?.popup_message) return;
     window.alert(data.meta.popup_message);
   }, [data]);
@@ -186,6 +225,10 @@ export default function ScopeContext() {
   const title = useMemo(() => data?.meta?.title ?? "Scope & Context", [data]);
   const activeScopeFile = data?.meta?.source_file?.trim() ?? "";
   const isBaselineScopeFile = activeScopeFile === BASELINE_SCOPE_FILE;
+  const scopeStatus = normalizeStepStatus(
+    systemStatus?.sections?.scope_context?.status ??
+      (isBaselineScopeFile ? "Not Started" : "Completed")
+  );
 
   async function callAgent(commandRaw: string, answer?: string): Promise<AgentResponse> {
     const command = stripSlash(commandRaw).toLowerCase() as AgentCommand;
@@ -257,7 +300,7 @@ export default function ScopeContext() {
     } catch (e) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `⚠️ ${e instanceof Error ? e.message : String(e)}` },
+        { role: "assistant", content: `Warning: ${e instanceof Error ? e.message : String(e)}` },
       ]);
     } finally {
       setSending(false);
@@ -313,7 +356,7 @@ export default function ScopeContext() {
           {
             role: "assistant",
             content:
-              "I’m in command mode.\n\n" +
+              "I'm in command mode.\n\n" +
               "Type /commands to see the full list.\n" +
               "Tip: use /fill to start conversation mode.",
           },
@@ -330,7 +373,7 @@ export default function ScopeContext() {
     } catch (e) {
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: `⚠️ ${e instanceof Error ? e.message : String(e)}` },
+        { role: "assistant", content: `Warning: ${e instanceof Error ? e.message : String(e)}` },
       ]);
     } finally {
       setSending(false);
@@ -458,8 +501,9 @@ export default function ScopeContext() {
 
                   <div className="flex flex-wrap items-center gap-2 text-sm text-slate-300">
                     <span>Year: {data?.meta?.year ?? YEAR}</span>
-                    <span>•</span>
+                    <span>|</span>
                     <span>Version: {data?.meta?.version ?? "NA"}</span>
+                    <StepStatusBadge status={scopeStatus} />
                   </div>
                 </div>
               </div>
@@ -480,7 +524,7 @@ export default function ScopeContext() {
               <div className="shrink-0 text-lg font-semibold">{renderWithPlaceholders(title)}</div>
 
               <div className="mt-2 text-sm text-slate-400">
-                Year: <span className="text-slate-200">{data?.meta?.year ?? YEAR}</span> • Version:{" "}
+                Year: <span className="text-slate-200">{data?.meta?.year ?? YEAR}</span> | Version:{" "}
                 <span className="text-slate-200">{data?.meta?.version ?? "NA"}</span>
               </div>
 
@@ -493,7 +537,7 @@ export default function ScopeContext() {
                   </div>
                 ) : !data ? (
                   <div className="rounded-xl border border-white/10 bg-white/5 p-6 ring-1 ring-white/10">
-                    <div className="text-sm text-slate-300">Loading Scope &amp; Context…</div>
+                    <div className="text-sm text-slate-300">Loading Scope &amp; Context...</div>
                   </div>
                 ) : (
                   <div className="space-y-8">
@@ -526,7 +570,7 @@ export default function ScopeContext() {
                 <div className="text-lg font-semibold">Assistant</div>
                 <div className="text-sm text-slate-400">
                   {sending
-                    ? "Working…"
+                    ? "Working..."
                     : loadOptions && fillQuestion === "__LOAD__"
                     ? "Load menu"
                     : fillQuestion
@@ -540,16 +584,23 @@ export default function ScopeContext() {
                   <div className="space-y-3">
                     {messages.map((m, idx) => {
                       const isUser = m.role === "user";
+                      const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
                       return (
                         <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                           <div
-                            className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                            className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                              isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                            } ${
                               isUser
-                                ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                                : "bg-white/5 text-slate-200 ring-white/10"
+                                ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                                : "w-full bg-white/5 text-slate-200 ring-white/10"
                             }`}
                           >
-                            {m.content}
+                            {isCommandMessage ? (
+                              <CommandHelpMessage content={m.content} />
+                            ) : (
+                              m.content
+                            )}
                           </div>
                         </div>
                       );
@@ -557,9 +608,9 @@ export default function ScopeContext() {
 
                     {sending ? (
                       <div className="flex justify-start">
-                        <div className="max-w-[90%] rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
-                          Thinking…
-                        </div>
+                      <div className="w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
+                          Thinking...
+                      </div>
                       </div>
                     ) : null}
 
@@ -721,6 +772,7 @@ export default function ScopeContext() {
                   <span className="text-sm text-slate-300">
                     Year: {data?.meta?.year ?? YEAR} - Version: {data?.meta?.version ?? "NA"}
                   </span>
+                  <StepStatusBadge status={scopeStatus} />
                 </div>
               </div>
             </div>
@@ -747,7 +799,7 @@ export default function ScopeContext() {
             <div className="shrink-0 text-lg font-semibold">{renderWithPlaceholders(title)}</div>
 
             <div className="mt-2 text-sm text-slate-400">
-              Year: <span className="text-slate-200">{data?.meta?.year ?? YEAR}</span> • Version:{" "}
+              Year: <span className="text-slate-200">{data?.meta?.year ?? YEAR}</span> | Version:{" "}
               <span className="text-slate-200">{data?.meta?.version ?? "NA"}</span>
             </div>
 
@@ -760,7 +812,7 @@ export default function ScopeContext() {
                 </div>
               ) : !data ? (
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-6 ring-1 ring-white/10">
-                  <div className="text-sm text-slate-300">Loading Scope &amp; Context…</div>
+                  <div className="text-sm text-slate-300">Loading Scope &amp; Context...</div>
                 </div>
               ) : (
                 <div className="space-y-8">
@@ -796,7 +848,7 @@ export default function ScopeContext() {
               <div className="text-lg font-semibold">Assistant</div>
               <div className="text-sm text-slate-400">
                 {sending
-                  ? "Working…"
+                  ? "Working..."
                   : loadOptions && fillQuestion === "__LOAD__"
                   ? "Load menu"
                   : fillQuestion
@@ -810,16 +862,23 @@ export default function ScopeContext() {
                 <div className="space-y-3">
                   {messages.map((m, idx) => {
                     const isUser = m.role === "user";
+                    const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
                     return (
                       <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                         <div
-                          className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                          className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                            isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                          } ${
                             isUser
-                              ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                              : "bg-white/5 text-slate-200 ring-white/10"
+                              ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                              : "w-full bg-white/5 text-slate-200 ring-white/10"
                           }`}
                         >
-                          {m.content}
+                          {isCommandMessage ? (
+                            <CommandHelpMessage content={m.content} />
+                          ) : (
+                            m.content
+                          )}
                         </div>
                       </div>
                     );
@@ -827,8 +886,8 @@ export default function ScopeContext() {
 
                   {sending ? (
                     <div className="flex justify-start">
-                      <div className="max-w-[90%] rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
-                        Thinking…
+                      <div className="w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
+                        Thinking...
                       </div>
                     </div>
                   ) : null}

@@ -18,7 +18,7 @@
         {
           "hostname": "SRV-01",
           "role": "Domain Controller (Active Directory)",
-          "operating_system": "Windows Server 2022",
+          "operating_system": "Windows Server 2019",
           "location": {
             "name": "10.0.0.0/28",
             "ip_address": "10.0.0.2"
@@ -30,7 +30,7 @@
           "detail": {
             "device_profile": {
               "os_type": "Windows Server",
-              "os_version": "Windows Server 2022",
+              "os_version": "Windows Server 2019",
               "is_domain_joined": true,
               "hostname_pattern": "SRV"
             },
@@ -80,7 +80,7 @@
               "predicted_roles": [
                 "Domain Controller (Active Directory)"
               ],
-              "confidence": "0.85",
+              "confidence": "0.8467",
               "feature_completeness_ratio": 1.0
             },
             "rag_based_role_detection": {

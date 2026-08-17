@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Optional
+import os
 import re
 import subprocess
 import json
@@ -10,6 +11,12 @@ from pydantic import BaseModel
 from app.api.aiml_kpi_telemetry import ollama_total_tokens, safe_increment_llm_counter
 
 LLM_MODEL = "qwen3:14b"
+ENABLE_LLM_MITIGATIONS = os.getenv("ENABLE_LLM_MITIGATIONS", "").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
 
 router = APIRouter(
     prefix="/api/threat-vulnerabilities",
@@ -25,6 +32,10 @@ class CreateThreatAssessmentRequest(BaseModel):
 
 
 class ResetThreatAssessmentRequest(BaseModel):
+    year: int = 2026
+
+
+class SubmitThreatAssessmentRequest(BaseModel):
     year: int = 2026
 
 
@@ -108,10 +119,23 @@ def _read_json(path: Path, default: Any):
 
 def _write_json(path: Path, data: Any):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    tmp_path = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    tmp_path.write_text(
         json.dumps(data, indent=2, ensure_ascii=False),
         encoding="utf-8",
     )
+    tmp_path.replace(path)
+
+
+def _default_system_status(year: int) -> dict:
+    return {
+        "meta": {
+            "name": "System Status",
+            "version": "1.0",
+        },
+        "sections": {},
+        "year": year,
+    }
 
 
 def _normalize_hosts(data: Any) -> list[dict]:
@@ -177,18 +201,14 @@ def _update_system_status(year: int, new_status: str):
         raise ValueError(f"Invalid status: {new_status}")
 
     path = _system_status_file(year)
-
-    if not path.exists():
-        raise FileNotFoundError(f"systemstatus.json not found: {path}")
-
-    data = _read_json(path, None)
-
+    data = _read_json(path, _default_system_status(year))
     if not isinstance(data, dict):
-        raise ValueError(f"Invalid systemstatus.json structure: {path}")
+        data = _default_system_status(year)
 
     sections = data.get("sections")
     if not isinstance(sections, dict):
-        raise ValueError(f"Missing 'sections' in: {path}")
+        sections = {}
+        data["sections"] = sections
 
     if "threats_vulns" not in sections or not isinstance(sections["threats_vulns"], dict):
         sections["threats_vulns"] = {}
@@ -223,6 +243,19 @@ def _extract_assets_from_inventory(data: Any) -> list[dict]:
 
 def _compute_threat_status_from_data(hosts: list[dict]) -> str:
     return "In Progress" if hosts else "Not Started"
+
+
+def _count_vulnerability_rows(hosts: list[dict]) -> int:
+    total = 0
+    for host in hosts:
+        if not isinstance(host, dict):
+            continue
+
+        items = host.get("vulnerabilities_threats", [])
+        if isinstance(items, list):
+            total += len(items)
+
+    return total
 
 def _build_threat_file_from_inventory(inventory_data: Any) -> dict:
     hosts: list[dict] = []
@@ -585,23 +618,27 @@ def _verify_scanner():
 
 def _verify_llm():
     try:
-        response = requests.post(
-            "http://127.0.0.1:11434/api/generate",
-            json={
-                "model": LLM_MODEL,
-                "prompt": "Reply with OK only.",
-                "stream": False,
-                "options": {
-                    "temperature": 0
-                }
-            },
-            timeout=15,
+        response = requests.get(
+            "http://127.0.0.1:11434/api/tags",
+            timeout=10,
         )
         response.raise_for_status()
         raw = response.json()
-        text = str(raw.get("response", "")).strip()
-        if not text:
-            raise RuntimeError("LLM returned empty response.")
+
+        models = raw.get("models", [])
+        if not isinstance(models, list):
+            raise RuntimeError("LLM service returned an invalid model list.")
+
+        model_names = {
+            str(model.get("name", "")).strip()
+            for model in models
+            if isinstance(model, dict)
+        }
+
+        if LLM_MODEL not in model_names:
+            raise RuntimeError(
+                f"Required Ollama model '{LLM_MODEL}' is not available."
+            )
     except Exception as e:
         raise HTTPException(
             status_code=502,
@@ -612,7 +649,16 @@ def _run_preflight(year: int):
     _verify_required_files(year)
     _verify_ml_models()
     _verify_cve_source_available()
-    _verify_llm()
+
+
+def _llm_preflight_warning() -> str:
+    if not ENABLE_LLM_MITIGATIONS:
+        return "LLM mitigations are disabled for threat assessments. Using built-in fallback mitigations."
+    try:
+        _verify_llm()
+        return ""
+    except HTTPException as e:
+        return str(e.detail)
 
 
 def _collect_host_evidence_with_existing_helpers(host: dict) -> dict:
@@ -1305,6 +1351,17 @@ Output example:
         ],
     }
 
+    if not ENABLE_LLM_MITIGATIONS:
+        return fallback_map.get(
+            cve.upper(),
+            [
+                "Apply the vendor security update for the affected product",
+                "Restrict access to the exposed service using firewall rules or segmentation",
+                "Limit administrative access using least privilege principles",
+                "Enable logging and monitor for suspicious activity related to the affected service",
+            ],
+        )
+
     try:
         response = requests.post(
             "http://127.0.0.1:11434/api/generate",
@@ -1373,11 +1430,16 @@ def create_new_threat_assessment(req: CreateThreatAssessmentRequest):
 
     inventory_data = _read_json(inventory_path, {})
     threat_data = _build_threat_file_from_inventory(inventory_data)
+    llm_warning = _llm_preflight_warning()
 
     progress_messages = [
         "Starting new threat and vulnerability assessment...",
         "Collecting host evidence...",
     ]
+    if llm_warning:
+        progress_messages.append(
+            "LLM service is unavailable or warming up. Using built-in fallback mitigations."
+        )
 
     hosts = threat_data.get("hosts", [])
     if not isinstance(hosts, list):
@@ -1493,6 +1555,7 @@ def create_new_threat_assessment(req: CreateThreatAssessmentRequest):
             "status": status,
             "message": "Threat and vulnerability assessment completed successfully.",
             "progress_messages": progress_messages,
+            "warnings": [llm_warning] if llm_warning else [],
             "kpis": {
                 "vulnerabilities": total_vulnerabilities,
                 "threats": total_threats,
@@ -1556,6 +1619,63 @@ def reset_threat_assessment(req: ResetThreatAssessmentRequest):
         "status": status,
         "message": "Threat and vulnerability entries were cleared.",
         "cleared_items": cleared_count,
+    }
+
+
+@router.post("/submit")
+def submit_threat_assessment(req: SubmitThreatAssessmentRequest):
+    threat_path = _tv_file(req.year)
+
+    if not threat_path.exists():
+        raise HTTPException(status_code=404, detail=f"Threat assessment file not found: {threat_path}")
+
+    raw = _read_json(threat_path, None)
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=500, detail=f"Invalid JSON structure in: {threat_path}")
+
+    hosts = _normalize_hosts(raw)
+    if not hosts:
+        raise HTTPException(
+            status_code=400,
+            detail="There are no threat assessment hosts to submit yet. Run /assess first.",
+        )
+
+    vulnerability_count = _count_vulnerability_rows(hosts)
+    if vulnerability_count == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Threat assessment has no vulnerability records yet. Run /assess before /submit.",
+        )
+
+    try:
+        _update_system_status(req.year, "Completed")
+        status_doc = _read_json(_system_status_file(req.year), _default_system_status(req.year))
+        if isinstance(status_doc, dict):
+            sections = status_doc.get("sections")
+            if not isinstance(sections, dict):
+                sections = {}
+                status_doc["sections"] = sections
+
+            next_section = sections.get("existing_controls_postures")
+            if not isinstance(next_section, dict):
+                next_section = {}
+                sections["existing_controls_postures"] = next_section
+
+            if next_section.get("status") != "Completed":
+                next_section["status"] = "In Progress"
+
+            _write_json(_system_status_file(req.year), status_doc)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Threat assessment submit succeeded logically, but failed to update systemstatus.json: {e}",
+        ) from e
+
+    return {
+        "success": True,
+        "year": req.year,
+        "status": "Completed",
+        "message": "Threat and vulnerability assessment submitted successfully.",
     }
 
 

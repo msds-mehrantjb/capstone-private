@@ -244,6 +244,18 @@ def _extract_assets_from_inventory(data: Any) -> list[dict]:
     return assets
 
 
+def _load_asset_inventory_host_map(year: int) -> dict[str, dict]:
+    data = _read_json(_asset_inventory_file(year), {})
+    result: dict[str, dict] = {}
+
+    for asset in _extract_assets_from_inventory(data):
+        hostname = _normalize_hostname(asset.get("hostname", ""))
+        if hostname:
+            result[hostname] = asset
+
+    return result
+
+
 def _build_controls_file_from_inventory(inventory_data: Any) -> dict:
     hosts: list[dict] = []
 
@@ -365,6 +377,89 @@ def _extract_existing_control_from_assetdetails(asset_host: dict) -> dict[str, l
     return cleaned
 
 
+def _extract_live_controls_from_inventory_asset(asset: dict) -> dict[str, list[str]]:
+    if not isinstance(asset, dict):
+        return {}
+
+    role = str(asset.get("role", "")).strip()
+    role_lower = role.lower()
+
+    detail = asset.get("detail", {})
+    if not isinstance(detail, dict):
+        detail = {}
+
+    indicators = detail.get("technical_indicators", {})
+    if not isinstance(indicators, dict):
+        indicators = {}
+
+    open_ports = indicators.get("open_ports", [])
+    if not isinstance(open_ports, list):
+        open_ports = []
+
+    running_services = indicators.get("running_services", [])
+    if not isinstance(running_services, list):
+        running_services = []
+    running_text = " | ".join(str(x).strip().lower() for x in running_services if str(x).strip())
+
+    installed_roles = indicators.get("installed_roles", [])
+    if not isinstance(installed_roles, list):
+        installed_roles = []
+    installed_roles_text = " | ".join(str(x).strip().lower() for x in installed_roles if str(x).strip())
+
+    installed_software = indicators.get("installed_software", [])
+    if not isinstance(installed_software, list):
+        installed_software = []
+    installed_software_text = " | ".join(str(x).strip().lower() for x in installed_software if str(x).strip())
+
+    controls: dict[str, list[str]] = {}
+
+    def add(category: str, value: str) -> None:
+        if not value:
+            return
+        controls.setdefault(category, [])
+        if value not in controls[category]:
+            controls[category].append(value)
+
+    add("Identity & Access Management", "Password Policies (complexity, rotation)")
+
+    if (
+        "domain controller" in role_lower
+        or "active directory" in role_lower
+        or "active directory domain services" in running_text
+        or "ad ds" in installed_roles_text
+        or 88 in open_ports
+        or 389 in open_ports
+        or 636 in open_ports
+    ):
+        add("Identity & Access Management", "Active Directory Domain Services (AD DS)")
+        add("Identity & Access Management", "Group Policy Objects (GPO)")
+        add("Identity & Access Management", "Role-Based Access Control (RBAC)")
+
+    if "dns server" in running_text or "dns server" in installed_roles_text or 53 in open_ports:
+        add("Network Security Controls", "DNS Security (DNS filtering / logging)")
+
+    if (
+        "windows server" in str(asset.get("operating_system", "")).strip().lower()
+        or "server" in role_lower
+        or "vmware tools" in installed_software_text
+    ):
+        add("Endpoint Security Controls", "Secure Boot")
+        add("Physical & Environmental Controls", "Server Room Access Control")
+
+    add("Endpoint Security Controls", "Antivirus / Anti-malware")
+
+    if open_ports or running_services:
+        add("Network Security Controls", "Windows Firewall (Host-based)")
+
+    if running_services or installed_roles or installed_software:
+        add("Logging, Monitoring & Detection", "Windows Event Logging")
+
+    if "server" in role_lower or "domain controller" in role_lower or "dns server" in role_lower:
+        add("Vulnerability & Patch Management", "Patch Management (WSUS / SCCM)")
+
+    return controls
+
+
 def _load_vm_targets_map() -> dict[str, dict]:
     path = _targets_file()
     data = _read_json(path, {})
@@ -420,6 +515,38 @@ def _run_vm_controls_scanner(year: int) -> dict[str, dict]:
     return vm_map
 
 
+def _is_vm_target_reachable(ip_address: str, hostname: str = "") -> bool:
+    candidates: list[str] = []
+
+    if str(hostname).strip():
+        candidates.append(str(hostname).strip())
+    if str(ip_address).strip() and str(ip_address).strip() not in candidates:
+        candidates.append(str(ip_address).strip())
+
+    for target in candidates:
+        try:
+            result = subprocess.run(
+                [
+                    "powershell",
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    f"try {{ Test-WSMan -ComputerName '{target}' | Out-Null; exit 0 }} catch {{ exit 1 }}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+        except Exception:
+            continue
+
+        if result.returncode == 0:
+            return True
+
+    return False
+
+
 @router.post("/new")
 def create_new_controls_postures(req: CreateControlsPosturesRequest):
     if not _has_submitted_scope_document():
@@ -469,7 +596,11 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
             detail="Submit the Scope & Context document first before starting Existing Controls & Postures.",
         )
 
-    fallback_vm_hosts: list[str] = []
+    live_vm_hosts: list[str] = []
+    direct_vm_controls_hosts: list[str] = []
+    live_inventory_fallback_vm_hosts: list[str] = []
+    assetdetails_fallback_vm_hosts: list[str] = []
+    unreachable_vm_hosts: list[str] = []
 
     controls_path = _controls_file(req.year)
 
@@ -486,6 +617,7 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
 
     targets_map = _load_vm_targets_map()
     assetdetails_map = _load_assetdetails_host_map(req.year)
+    inventory_host_map = _load_asset_inventory_host_map(req.year)
 
     vm_results_map: dict[str, dict] = {}
     if targets_map:
@@ -494,7 +626,6 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"VM scanning failed: {e}") from e
 
-    active_vm_hosts: list[str] = []
     other_hosts: list[str] = []
 
     for host in hosts:
@@ -505,19 +636,30 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
         normalized_hostname = _normalize_hostname(hostname)
 
         if normalized_hostname in targets_map:
+            target_host = targets_map.get(normalized_hostname, {})
+            target_ip = str(target_host.get("ip_address", "")).strip()
+            if _is_vm_target_reachable(target_ip, hostname):
+                live_vm_hosts.append(hostname)
+            else:
+                unreachable_vm_hosts.append(hostname)
+
             vm_host = vm_results_map.get(normalized_hostname, {})
             vm_controls = _safe_existing_controls(vm_host)
-        
+
             if vm_controls:
                 host["existing_controls"] = vm_controls
-                active_vm_hosts.append(hostname)
+                direct_vm_controls_hosts.append(hostname)
             else:
-                asset_host = assetdetails_map.get(normalized_hostname, {})
-                fallback_controls = _extract_existing_control_from_assetdetails(asset_host)
+                inventory_asset = inventory_host_map.get(normalized_hostname, {})
+                fallback_controls = _extract_live_controls_from_inventory_asset(inventory_asset)
+                if not fallback_controls:
+                    asset_host = assetdetails_map.get(normalized_hostname, {})
+                    fallback_controls = _extract_existing_control_from_assetdetails(asset_host)
+                    if fallback_controls:
+                        assetdetails_fallback_vm_hosts.append(hostname)
+                else:
+                    live_inventory_fallback_vm_hosts.append(hostname)
                 host["existing_controls"] = fallback_controls
-        
-                if fallback_controls:
-                    fallback_vm_hosts.append(hostname)
         else:
             asset_host = assetdetails_map.get(normalized_hostname, {})
             host["existing_controls"] = _extract_existing_control_from_assetdetails(asset_host)
@@ -536,20 +678,38 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
 
     lines = [
         "Existing Controls & Postures assessment completed succesfully.",
-        "Active VM machines:",
+        "Live VM machines detected:",
     ]
-    
-    if active_vm_hosts:
-        lines.extend([f"- {name}" for name in active_vm_hosts])
+
+    if live_vm_hosts:
+        lines.extend([f"- {name}" for name in live_vm_hosts])
     else:
         lines.append("- None")
-    
-    lines.append("VM hosts populated using synthetic data:")
-    if fallback_vm_hosts:
-        lines.extend([f"- {name}" for name in fallback_vm_hosts])
+
+    lines.append("VM hosts with direct live controls collection:")
+    if direct_vm_controls_hosts:
+        lines.extend([f"- {name}" for name in direct_vm_controls_hosts])
     else:
         lines.append("- None")
-    
+
+    lines.append("VM hosts populated using live inventory fallback:")
+    if live_inventory_fallback_vm_hosts:
+        lines.extend([f"- {name}" for name in live_inventory_fallback_vm_hosts])
+    else:
+        lines.append("- None")
+
+    lines.append("VM hosts populated using AssetDetails fallback:")
+    if assetdetails_fallback_vm_hosts:
+        lines.extend([f"- {name}" for name in assetdetails_fallback_vm_hosts])
+    else:
+        lines.append("- None")
+
+    lines.append("Configured VM targets not reachable:")
+    if unreachable_vm_hosts:
+        lines.extend([f"- {name}" for name in unreachable_vm_hosts])
+    else:
+        lines.append("- None")
+
     lines.append("Other hosts:")
     if other_hosts:
         lines.extend([f"- {name}" for name in other_hosts])
@@ -560,7 +720,11 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
         "success": True,
         "year": req.year,
         "status": "In Progress",
-        "active_vm_hosts": active_vm_hosts,
+        "live_vm_hosts": live_vm_hosts,
+        "direct_vm_controls_hosts": direct_vm_controls_hosts,
+        "live_inventory_fallback_vm_hosts": live_inventory_fallback_vm_hosts,
+        "assetdetails_fallback_vm_hosts": assetdetails_fallback_vm_hosts,
+        "unreachable_vm_hosts": unreachable_vm_hosts,
         "other_hosts": other_hosts,
         "message": "\n".join(lines),
     }

@@ -1,3 +1,476 @@
 {
-  "controls": []
+  "controls": [
+    {
+      "control": "6.7",
+      "control_name": "Remote working",
+      "implementation_status": "Planned",
+      "justification": "Control 6.7 (Remote working) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Ensure security in remote work.",
+      "treatment_action": "Recommended treatment actions:  \n- Implement and enforce secure remote access protocols (e.g., VPN, Zero Trust) for all remote users connecting to SRV-01 and SRV-03  \n- Apply the latest security patches to address CVE-2020-1350 and CVE-2017-0144 on affected hosts  \n- Conduct regular vulnerability scans and penetration tests on remote access points and network segments  \n- Provide mandatory remote working security training to all employees accessing critical systems",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0001",
+              "responsible": "Identity & Access Management Team / ISMS Auditor Team",
+              "resources": "SRV-01 / Domain Controller (Active Directory)",
+              "date": "",
+              "url": "",
+              "desc": "The implementation of secure remote access protocols (e.g., Zero Trust) for all remote users connecting to host SRV-01 under control 6.7 (Remote working) provides evidence that security measures are in place to protect the Domain Controller from unauthorized access and exploitation of vulnerabilities like CVE-2020-1350."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "riskid": "R-007",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0002",
+              "responsible": "Infrastructure Operations Team / ISMS Auditor Team",
+              "resources": "SRV-03 / File Server",
+              "date": "",
+              "url": "",
+              "desc": "The implementation of secure remote access protocols and application of patches for CVE-2017-0144 on SRV-03, a File Server, provides evidence that control 6.7 (Remote working) has been addressed by mitigating the SMB Remote Code Execution vulnerability through technical measures."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.2",
+      "control_name": "Network security",
+      "implementation_status": "Planned",
+      "justification": "Control 8.2 (Network security) is recommended because the risk context includes medium, technical vulnerability; its ISO 27002 purpose is Protect networks.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply security patches for CVE-2020-1472 on SRV-01 (Domain Controller) to mitigate Netlogon Elevation of Privilege vulnerability  \n- Apply security patches for CVE-2020-1350 on SRV-02 (DNS Server) to address Windows DNS Server Remote Code Execution vulnerability  \n- Implement network segmentation to isolate SRV-01 and SRV-02 in separate VLANs with restricted access  \n- Configure firewall rules to block unauthorized traffic to SRV-01 (Domain Controller) and SRV-02 (DNS Server)  \n- Enforce least privilege access controls for administrative accounts on both hosts  \n- Deploy intrusion detection systems (IDS) and intrusion prevention systems (IPS) to monitor network traffic to these hosts  \n- Enable multi-factor authentication (MFA) for remote administration access to SRV-01 and SRV-02  \n- Harden DNS server configuration on SRV-02 by disabling unnecessary services and applying DNS security best practices  \n- Conduct regular vulnerability scans using automated tools aligned with ISO 27002:2022 control 8.8  \n- Implement endpoint protection solutions on all devices accessing SRV-01 and SRV-02 networks",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0003",
+              "responsible": "Identity & Access Management Team / ISMS Auditor Team",
+              "resources": "SRV-01 / Domain Controller (Active Directory)",
+              "date": "",
+              "url": "",
+              "desc": "The application of security patches for CVE-2020-1472 on host SRV-01 (Domain Controller) under control 8.2 (Network security) demonstrates mitigation of the Netlogon Elevation of Privilege vulnerability, ensuring network protection against unauthorized access."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0004",
+              "responsible": "Network & Infrastructure Security Team / ISMS Auditor Team",
+              "resources": "SRV-02 / DNS Server",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-02 (DNS Server) has applied the security patch for CVE-2020-1350 under control 8.2 (Network security), demonstrating that the Windows DNS Server Remote Code Execution vulnerability has been mitigated to protect network integrity."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.21",
+      "control_name": "Network services security",
+      "implementation_status": "In Progress",
+      "justification": "Control 8.21 (Network services security) is recommended because the risk context includes medium, technical vulnerability; its ISO 27002 purpose is Secure services.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply the latest security patches and updates from Microsoft to address CVE-2020-1472, CVE-2020-1350, CVE-2017-0144, and CVE-2021-31166 on all affected hosts.  \n- Disable or configure Netlogon and DNS services on SRV-01 and SRV-02 to restrict unnecessary network communication.  \n- Implement network segmentation to isolate SRV-01 (Domain Controller) and SRV-02 (DNS Server) from less secure segments.  \n- Configure firewall rules to block unauthorized access to SRV-03 (File Server) and SRV-04 (Application Server) ports used by SMB, WinRM, and web applications.  \n- Enforce TLS 1.2 or higher for WinRM and disable plaintext authentication on SRV-03 and SRV-04.  \n- Conduct a vulnerability scan using automated tools (e.g., Nessus, OpenVAS) to identify residual risks after patching.  \n- Perform penetration testing on SRV-01, SRV-02, SRV-03, and SRV-04 to validate the effectiveness of applied controls.  \n- Update application configurations on SRV-04 to mitigate CVE-2021-44228 (Log4j) by disabling remote code execution features.  \n- Implement a Web Application Firewall (WAF) on SRV-04 to filter malicious traffic targeting the web application.  \n- Enable logging and monitoring for all network services on SRV-01, SRV-02, SRV-03, and SRV-04, with alerts for suspicious activity.  \n- Review and update the information security requirements in project management (Control 5.8) to include network service hardening as a mandatory deliverable.  \n- Schedule regular audits of network service configurations to ensure alignment with ISO 27002:2022 Control 8.21 and 8.8.",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0005",
+              "responsible": "Identity & Access Management Team / ISMS Auditor Team",
+              "resources": "SRV-01 / Domain Controller (Active Directory)",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-01, under control 8.21, has the latest security patches applied to address CVE-2020-1472, ensuring network services are secured against elevation of privilege vulnerabilities."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0006",
+              "responsible": "Identity & Access Management Team / ISMS Auditor Team",
+              "resources": "SRV-01 / Domain Controller (Active Directory)",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-01, acting as a Domain Controller, has been patched against CVE-2020-1350 and its Netlogon and DNS services configured to restrict unnecessary communication, providing evidence that network services are secured in accordance with Control 8.21."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0007",
+              "responsible": "Network & Infrastructure Security Team / ISMS Auditor Team",
+              "resources": "SRV-02 / DNS Server",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-02 (DNS Server) has applied the latest security patches to address CVE-2020-1350 and configured Netlogon and DNS services to restrict unnecessary network communication, ensuring the security of network services under Control 8.21."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "riskid": "R-007",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0008",
+              "responsible": "Infrastructure Operations Team / ISMS Auditor Team",
+              "resources": "SRV-03 / File Server",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-03 has applied the latest security patches addressing CVE-2017-0144 and configured firewall rules to restrict unauthorized access to SMB ports, ensuring network services are secured as required by control 8.21."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-008",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0009",
+              "responsible": "Infrastructure Operations Team / ISMS Auditor Team",
+              "resources": "SRV-03 / File Server",
+              "date": "",
+              "url": "",
+              "desc": "Firewall rules on SRV-03 (File Server) under Control 8.21 (Network services security) block unauthorized access to WinRM ports and enforce TLS 1.2, mitigating CVE-2021-31166 exposure."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "riskid": "R-009",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0010",
+              "responsible": "Application & Platform Security Team / ISMS Auditor Team",
+              "resources": "SRV-04 / Application Server",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-04 has been configured with updated application settings to disable remote code execution features related to CVE-2021-44228 and a Web Application Firewall (WAF) implemented to filter malicious traffic, demonstrating compliance with Control 8.21 by securing the web application against network-based vulnerabilities."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-010",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0011",
+              "responsible": "Application & Platform Security Team / ISMS Auditor Team",
+              "resources": "SRV-04 / Application Server",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-04 has implemented firewall rules to block unauthorized WinRM access and enforced TLS 1.2 for secure communication, demonstrating compliance with Control 8.21 by mitigating the WinRM Remote Command Execution vulnerability."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.28",
+      "control_name": "Secure coding",
+      "implementation_status": "In Progress",
+      "justification": "Although the vulnerability already exists, secure coding practices can help prevent similar issues in the future.",
+      "treatment_action": "Recommended treatment actions:  \n- Implement secure coding standards (e.g., OWASP, CERT) for all application development on SRV-04 and custom scripts deployed on SRV-03.  \n- Conduct code reviews and penetration testing for all code deployed on SRV-04 and scripts running on SRV-03.  \n- Apply patches for CVE-2020-1350 on SRV-02 and CVE-2021-31166 on SRV-03 and SRV-04 from Microsoft.  \n- Disable or restrict WinRM usage on SRV-03 and SRV-04 to only trusted networks using firewall rules (control 8.20).  \n- Enforce HTTPS and mutual TLS for WinRM communication on SRV-03 and SRV-04 (control 8.21).  \n- Use application whitelisting on SRV-04 to prevent unauthorized code execution.  \n- Integrate static and dynamic code analysis tools into the CI/CD pipeline for SRV-04.  \n- Provide secure coding training to developers and system administrators responsible for SRV-02, SRV-03, and SRV-04.  \n- Configure DNS server on SRV-02 to disable unnecessary features and apply hardening guidelines from Microsoft.  \n- Establish a vulnerability management process (control 8.8) to monitor and remediate similar issues proactively.",
+      "hosts": [
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0012",
+              "responsible": "Network & Infrastructure Security Team / ISMS Auditor Team",
+              "resources": "SRV-02 / DNS Server",
+              "date": "",
+              "url": "",
+              "desc": "The DNS server on SRV-02 has been configured to disable unnecessary features and apply hardening guidelines from Microsoft, demonstrating that secure coding practices are implemented to reduce vulnerabilities under control 8.28."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-008",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0013",
+              "responsible": "Infrastructure Operations Team / ISMS Auditor Team",
+              "resources": "SRV-03 / File Server",
+              "date": "",
+              "url": "",
+              "desc": "Implementation of OWASP/CERT secure coding standards and code reviews for custom scripts on SRV-03 under control 8.28 provide evidence of measures to prevent WinRM remote command execution vulnerabilities."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-010",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0014",
+              "responsible": "Application & Platform Security Team / ISMS Auditor Team",
+              "resources": "SRV-04 / Application Server",
+              "date": "",
+              "url": "",
+              "desc": "The integration of static and dynamic code analysis tools into the CI/CD pipeline for host SRV-04 under control 8.28 provides evidence that secure coding practices are enforced to mitigate vulnerabilities like WinRM Remote Command Execution Exposure."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.8",
+      "control_name": "Technical vulnerability management",
+      "implementation_status": "Planned",
+      "justification": "Control 8.8 (Technical vulnerability management) is recommended because the risk context includes medium, technical vulnerability; its ISO 27002 purpose is Manage vulnerabilities.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply security patches and updates for CVE-2020-1472, CVE-2020-1350, CVE-2017-0144, CVE-2021-44228, and CVE-2021-31166 on all affected hosts immediately  \n- Conduct a vulnerability scan and penetration test to identify and remediate any remaining unpatched vulnerabilities  \n- Implement network segmentation to isolate critical systems such as Domain Controllers and File Servers from less secure segments  \n- Establish a vulnerability management process including regular scanning, prioritization, and remediation tracking",
+      "hosts": [
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Netlogon Elevation of Privilege",
+          "cve": "CVE-2020-1472",
+          "riskid": "R-001",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0015",
+              "responsible": "Identity & Access Management Team / ISMS Auditor Team",
+              "resources": "SRV-01 / Domain Controller (Active Directory)",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-01, under control 8.8, has applied security patches for CVE-2020-1472 and implemented network segmentation, proving that technical vulnerabilities are managed through immediate remediation and isolation of critical systems."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-01",
+          "ip_address": "",
+          "role": "Domain Controller (Active Directory)",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-002",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0016",
+              "responsible": "Identity & Access Management Team / ISMS Auditor Team",
+              "resources": "SRV-01 / Domain Controller (Active Directory)",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-01, under control 8.8, has applied security patches for CVE-2020-1350, demonstrating effective technical vulnerability management by mitigating the identified risk through timely remediation actions."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-02",
+          "ip_address": "",
+          "role": "DNS Server",
+          "CIA rating": "",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "riskid": "R-003",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0017",
+              "responsible": "Network & Infrastructure Security Team / ISMS Auditor Team",
+              "resources": "SRV-02 / DNS Server",
+              "date": "",
+              "url": "",
+              "desc": "Evidence shows that security patches for CVE-2020-1350 were successfully applied on host SRV-02, a DNS Server, confirming compliance with control 8.8 by addressing the technical vulnerability through timely remediation."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "SMB Remote Code Execution",
+          "cve": "CVE-2017-0144",
+          "riskid": "R-007",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0018",
+              "responsible": "Infrastructure Operations Team / ISMS Auditor Team",
+              "resources": "SRV-03 / File Server",
+              "date": "",
+              "url": "",
+              "desc": "The host SRV-03 has applied security patches for CVE-2017-0144 as part of technical vulnerability management under control 8.8, demonstrating that vulnerabilities have been remediated."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-03",
+          "ip_address": "",
+          "role": "File Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-008",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0019",
+              "responsible": "Infrastructure Operations Team / ISMS Auditor Team",
+              "resources": "SRV-03 / File Server",
+              "date": "",
+              "url": "",
+              "desc": "Application of security patches for CVE-2021-31166 and completion of a vulnerability scan on host SRV-03, a File Server, under control 8.8, prove successful remediation of technical vulnerabilities and adherence to vulnerability management processes."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "riskid": "R-009",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0020",
+              "responsible": "Application & Platform Security Team / ISMS Auditor Team",
+              "resources": "SRV-04 / Application Server",
+              "date": "",
+              "url": "",
+              "desc": "The vulnerability scan results for host SRV-04 under control 8.8 (Technical vulnerability management) confirm that security patches for CVE-2021-44228 were successfully applied, mitigating the Web Application Remote Code Execution vulnerability."
+            }
+          ]
+        },
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "riskid": "R-010",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0021",
+              "responsible": "Application & Platform Security Team / ISMS Auditor Team",
+              "resources": "SRV-04 / Application Server",
+              "date": "",
+              "url": "",
+              "desc": "The application server SRV-04 demonstrates compliance with control 8.8 (Technical vulnerability management) by applying security patches for CVE-2021-31166 and conducting vulnerability scans to ensure WinRM Remote Command Execution Exposure is mitigated."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "control": "8.9",
+      "control_name": "Configuration management",
+      "implementation_status": "Planned",
+      "justification": "This control ensures that secure configurations are maintained, which is necessary to prevent exploitation of the Log4j2 vulnerability through misconfigurations in the application server.",
+      "treatment_action": "Recommended treatment actions:  \n- Implement automated configuration management tools to enforce and monitor secure settings on SRV-04  \n- Conduct regular configuration audits to detect and correct insecure or non-compliant settings  \n- Apply patches and updates to address the Log4j2 vulnerability (CVE-2021-44228) on SRV-04  \n- Integrate configuration management with the technical vulnerability management process to ensure timely remediation of identified risks",
+      "hosts": [
+        {
+          "hostname": "SRV-04",
+          "ip_address": "",
+          "role": "Application Server",
+          "CIA rating": "",
+          "vulnerability_name": "Web Application Remote Code Execution",
+          "cve": "CVE-2021-44228",
+          "riskid": "R-009",
+          "evidence": [
+            {
+              "evidence_id": "EVID-2026-0022",
+              "responsible": "Application & Platform Security Team / ISMS Auditor Team",
+              "resources": "SRV-04 / Application Server",
+              "date": "",
+              "url": "",
+              "desc": "Automated configuration management tools and applied patches for CVE-2021-44228 on SRV-04 demonstrate secure configuration enforcement under control 8.9, ensuring misconfigurations are prevented and vulnerabilities are remediated."
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

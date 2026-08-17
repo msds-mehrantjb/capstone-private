@@ -1,3 +1,237 @@
 {
-  "hosts": []
+  "hosts": [
+    {
+      "hostname": "SRV-01",
+      "ip_address": "10.0.0.2",
+      "role": "Domain Controller (Active Directory)",
+      "CIA rating": "Critical",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)",
+          "Active Directory Domain Services (AD DS)",
+          "Group Policy Objects (GPO)",
+          "Role-Based Access Control (RBAC)"
+        ],
+        "Network Security Controls": [
+          "DNS Security (DNS filtering / logging)",
+          "Windows Firewall (Host-based)"
+        ],
+        "Endpoint Security Controls": [
+          "Secure Boot",
+          "Antivirus / Anti-malware"
+        ],
+        "Physical & Environmental Controls": [
+          "Server Room Access Control"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ],
+        "Vulnerability & Patch Management": [
+          "Patch Management (WSUS / SCCM)"
+        ]
+      }
+    },
+    {
+      "hostname": "SRV-02",
+      "ip_address": "10.0.0.3",
+      "role": "DNS Server",
+      "CIA rating": "High",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware",
+          "Secure Boot"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)",
+          "DNS Security (DNS filtering / logging)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ],
+        "Vulnerability & Patch Management": [
+          "Patch Management (WSUS / SCCM)"
+        ],
+        "Physical & Environmental Controls": [
+          "Server Room Access Control"
+        ]
+      }
+    },
+    {
+      "hostname": "WS-01",
+      "ip_address": "10.0.0.10",
+      "role": "Finance Workstation",
+      "CIA rating": "Medium",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ]
+      }
+    },
+    {
+      "hostname": "WS-02",
+      "ip_address": "10.0.0.11",
+      "role": "HR Workstation",
+      "CIA rating": "Medium",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ]
+      }
+    },
+    {
+      "hostname": "WS-03",
+      "ip_address": "10.0.0.12",
+      "role": "Standard Employee Workstation",
+      "CIA rating": "Medium",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ]
+      }
+    },
+    {
+      "hostname": "SRV-03",
+      "ip_address": "10.0.0.18",
+      "role": "File Server",
+      "CIA rating": "High",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware",
+          "Secure Boot"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ],
+        "Vulnerability & Patch Management": [
+          "Patch Management (WSUS / SCCM)"
+        ],
+        "Physical & Environmental Controls": [
+          "Server Room Access Control"
+        ]
+      }
+    },
+    {
+      "hostname": "SRV-04",
+      "ip_address": "10.0.0.19",
+      "role": "Application Server",
+      "CIA rating": "High",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware",
+          "Secure Boot"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ],
+        "Vulnerability & Patch Management": [
+          "Patch Management (WSUS / SCCM)"
+        ],
+        "Physical & Environmental Controls": [
+          "Server Room Access Control"
+        ]
+      }
+    },
+    {
+      "hostname": "WS-04",
+      "ip_address": "10.0.0.26",
+      "role": "Call Center Workstation",
+      "CIA rating": "Medium",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ]
+      }
+    },
+    {
+      "hostname": "WS-05",
+      "ip_address": "10.0.0.27",
+      "role": "Developer Workstation",
+      "CIA rating": "Medium",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ]
+      }
+    },
+    {
+      "hostname": "WS-06",
+      "ip_address": "10.0.0.28",
+      "role": "Data Scientist Workstation",
+      "CIA rating": "Medium",
+      "existing_controls": {
+        "Identity & Access Management": [
+          "Password Policies (complexity, rotation)"
+        ],
+        "Endpoint Security Controls": [
+          "Antivirus / Anti-malware"
+        ],
+        "Network Security Controls": [
+          "Windows Firewall (Host-based)"
+        ],
+        "Logging, Monitoring & Detection": [
+          "Windows Event Logging"
+        ]
+      }
+    }
+  ]
 }

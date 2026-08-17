@@ -5,7 +5,6 @@ def build_asset_inventory_markdown(year: int) -> str:
         _asset_inventory_file,
         _extract_asset_rows,
         _load_dashboard_context,
-        _md_table,
         _read_json,
     )
 
@@ -145,18 +144,74 @@ def build_asset_inventory_markdown(year: int) -> str:
 
         return _safe_str(selected.get("method"))
 
+    def _esc(value: object) -> str:
+        text = "" if value is None else str(value).strip()
+        return (
+            text.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+
+    def _asset_row_bg(cia_rating: object) -> str:
+        rating = _safe_str(cia_rating, "").lower()
+        if rating == "critical":
+            return "#fdecea"  # light red
+        if rating == "high":
+            return "#fff1db"  # light orange
+        return "white"
+
+    def _build_asset_inventory_table(rows_data: list[list[object]]) -> str:
+        if not rows_data:
+            return "_No data available._"
+
+        headers = [
+            "Hostname",
+            "IP Address",
+            "Role",
+            "Operating System",
+            "CIA Rating",
+            "Status",
+            "Business Context",
+        ]
+
+        lines = [
+            '<table style="border-collapse: collapse; width: 100%; text-align: left;">',
+            "  <thead>",
+            "    <tr>",
+        ]
+
+        for header in headers:
+            lines.append(
+                f'      <th style="background-color: #eef5fb; padding: 8px; border: 1px solid #999; text-align: left; font-weight: bold;">{header}</th>'
+            )
+
+        lines.extend([
+            "    </tr>",
+            "  </thead>",
+            "  <tbody>",
+        ])
+
+        for row in rows_data:
+            normalized = list(row) + [""] * (7 - len(row))
+            bg_color = _asset_row_bg(normalized[4])
+            lines.append(f'    <tr style="background-color: {bg_color};">')
+            for cell in normalized[:7]:
+                lines.append(
+                    f'      <td style="background-color: {bg_color}; padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(cell)}</td>'
+                )
+            lines.append("    </tr>")
+
+        lines.extend([
+            "  </tbody>",
+            "</table>",
+        ])
+
+        return "\n".join(lines)
+
     def _build_grouped_header_table(rows_data: list[list[object]]) -> str:
         if not rows_data:
             return "_No data available._"
-    
-        def esc(value: object) -> str:
-            text = "" if value is None else str(value).strip()
-            return (
-                text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-            )
-    
+
         lines = [
             '<table style="border-collapse: collapse; width: 100%; text-align: left;">',
             '  <thead>',
@@ -182,13 +237,13 @@ def build_asset_inventory_markdown(year: int) -> str:
             normalized = list(row) + [""] * (7 - len(row))
             lines.extend([
                 '    <tr>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[0])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[1])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[2])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[3])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[4])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[5])}</td>',
-                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{esc(normalized[6])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(normalized[0])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(normalized[1])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(normalized[2])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(normalized[3])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(normalized[4])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(normalized[5])}</td>',
+                f'      <td style="padding: 8px; border: 1px solid #999; vertical-align: top; text-align: left;">{_esc(normalized[6])}</td>',
                 '    </tr>',
             ])
     
@@ -236,18 +291,7 @@ def build_asset_inventory_markdown(year: int) -> str:
                 _get_business_context(row),
             ])
 
-        table = _md_table(
-            [
-                "Hostname",
-                "IP Address",
-                "Role",
-                "Operating System",
-                "CIA Rating",
-                "Status",
-                "Business Context",
-            ],
-            table_rows,
-        )
+        table = _build_asset_inventory_table(table_rows)
 
         lines.extend([
             f"### Subnet: {subnet_name}",

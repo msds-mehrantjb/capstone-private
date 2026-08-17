@@ -8,6 +8,10 @@ import {
   Send,
   ChevronRight,
 } from "lucide-react";
+import CommandHelpMessage, {
+  isCommandHelpMessage,
+} from "../components/CommandHelpMessage";
+import StepStatusBadge from "../components/StepStatusBadge";
 
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
@@ -115,7 +119,7 @@ type Kpi = {
   accent: "amber" | "emerald" | "rose" | "slate";
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
@@ -148,7 +152,19 @@ async function apiGetDashboard(
 }
 
 async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>(`/api/system/status?_ts=${Date.now()}`);
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>(`/api/system/status?_ts=${Date.now()}`);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiGetThreatVulns(year: number): Promise<ThreatVulnsDTO> {
@@ -189,6 +205,28 @@ async function apiResetThreatAssessment(
   year: number
 ): Promise<CreateThreatAssessmentResponse> {
   const res = await fetch(`${API_BASE}/api/threat-vulnerabilities/reset`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+    body: JSON.stringify({ year }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || `HTTP ${res.status}`);
+  }
+
+  return data as CreateThreatAssessmentResponse;
+}
+
+async function apiSubmitThreatAssessment(
+  year: number
+): Promise<CreateThreatAssessmentResponse> {
+  const res = await fetch(`${API_BASE}/api/threat-vulnerabilities/submit`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -398,12 +436,17 @@ function AssistantMessages({
     <div className="space-y-3">
       {messages.map((m, idx) => {
         const isUser = m.role === "user";
+        const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
 
         if (m.role === "assistant" && "type" in m && m.type === "reset-confirmation") {
           return (
             <div key={idx} className="flex justify-start">
-              <div className="max-w-[90%] rounded-2xl bg-white/5 px-4 py-4 text-sm text-slate-200 ring-1 ring-white/10">
-                <div className="whitespace-pre-wrap">{m.content}</div>
+              <div className="w-full rounded-2xl bg-white/5 px-4 py-4 text-sm text-slate-200 ring-1 ring-white/10">
+                {isCommandMessage ? (
+                  <CommandHelpMessage content={m.content} />
+                ) : (
+                  <div className="whitespace-pre-wrap">{m.content}</div>
+                )}
 
                 <div className="mt-4 flex items-center gap-3">
                   <button
@@ -431,13 +474,19 @@ function AssistantMessages({
             className={`flex ${isUser ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+              className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+              } ${
                 isUser
-                  ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                  : "bg-white/5 text-slate-200 ring-white/10"
+                  ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                  : "w-full bg-white/5 text-slate-200 ring-white/10"
               }`}
             >
-              {m.content}
+              {isCommandMessage ? (
+                <CommandHelpMessage content={m.content} />
+              ) : (
+                m.content
+              )}
             </div>
           </div>
         );
@@ -445,7 +494,7 @@ function AssistantMessages({
 
       {sending ? (
         <div className="flex justify-start">
-          <div className="max-w-[90%] rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
+          <div className="w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
             …
           </div>
         </div>
@@ -1020,11 +1069,16 @@ export default function ThreatVulnerabilities() {
       }
     
       if (text === "/submit") {
+        const result = await apiSubmitThreatAssessment(YEAR);
+        await refreshThreatSection();
+
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: "The Threats & Vulnerabilities have been finalized.",
+            content:
+              result.message ||
+              "The Threats & Vulnerabilities have been finalized and marked Completed.",
           },
         ]);
         return;
@@ -1035,6 +1089,26 @@ export default function ThreatVulnerabilities() {
         {
           role: "assistant",
           content: "Unknown command. Type /commands to see available commands.",
+        },
+      ]);
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+          ? e
+          : JSON.stringify(e);
+
+      const failureMessage =
+        text === "/submit"
+          ? `Failed to submit Threats & Vulnerabilities: ${msg}`
+          : `Command failed: ${msg}`;
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: failureMessage,
         },
       ]);
     } finally {
@@ -1129,10 +1203,7 @@ export default function ThreatVulnerabilities() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-slate-300">({assetCount} assets)</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                      {threatStatus}
-                    </span>
+                    <StepStatusBadge status={threatStatus} />
                   </div>
                 </div>
               </div>
@@ -1472,10 +1543,7 @@ export default function ThreatVulnerabilities() {
 
                   <span className="text-sm text-slate-300">- ({assetCount} assets)</span>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                    {threatStatus}
-                  </span>
+                  <StepStatusBadge status={threatStatus} />
                 </div>
               </div>
             </div>

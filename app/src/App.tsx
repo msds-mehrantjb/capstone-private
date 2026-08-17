@@ -12,7 +12,7 @@ const ActionPlanImplementation = lazy(() => import("./pages/ActionPlanImplementa
 const MonitoringImprovement = lazy(() => import("./pages/MonitoringImprovement"));
 const FinalDeliverables = lazy(() => import("./pages/FinalDeliverables"));
 const AIMLDashboard = lazy(() => import("./pages/AIMLDashboard"));
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 type RouteKey =
   | "dashboard"

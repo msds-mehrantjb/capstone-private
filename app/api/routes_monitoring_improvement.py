@@ -151,9 +151,9 @@ def find_project_root() -> Path:
 
 BASE_DIR = find_project_root()
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/generate")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")
-OLLAMA_EMBED_URL = os.getenv("OLLAMA_EMBED_URL", "http://localhost:11434/api/embeddings")
+OLLAMA_EMBED_URL = os.getenv("OLLAMA_EMBED_URL", "http://127.0.0.1:11434/api/embeddings")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 
 
@@ -380,9 +380,9 @@ def _load_system_status_or_default(year: int) -> dict:
             "assets_cia": {"status": "Not Started"},
             "risk_analysis": {"status": "Not Started"},
             "risk_evaluation_treatment": {"status": "Not Started"},
-            "annex_a_soa": {"status": "Blocked"},
+            "annex_a_soa": {"status": "Not Started"},
             "action_plan_implementation": {"status": "Completed"},
-            "monitoring_improvement": {"status": "Blocked"},
+            "monitoring_improvement": {"status": "Not Started"},
         },
     }
 
@@ -422,8 +422,7 @@ def _set_section_status(year: int, section_name: str, new_status: str) -> None:
 
 
 def _monitoring_improvement_section_is_read_only(year: int) -> bool:
-    doc = _load_system_status_or_default(year)
-    return doc.get("sections", {}).get("monitoring_improvement", {}).get("status") == "Completed"
+    return False
 
 
 # =========================================================
@@ -777,6 +776,12 @@ Relevant ISO 27001 / ISO 27002 References:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "num_predict": 90,
+        },
     }
 
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
@@ -1145,6 +1150,12 @@ Generate only the JSON array.
             "model": OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
+            "think": False,
+            "options": {
+                "temperature": 0.1,
+                "top_p": 0.9,
+                "num_predict": 900,
+            },
         }
 
         res = requests.post(OLLAMA_URL, json=payload, timeout=180)
@@ -1343,19 +1354,45 @@ def _fallback_monitoring_implementation_steps(context: dict) -> list[dict]:
     ]
 
 
-def _replace_monitoring_guide_for_evidence(year: int, control: dict, host: dict, evidence: dict) -> dict:
+def _replace_monitoring_guide_for_evidence(
+    year: int,
+    control: dict,
+    host: dict,
+    evidence: dict,
+    prefer_fallback: bool = False,
+    guide_id_override: str | None = None,
+) -> dict:
     evidence_id = _normalize_text(evidence.get("evidence_id"))
     if evidence_id == "":
         raise ValueError("Evidence item is missing evidence_id.")
 
     doc = _load_monitoring_implementation_guides_doc_or_blank(year)
+    existing_guide = next(
+        (
+            guide
+            for guide in _all_guides(doc)
+            if _normalize_key(guide.get("evidence_id")) == _normalize_key(evidence_id)
+        ),
+        None,
+    )
+    preserved_guide_id = _normalize_text(guide_id_override)
+    if preserved_guide_id == "" and isinstance(existing_guide, dict):
+        preserved_guide_id = _normalize_text(existing_guide.get("guide_id"))
+
     doc["guides"] = [
         guide for guide in _all_guides(doc)
         if _normalize_key(guide.get("evidence_id")) != _normalize_key(evidence_id)
     ]
 
     try:
+        if prefer_fallback:
+            raise ValueError("Using deterministic monitoring guide path for bulk generation.")
+
         guide = _generate_flat_monitoring_implementation_guide(year, control, host, evidence)
+        if preserved_guide_id != "":
+            guide["guide_id"] = preserved_guide_id
+        guide["generation_quality"] = "full"
+        guide["generation_method"] = "llm_rag"
     except Exception:
         asset_host = _find_asset_inventory_host(year, _normalize_text(host.get("hostname")))
         hostname = _normalize_text(host.get("hostname"))
@@ -1372,7 +1409,7 @@ def _replace_monitoring_guide_for_evidence(year: int, control: dict, host: dict,
         evidence_description = _normalize_text(evidence.get("desc")) or evidence_name
 
         guide = {
-            "guide_id": _next_monitoring_guide_id(year, doc),
+            "guide_id": preserved_guide_id or _next_monitoring_guide_id(year, doc),
             "evidence_id": evidence_id,
             "hostname": hostname,
             "role": role,
@@ -1396,6 +1433,12 @@ def _replace_monitoring_guide_for_evidence(year: int, control: dict, host: dict,
                 generation_hints="Deterministic fallback monitoring guide steps generated from control, host, vulnerability, and monitoring context.",
                 method_label="Deterministic fallback monitoring guide",
             ),
+            "generation_quality": "draft" if prefer_fallback else "fallback",
+            "generation_method": (
+                "bulk_deterministic_draft"
+                if prefer_fallback
+                else "deterministic_fallback"
+            ),
             "implementation_steps": _fallback_monitoring_implementation_steps(
                 {
                     "hostname": hostname,
@@ -1416,6 +1459,109 @@ def _replace_monitoring_guide_for_evidence(year: int, control: dict, host: dict,
     doc["guides"].append(guide)
     _save_monitoring_implementation_guides_doc(year, doc)
     return guide
+
+
+def _find_monitoring_guide_by_id(year: int, guide_id: str) -> dict | None:
+    normalized_guide_id = _normalize_key(guide_id)
+    if normalized_guide_id == "":
+        return None
+
+    doc = _load_monitoring_implementation_guides_doc_or_blank(year)
+    for guide in _all_guides(doc):
+        if _normalize_key(guide.get("guide_id")) == normalized_guide_id:
+            return guide
+    return None
+
+
+def _find_monitoring_control_host_evidence_for_guide(
+    year: int,
+    guide: dict,
+) -> tuple[dict | None, dict | None, dict | None]:
+    monitoring_doc = _load_monitoring_improvement_doc_or_blank(year)
+    evidence_id = _normalize_key(guide.get("evidence_id"))
+    control_id = _normalize_key(guide.get("control_id") or guide.get("cve_id"))
+    hostname = _normalize_key(guide.get("hostname"))
+    vulnerability_name = _normalize_key(guide.get("vulnerability_name"))
+    evidence_desc = _normalize_key(guide.get("evidence_description"))
+
+    for control in _all_cves(monitoring_doc):
+        if control_id and _normalize_key(control.get("CVE")) != control_id:
+            continue
+
+        hosts = control.get("hosts", [])
+        if not isinstance(hosts, list):
+            continue
+
+        for host in hosts:
+            if not isinstance(host, dict):
+                continue
+            if hostname and _normalize_key(host.get("hostname")) != hostname:
+                continue
+            if vulnerability_name and _normalize_key(host.get("vulnerability_name")) not in {"", vulnerability_name}:
+                continue
+
+            evidence_list = _clean_evidence_list(year, monitoring_doc, host.get("evidence", []))
+            for evidence in evidence_list:
+                current_evidence_id = _normalize_key(evidence.get("evidence_id"))
+                current_desc = _normalize_key(evidence.get("desc"))
+                if evidence_id and current_evidence_id == evidence_id:
+                    return control, host, evidence
+                if (
+                    not evidence_id
+                    and evidence_desc
+                    and current_desc != ""
+                    and (
+                        current_desc == evidence_desc
+                        or current_desc in evidence_desc
+                        or evidence_desc in current_desc
+                    )
+                ):
+                    return control, host, evidence
+
+    return None, None, None
+
+
+def _guide_needs_full_generation(guide: dict) -> bool:
+    generation_quality = _normalize_key(guide.get("generation_quality"))
+    if generation_quality == "draft":
+        return True
+
+    if generation_quality in {"full", "fallback"}:
+        return False
+
+    steps = guide.get("implementation_steps", [])
+    references = guide.get("references", [])
+    if not isinstance(steps, list):
+        steps = []
+    if not isinstance(references, list):
+        references = []
+
+    return len(steps) <= 3 and len(references) <= 5
+
+
+def ensure_monitoring_implementation_guide_ready(year: int, guide_id: str) -> dict | None:
+    guide = _find_monitoring_guide_by_id(year, guide_id)
+    if guide is None:
+        return None
+
+    if not _guide_needs_full_generation(guide):
+        return guide
+
+    control, host, evidence = _find_monitoring_control_host_evidence_for_guide(year, guide)
+    if control is None or host is None or evidence is None:
+        return guide
+
+    try:
+        return _replace_monitoring_guide_for_evidence(
+            year,
+            control,
+            host,
+            evidence,
+            prefer_fallback=False,
+            guide_id_override=_normalize_text(guide.get("guide_id")),
+        )
+    except Exception:
+        return guide
 
 
 def _build_host_lines_for_rag(hosts: list[dict]) -> list[str]:
@@ -1494,10 +1640,16 @@ Relevant ISO References:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "num_predict": 90,
+        },
     }
 
     try:
-        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res = requests.post(OLLAMA_URL, json=payload, timeout=45)
         res.raise_for_status()
         data = res.json()
         safe_increment_llm_counter(year, ollama_total_tokens(data))
@@ -1507,14 +1659,149 @@ Relevant ISO References:
     except Exception:
         pass
 
-    # fallback
+    return _fallback_monitoring_evidence_desc(
+        control_id=control_id,
+        control_name=control_name,
+        hostname=hostname,
+        role=role,
+        vulnerability_name=vulnerability_name,
+        recommended_action=recommended_action,
+    )
+
+
+def _fallback_monitoring_evidence_desc(
+    control_id: str,
+    control_name: str,
+    hostname: str,
+    role: str,
+    vulnerability_name: str,
+    recommended_action: str,
+) -> str:
     host_value = _normalize_text(hostname) or "the host"
+    role_value = _normalize_text(role) or "the assigned role"
+    control_value = _normalize_text(control_name) or _normalize_text(control_id) or "the relevant control context"
     vuln_value = _normalize_text(vulnerability_name) or _normalize_text(control_name) or "the identified vulnerability"
     action_value = _normalize_text(recommended_action) or "the defined monitoring action"
     return (
-        f"Evidence for {host_value} shows monitoring activities implemented for {vuln_value} "
-        f"under control {control_id}, supporting {action_value.lower()} and follow-up review by the ISMS auditor team."
+        f"Evidence for {host_value} documents monitoring activities for {vuln_value} on the {role_value} host "
+        f"within {control_value}, supporting {action_value.lower()} and follow-up review by the ISMS auditor team."
     )
+
+
+def _generate_bulk_evidence_descs_with_llama3(
+    year: int,
+    control_id: str,
+    control_name: str,
+    justification: str,
+    recommended_action: str,
+    hosts: list[dict],
+    retrieved_controls: list[dict],
+) -> dict[str, str]:
+    pending_hosts = [host for host in hosts if isinstance(host, dict)]
+    if not pending_hosts:
+        return {}
+
+    retrieved_text = "\n\n".join(
+        [
+            (
+                f"Control Reference {i + 1}\n"
+                f"Section: {_normalize_text(rec.get('Section'))}\n"
+                f"Control: {_normalize_text(rec.get('Control'))}\n"
+                f"Title: {_normalize_text(rec.get('Title'))}\n"
+                f"Purpose: {_normalize_text(rec.get('Purpose'))}"
+            )
+            for i, rec in enumerate(retrieved_controls)
+        ]
+    )
+
+    host_lines = []
+    fallback_map: dict[str, str] = {}
+    for host in pending_hosts:
+        hostname = _normalize_text(host.get("hostname"))
+        role = _normalize_text(host.get("role"))
+        vulnerability_name = _normalize_text(host.get("vulnerability_name")) or _normalize_text(control_name)
+        if hostname == "":
+            continue
+        host_lines.append(
+            f"- Hostname: {hostname} | Role: {role or 'Unknown Role'} | Vulnerability: {vulnerability_name}"
+        )
+        fallback_map[_normalize_key(hostname)] = _fallback_monitoring_evidence_desc(
+            control_id=control_id,
+            control_name=control_name,
+            hostname=hostname,
+            role=role,
+            vulnerability_name=vulnerability_name,
+            recommended_action=recommended_action,
+        )
+
+    if not host_lines:
+        return {}
+
+    prompt = f"""
+You are an ISO 27001:2022 and ISO 27002:2022 expert.
+
+Generate one brief monitoring evidence description for each host below.
+
+STRICT RULES:
+- Return valid JSON only
+- Return an object where each key is the hostname and each value is the description
+- Each description must be a single paragraph
+- Each description must be 24 to 45 words
+- Mention the host
+- Mention the monitoring purpose
+- Reflect the host role and vulnerability context
+- Be auditor-friendly
+- No markdown
+- No bullets
+- No explanations outside JSON
+
+Control ID: {control_id}
+Control Name: {control_name}
+Justification: {justification or "NA"}
+Recommended Monitoring Action: {recommended_action or "NA"}
+
+Hosts:
+{chr(10).join(host_lines)}
+
+Relevant ISO References:
+{retrieved_text or "NA"}
+""".strip()
+
+    payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "num_predict": max(220, len(host_lines) * 80),
+        },
+    }
+
+    try:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=60)
+        res.raise_for_status()
+        data = res.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(data))
+        raw_text = _normalize_text(data.get("response"))
+        parsed = json.loads(raw_text)
+        if not isinstance(parsed, dict):
+            raise ValueError("Bulk evidence description response was not a JSON object.")
+
+        result: dict[str, str] = {}
+        for host in pending_hosts:
+            hostname = _normalize_text(host.get("hostname"))
+            if hostname == "":
+                continue
+            value = parsed.get(hostname)
+            if not isinstance(value, str):
+                value = parsed.get(hostname.lower())
+            text = _normalize_text(value)
+            result[_normalize_key(hostname)] = text or fallback_map[_normalize_key(hostname)]
+        return result
+    except Exception:
+        return fallback_map
 
 # =========================================================
 # MONITORING & IMPROVEMENT DOCUMENT HELPERS
@@ -1646,10 +1933,6 @@ def _derive_monitoring_improvement_status_from_doc(doc: dict) -> str:
 
 
 def _sync_monitoring_improvement_status(year: int, doc: dict | None = None) -> str:
-    if _monitoring_improvement_section_is_read_only(year):
-        _set_section_status(year, "monitoring_improvement", "Completed")
-        return "Completed"
-
     if doc is None:
         doc = _load_monitoring_improvement_doc_or_blank(year)
 
@@ -2880,7 +3163,7 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
             control_name=control_name,
             justification=justification,
             host_lines=host_lines,
-            top_k=5,
+            top_k=3,
         )
     except Exception:
         retrieved_controls = []
@@ -3226,7 +3509,7 @@ def get_monitoring_evidence_defaults(payload: EvidenceDefaultsRequest):
             control_name=control_name,
             justification=justification,
             host_lines=host_lines,
-            top_k=5,
+            top_k=3,
         )
     except Exception:
         retrieved_controls = []
@@ -3321,6 +3604,7 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
                 control["recommended_action"] = recommended_action
                 cves[control_idx] = control
                 doc["cves"] = cves
+                _save_json(_monitoring_improvement_file(year), doc)
                 recommended_created_count += 1
             except Exception:
                 failed_count += len(
@@ -3342,11 +3626,12 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
                 control_name=control_name,
                 justification=justification,
                 host_lines=host_lines,
-                top_k=5,
+                top_k=3,
             )
         except Exception:
             retrieved_controls = []
 
+        pending_host_entries: list[tuple[int, dict]] = []
         for host_idx, host in enumerate(hosts):
             if not isinstance(host, dict):
                 continue
@@ -3364,7 +3649,21 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
                 hosts[host_idx] = host
                 continue
 
+            pending_host_entries.append((host_idx, host))
+
+        desc_map = _generate_bulk_evidence_descs_with_llama3(
+            year=year,
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification,
+            recommended_action=recommended_action,
+            hosts=[host for _, host in pending_host_entries],
+            retrieved_controls=retrieved_controls,
+        )
+
+        for host_idx, host in pending_host_entries:
             role = _normalize_text(host.get("role"))
+            hostname = _normalize_text(host.get("hostname"))
             vulnerability_name = _normalize_text(
                 host.get("vulnerability_name") or control_name
             )
@@ -3375,16 +3674,13 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
                 "resources": _build_resources_value(hostname, role),
                 "date": "",
                 "url": "",
-                "desc": _generate_evidence_desc_with_llama3(
-                    year=year,
+                "desc": desc_map.get(_normalize_key(hostname)) or _fallback_monitoring_evidence_desc(
                     control_id=control_id,
                     control_name=control_name,
-                    justification=justification,
                     hostname=hostname,
                     role=role,
                     vulnerability_name=vulnerability_name,
                     recommended_action=recommended_action,
-                    retrieved_controls=retrieved_controls,
                 ),
             }
 
@@ -3395,13 +3691,27 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
 
             host["evidence"] = [new_evidence]
             hosts[host_idx] = host
+            control["hosts"] = hosts
+            cves[control_idx] = control
+            doc["cves"] = cves
+            _save_json(_monitoring_improvement_file(year), doc)
             added_count += 1
 
             try:
-                _replace_monitoring_guide_for_evidence(year, control, host, new_evidence)
+                _replace_monitoring_guide_for_evidence(
+                    year,
+                    control,
+                    host,
+                    new_evidence,
+                    prefer_fallback=True,
+                )
             except Exception:
                 host["evidence"] = []
                 hosts[host_idx] = host
+                control["hosts"] = hosts
+                cves[control_idx] = control
+                doc["cves"] = cves
+                _save_json(_monitoring_improvement_file(year), doc)
                 added_count -= 1
                 failed_count += 1
                 failed_items.append(f"{control_id} / {hostname}")
@@ -3415,7 +3725,7 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
 
     message = (
         f"Evidence generation completed. Generated {recommended_created_count} recommended action(s), "
-        f"added {added_count} evidence item(s) and linked monitoring guide(s), "
+        f"added {added_count} evidence item(s) and linked draft monitoring guide(s) for fast bulk creation, "
         f"Skipped {skipped_count} host row(s) that already had evidence."
     )
     if failed_count > 0:

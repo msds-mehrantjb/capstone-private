@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+from fastapi import Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 from pathlib import Path
@@ -656,16 +657,11 @@ def _find_action_implementation_guide(year: int, guide_id: str) -> dict | None:
 
 
 def _find_monitoring_implementation_guide(year: int, guide_id: str) -> dict | None:
-    doc = _read_json(_monitoring_implementation_guides_file(year), {})
-    guides = doc.get("guides", [])
-    if not isinstance(guides, list):
-        return None
+    from app.api.routes_monitoring_improvement import (
+        ensure_monitoring_implementation_guide_ready,
+    )
 
-    for guide in guides:
-        if isinstance(guide, dict) and str(guide.get("guide_id", "")).strip() == guide_id:
-            return guide
-
-    return None
+    return ensure_monitoring_implementation_guide_ready(year, guide_id)
 
 def _html_escape(value: Any) -> str:
     text = "" if value is None else str(value)
@@ -675,6 +671,26 @@ def _html_escape(value: Any) -> str:
         .replace(">", "&gt;")
         .replace('"', "&quot;")
     )
+
+
+def _runtime_api_base_url(request: Request) -> str:
+    base = str(request.base_url).rstrip("/")
+    return base
+
+
+def _normalize_markdown_api_base(markdown: str, request: Request) -> str:
+    active_base = _runtime_api_base_url(request)
+    normalized = str(markdown)
+    for known_base in [
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8002",
+        "http://localhost:8002",
+        "http://127.0.0.1:8003",
+        "http://localhost:8003",
+    ]:
+        normalized = normalized.replace(known_base, active_base)
+    return normalized
 
 
 def _list_to_html(items: list[str]) -> str:
@@ -872,6 +888,7 @@ def get_final_deliveries_system_year():
 
 @router.get("/{section}")
 def get_final_delivery_section(
+    request: Request,
     section: str,
     year: int | None = Query(None),
 ):
@@ -888,6 +905,8 @@ def get_final_delivery_section(
         markdown = _empty_section_markdown(section, resolved_year)
     else:
         markdown = builder(resolved_year)
+
+    markdown = _normalize_markdown_api_base(markdown, request)
 
     return {
         "success": True,

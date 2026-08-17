@@ -200,10 +200,16 @@ def find_project_root() -> Path:
 
 BASE_DIR = find_project_root()
 
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/generate")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")
-OLLAMA_EMBED_URL = os.getenv("OLLAMA_EMBED_URL", "http://localhost:11434/api/embeddings")
+OLLAMA_EMBED_URL = os.getenv("OLLAMA_EMBED_URL", "http://127.0.0.1:11434/api/embeddings")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
+ENABLE_LLM_TREATMENT_ACTIONS = os.getenv("ENABLE_LLM_TREATMENT_ACTIONS", "true").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
 
 
 def _work_dir(year: int) -> Path:
@@ -368,8 +374,8 @@ def _load_system_status_or_default(year: int) -> dict:
             "assets_cia": {"status": "Not Started"},
             "risk_analysis": {"status": "Not Started"},
             "risk_evaluation_treatment": {"status": "Not Started"},
-            "annex_a_soa": {"status": "Blocked"},
-            "action_plan_implementation": {"status": "Blocked"},
+            "annex_a_soa": {"status": "Not Started"},
+            "action_plan_implementation": {"status": "Not Started"},
         },
     }
 
@@ -409,8 +415,7 @@ def _set_section_status(year: int, section_name: str, new_status: str) -> None:
 
 
 def _action_plan_section_is_read_only(year: int) -> bool:
-    doc = _load_system_status_or_default(year)
-    return doc.get("sections", {}).get("action_plan_implementation", {}).get("status") == "Completed"
+    return False
 
 
 # =========================================================
@@ -554,10 +559,6 @@ def _derive_action_plan_status_from_doc(doc: dict) -> str:
 
 
 def _sync_action_plan_status(year: int, doc: dict | None = None) -> str:
-    if _action_plan_section_is_read_only(year):
-        _set_section_status(year, "action_plan_implementation", "Completed")
-        return "Completed"
-
     if doc is None:
         doc = _load_action_plan_doc_or_blank(year)
 
@@ -785,7 +786,6 @@ def _retrieve_relevant_iso_controls(
         use_semantic = False
 
     scored: list[tuple[float, dict]] = []
-    cache_changed = False
 
     for rec in records:
         rec_text = rec.get("_text", "")
@@ -794,10 +794,9 @@ def _retrieve_relevant_iso_controls(
         semantic = 0.0
         if use_semantic:
             try:
-                if rec_key not in cache:
-                    cache[rec_key] = _get_embedding(rec_text)
-                    cache_changed = True
-                semantic = _cosine_similarity(query_embedding, cache[rec_key])
+                cached_embedding = cache.get(rec_key)
+                if isinstance(cached_embedding, list) and cached_embedding:
+                    semantic = _cosine_similarity(query_embedding, cached_embedding)
             except Exception:
                 semantic = 0.0
 
@@ -812,9 +811,6 @@ def _retrieve_relevant_iso_controls(
 
         final_score = (semantic * 0.50) + (keyword * 0.35) + boost
         scored.append((final_score, rec))
-
-    if cache_changed:
-        _save_embedding_cache(year, cache)
 
     scored.sort(key=lambda x: x[0], reverse=True)
     retrieved = [item[1] for item in scored[:top_k]]
@@ -949,7 +945,7 @@ def _generate_treatment_action_with_llama3(
                 f"Title: {_normalize_text(rec.get('Title'))}\n"
                 f"Purpose: {_normalize_text(rec.get('Purpose'))}"
             )
-            for i, rec in enumerate(retrieved_controls)
+            for i, rec in enumerate(retrieved_controls[:3])
         ]
     )
 
@@ -963,10 +959,12 @@ FORMAT REQUIREMENTS (STRICT):
   Recommended treatment actions:
 - Then provide bullet points using "-" (dash)
 - Each action must be practical and implementation-oriented
+- Limit the answer to 4 bullet points maximum
 - No explanations
 - No paragraphs
 - No numbering
 - No markdown symbols like *
+- Do not include hidden reasoning or thinking traces
 
 Target control:
 Control ID: {control_id}
@@ -984,6 +982,12 @@ ISO guidance:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "num_predict": 220,
+        },
     }
 
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
@@ -1022,9 +1026,108 @@ ISO guidance:
                 seen.add(b)
                 final_bullets.append(b)
         
-        response_text = "Recommended treatment actions:\n" + "\n".join(final_bullets)
+        response_text = "Recommended treatment actions:\n" + "\n".join(final_bullets[:4])
 
-    return response_text
+    lines = [line.rstrip() for line in response_text.splitlines() if line.strip()]
+    if len(lines) > 5:
+        response_text = "\n".join([lines[0], *lines[1:5]])
+
+    bullet_lines = [line for line in response_text.splitlines()[1:] if line.strip().startswith("-")]
+    if bullet_lines:
+        return response_text
+
+    repair_prompt = f"""
+You must rewrite the treatment action output into the required final format.
+
+FORMAT REQUIREMENTS:
+- First line must be exactly: Recommended treatment actions:
+- Then provide 3 to 4 bullet points using "-" (dash)
+- No explanations
+- No numbering
+- No markdown other than dash bullets
+- Output only the final answer
+
+Control ID: {control_id}
+Control Name: {control_name}
+Justification: {justification or "NA"}
+
+Affected hosts:
+{_safe_join_lines(host_lines) or "NA"}
+
+ISO guidance:
+{retrieved_text or "NA"}
+""".strip()
+
+    repair_payload = {
+        "model": OLLAMA_MODEL,
+        "prompt": repair_prompt,
+        "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.05,
+            "top_p": 0.9,
+            "num_predict": 220,
+        },
+    }
+
+    repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=180)
+    repair_res.raise_for_status()
+    repair_data = repair_res.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(repair_data))
+    repaired_text = _normalize_text(repair_data.get("response"))
+
+    if not repaired_text.startswith("Recommended treatment actions:"):
+        repaired_lines = [line.strip() for line in repaired_text.splitlines() if line.strip()]
+        repaired_bullets = [line for line in repaired_lines if line.startswith("-")]
+        repaired_text = "Recommended treatment actions:\n" + "\n".join(repaired_bullets[:4])
+
+    repaired_bullet_lines = [line for line in repaired_text.splitlines()[1:] if line.strip().startswith("-")]
+    if not repaired_bullet_lines:
+        raise ValueError("LLM returned no usable treatment action bullets.")
+
+    return repaired_text
+
+
+def _fallback_treatment_action(
+    control_id: str,
+    control_name: str,
+    justification: str,
+    host_lines: list[str],
+) -> str:
+    host_text = " ".join(host_lines).lower()
+    bullets: list[str] = []
+
+    bullets.append(
+        f"- Review all affected hosts under {control_id or 'the selected control'} and confirm the current exposure, vulnerable service, and affected software before making changes."
+    )
+
+    if any(term in host_text for term in ["domain controller", "active directory", "ldap", "kerberos", "dns server"]):
+        bullets.append(
+            "- Apply the approved hardening or patching changes in a controlled maintenance window and restrict administrative access to trusted support paths only."
+        )
+    elif any(term in host_text for term in ["rdp", "remote desktop", "smb", "winrm", "http", "https", "web application"]):
+        bullets.append(
+            "- Reduce network exposure for the affected service using firewall rules, segmentation, VPN-only access, or service-specific access restrictions."
+        )
+    else:
+        bullets.append(
+            "- Apply the required remediation for the affected hosts, including vendor patches, secure configuration changes, or disabling unnecessary exposure where operationally safe."
+        )
+
+    if justification:
+        bullets.append(
+            f"- Align the change with the control objective for {control_name or control_id or 'the selected control'} and document how it addresses this risk context: {justification}"
+        )
+    else:
+        bullets.append(
+            f"- Document the implemented treatment against {control_name or control_id or 'the selected control'} and record the responsible owner, change evidence, and completion date."
+        )
+
+    bullets.append(
+        "- Validate the result with post-change checks such as service status review, exposure verification, relevant log review, and evidence capture for audit tracking."
+    )
+
+    return "Recommended treatment actions:\n" + "\n".join(bullets[:4])
 
 def _control_id_sort_key(control_id: str):
     parts = _normalize_text(control_id).split(".")
@@ -1154,6 +1257,12 @@ Relevant ISO Guidance:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "think": False,
+        "options": {
+            "temperature": 0.1,
+            "top_p": 0.9,
+            "num_predict": 90,
+        },
     }
 
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
@@ -1961,6 +2070,12 @@ Generate only the JSON array.
             "model": OLLAMA_MODEL,
             "prompt": prompt,
             "stream": False,
+            "think": False,
+            "options": {
+                "temperature": 0.1,
+                "top_p": 0.9,
+                "num_predict": 900,
+            },
         }
         
         res = requests.post(OLLAMA_URL, json=payload, timeout=180)
@@ -2530,7 +2645,7 @@ def submit_action_plan(payload: SubmitRequest):
     }
 
 
-def _generate_treatment_action_for_control(year: int, control: dict) -> str:
+def _generate_treatment_action_for_control(year: int, control: dict) -> tuple[str, str]:
     control_id = _normalize_text(control.get("control_id") or control.get("control"))
     control_name = _normalize_text(control.get("control_name"))
     justification = _normalize_text(control.get("justification"))
@@ -2548,16 +2663,27 @@ def _generate_treatment_action_for_control(year: int, control: dict) -> str:
                     f"Risk={_normalize_text(host.get('risk'))}"
                 )
 
+    if not ENABLE_LLM_TREATMENT_ACTIONS:
+        return (
+            _fallback_treatment_action(
+                control_id=control_id,
+                control_name=control_name,
+                justification=justification,
+                host_lines=host_lines,
+            ),
+            "fallback",
+        )
+
     retrieved_controls = _retrieve_relevant_iso_controls(
         year=year,
         control_id=control_id,
         control_name=control_name,
         justification=justification,
         host_lines=host_lines,
-        top_k=5,
+        top_k=3,
     )
 
-    return _generate_treatment_action_with_llama3(
+    generated = _generate_treatment_action_with_llama3(
         year=year,
         control_id=control_id,
         control_name=control_name,
@@ -2565,6 +2691,9 @@ def _generate_treatment_action_for_control(year: int, control: dict) -> str:
         host_lines=host_lines,
         retrieved_controls=retrieved_controls,
     )
+    if not _normalize_text(generated):
+        raise ValueError("Empty treatment action returned by LLM.")
+    return generated, "llm"
 
 
 @router.post("/recommend-treatment")
@@ -2588,11 +2717,11 @@ def recommend_treatment_action(payload: RecommendTreatmentRequest):
         }
 
     try:
-        generated_treatment_action = _generate_treatment_action_for_control(year, control)
+        generated_treatment_action, generation_method = _generate_treatment_action_for_control(year, control)
     except Exception as e:
         return {
             "success": False,
-            "message": f"Failed to generate treatment action via RAG + Llama3: {str(e)}",
+            "message": f"Failed to generate treatment action: {str(e)}",
             "inventory": doc,
         }
 
@@ -2607,9 +2736,14 @@ def recommend_treatment_action(payload: RecommendTreatmentRequest):
     _save_json(_action_plan_implementation_file(year), doc)
     _sync_action_plan_status(year, doc)
 
+    if generation_method == "fallback":
+        message = f"Treatment action generated for control {control_id} using deterministic fallback."
+    else:
+        message = f"Treatment action generated for control {control_id}."
+
     return {
         "success": True,
-        "message": f"Treatment action generated for control {control_id}.",
+        "message": message,
         "control": control,
         "inventory": doc,
     }

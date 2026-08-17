@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 set "ROOT_DIR=%~dp0.."
 for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
@@ -7,8 +7,17 @@ for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 set "VENV_PYTHON=%ROOT_DIR%\venv\Scripts\python.exe"
 set "OLLAMA_MODEL=qwen3:14b"
 set "OLLAMA_EMBED_MODEL=nomic-embed-text"
-set "API_BASE_URL=http://127.0.0.1:8002"
+set "API_HOST=127.0.0.1"
+set "PREFERRED_API_PORT=8003"
+set "FALLBACK_API_PORT=8002"
+set "API_PORT=%PREFERRED_API_PORT%"
+set "FRONTEND_PORT=5174"
+set "BACKEND_STDOUT=backend_stdout.log"
+set "BACKEND_STDERR=backend_stderr.log"
+set "FRONTEND_STDOUT=..\frontend_stdout.log"
+set "FRONTEND_STDERR=..\frontend_stderr.log"
 set "PIP_DISABLE_PIP_VERSION_CHECK=1"
+call :set_api_base_url
 
 cls
 echo ==============================================
@@ -49,8 +58,8 @@ call :ensure_docker
 if errorlevel 1 goto :startup_failed
 
 echo.
-echo [7/8] Closing existing Capstone dev servers on ports 8002 and 5174...
-for %%P in (8002 5174) do (
+echo [7/8] Closing existing Capstone dev servers on ports %PREFERRED_API_PORT%, %FALLBACK_API_PORT%, and %FRONTEND_PORT%...
+for %%P in (%PREFERRED_API_PORT% %FALLBACK_API_PORT% %FRONTEND_PORT%) do (
   for /f "tokens=5" %%A in ('netstat -ano ^| findstr /R /C:":%%P .*LISTENING"') do (
     echo Stopping process %%A on port %%P
     taskkill /PID %%A /F >nul 2>&1
@@ -117,26 +126,37 @@ if not exist "%VENV_PYTHON%" (
 )
 
 :backend_dependencies
-"%VENV_PYTHON%" -c "import fastapi, uvicorn, dotenv, pandas, sklearn, chromadb, sentence_transformers, langgraph, langchain_community, ollama, winrm" >nul 2>&1
-if not errorlevel 1 (
-  echo [OK] Backend Python dependencies are installed.
-  goto :ensure_env_file
-)
-
-echo [INFO] Backend dependencies are missing.
-call :ensure_pypi_access
-if errorlevel 1 exit /b 1
-
-echo [INFO] Installing backend dependencies from requirements.txt ...
-"%VENV_PYTHON%" -m pip install --retries 1 --timeout 15 -r "%ROOT_DIR%\requirements.txt"
+"%VENV_PYTHON%" -c "import fastapi, uvicorn, dotenv, pandas, sklearn, langgraph, langchain_community, ollama, winrm" >nul 2>&1
 if errorlevel 1 (
-  echo [ERROR] Failed to install Python dependencies.
-  echo Test PyPI manually with:
-  echo   "%VENV_PYTHON%" -m pip install --retries 1 --timeout 15 -r "%ROOT_DIR%\requirements.txt"
-  exit /b 1
+  echo [INFO] Core backend dependencies are missing.
+  call :ensure_pypi_access
+  if errorlevel 1 exit /b 1
+
+  echo [INFO] Installing backend dependencies from requirements.txt ...
+  "%VENV_PYTHON%" -m pip install --retries 1 --timeout 15 -r "%ROOT_DIR%\requirements.txt"
+  if errorlevel 1 (
+    echo [ERROR] Failed to install Python dependencies.
+    echo Test PyPI manually with:
+    echo   "%VENV_PYTHON%" -m pip install --retries 1 --timeout 15 -r "%ROOT_DIR%\requirements.txt"
+    exit /b 1
+  )
+
+  echo [OK] Core backend dependencies installed.
+) else (
+  echo [OK] Core backend Python dependencies are installed.
 )
 
-echo [OK] Backend dependencies installed.
+"%VENV_PYTHON%" -c "import chromadb" >nul 2>&1
+if errorlevel 1 (
+  echo [WARN] Optional package chromadb could not be imported.
+  echo        Chroma-backed AI search features may be limited until optional dependencies are repaired.
+)
+
+"%VENV_PYTHON%" -c "import sentence_transformers" >nul 2>&1
+if errorlevel 1 (
+  echo [WARN] Optional package sentence_transformers could not be imported.
+  echo        Embedding-based AI features may be limited until Torch/DLL dependencies are repaired.
+)
 
 :ensure_env_file
 if not exist "%ROOT_DIR%\app\.env" (
@@ -162,6 +182,27 @@ if errorlevel 1 (
   echo VITE_API_BASE_URL=%API_BASE_URL%>>"%ROOT_DIR%\app\.env"
   echo [OK] Added VITE_API_BASE_URL=%API_BASE_URL% to app\.env.
 )
+exit /b 0
+
+
+:set_api_base_url
+set "API_BASE_URL=http://%API_HOST%:%API_PORT%"
+exit /b 0
+
+
+:sync_frontend_api_base
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  "$path = '%ROOT_DIR%\app\.env';" ^
+  "$existing = @();" ^
+  "if (Test-Path -LiteralPath $path) { $existing = Get-Content -LiteralPath $path }" ^
+  "$filtered = @($existing | Where-Object { $_ -notmatch '^VITE_API_BASE_URL=' });" ^
+  "$filtered += 'VITE_API_BASE_URL=%API_BASE_URL%';" ^
+  "Set-Content -LiteralPath $path -Value $filtered -Encoding UTF8"
+if errorlevel 1 (
+  echo [WARN] Failed to synchronize VITE_API_BASE_URL in app\.env.
+  exit /b 1
+)
+echo [OK] Synchronized VITE_API_BASE_URL=%API_BASE_URL% in app\.env.
 exit /b 0
 
 
@@ -429,25 +470,54 @@ if errorlevel 1 (
 )
 popd
 
+call :try_start_backend %PREFERRED_API_PORT%
+if errorlevel 1 (
+  echo [WARN] Backend was not healthy on preferred port %PREFERRED_API_PORT%.
+  echo [INFO] Retrying backend on fallback port %FALLBACK_API_PORT% ...
+  call :try_start_backend %FALLBACK_API_PORT%
+  if errorlevel 1 (
+    echo [ERROR] Backend did not become healthy on either %PREFERRED_API_PORT% or %FALLBACK_API_PORT%.
+    echo Check %BACKEND_STDOUT% and %BACKEND_STDERR% in the project root for details.
+    exit /b 1
+  )
+)
+
+echo [OK] Backend health check passed.
+echo [INFO] Starting Vite frontend with VITE_API_BASE_URL=%API_BASE_URL% ...
+start "Capstone Frontend" /MIN /D "%ROOT_DIR%\app" cmd /c "set VITE_API_BASE_URL=%API_BASE_URL%&& npm run dev -- --host localhost --port %FRONTEND_PORT% > %FRONTEND_STDOUT% 2> %FRONTEND_STDERR%"
+exit /b 0
+
+
+:try_start_backend
+set "API_PORT=%~1"
+call :set_api_base_url
+
+if exist "%ROOT_DIR%\%BACKEND_STDOUT%" del /q "%ROOT_DIR%\%BACKEND_STDOUT%" >nul 2>&1
+if exist "%ROOT_DIR%\%BACKEND_STDERR%" del /q "%ROOT_DIR%\%BACKEND_STDERR%" >nul 2>&1
+
 echo [INFO] Starting FastAPI backend on %API_BASE_URL% ...
-start "Capstone Backend" /D "%ROOT_DIR%" cmd /k ""%VENV_PYTHON%" -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8002"
+echo [INFO] Uvicorn reload is disabled for Windows startup stability.
+start "Capstone Backend" /MIN /D "%ROOT_DIR%" cmd /c ""%VENV_PYTHON%" -m uvicorn app.main:app --host %API_HOST% --port %API_PORT% > %BACKEND_STDOUT% 2> %BACKEND_STDERR%"
 
 echo [INFO] Waiting for backend health endpoint...
 for /L %%I in (1,1,30) do (
   call :backend_health
-  if not errorlevel 1 goto :backend_ready
+  if not errorlevel 1 (
+    call :sync_frontend_api_base
+    if errorlevel 1 exit /b 1
+    exit /b 0
+  )
   timeout /t 2 /nobreak >nul
 )
 
-echo [ERROR] Backend did not become healthy at %API_BASE_URL%/health.
-echo Check the Capstone Backend window for the Python/Uvicorn error.
-exit /b 1
+if exist "%ROOT_DIR%\%BACKEND_STDERR%" (
+  findstr /C:"error while attempting to bind on address" "%ROOT_DIR%\%BACKEND_STDERR%" >nul 2>&1
+  if not errorlevel 1 (
+    echo [WARN] Port %API_PORT% could not be bound.
+  )
+)
 
-:backend_ready
-echo [OK] Backend health check passed.
-echo [INFO] Starting Vite frontend with VITE_API_BASE_URL=%API_BASE_URL% ...
-start "Capstone Frontend" /D "%ROOT_DIR%\app" cmd /k "set VITE_API_BASE_URL=%API_BASE_URL%&& npm run dev -- --host localhost --port 5174"
-exit /b 0
+exit /b 1
 
 
 :backend_health

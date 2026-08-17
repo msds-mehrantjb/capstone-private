@@ -4,6 +4,10 @@ import {
   ChevronDown,
   Send,
 } from "lucide-react";
+import CommandHelpMessage, {
+  isCommandHelpMessage,
+} from "../components/CommandHelpMessage";
+import StepStatusBadge from "../components/StepStatusBadge";
 
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
 
@@ -78,6 +82,30 @@ type MonitoringImprovementHost = {
   evidence?: MonitoringImprovementEvidence[];
 };
 
+function hasMeaningfulEvidence(
+  ev: MonitoringImprovementEvidence | null | undefined
+): boolean {
+  if (!ev || typeof ev !== "object") return false;
+
+  return Boolean(
+    (ev.responsible && ev.responsible.trim() !== "") ||
+      (ev.resources && ev.resources.trim() !== "") ||
+      (ev.date && ev.date.trim() !== "") ||
+      (ev.url && ev.url.trim() !== "") ||
+      (ev.desc && ev.desc.trim() !== "")
+  );
+}
+
+function getMeaningfulEvidence(
+  evidence: MonitoringImprovementEvidence[] | null | undefined
+): Array<{ ev: MonitoringImprovementEvidence; rawIndex: number }> {
+  if (!Array.isArray(evidence)) return [];
+
+  return evidence
+    .map((ev, rawIndex) => ({ ev, rawIndex }))
+    .filter(({ ev }) => hasMeaningfulEvidence(ev));
+}
+
 
 type SystemStatusDTO = {
   meta: { name: string; version: string };
@@ -128,15 +156,6 @@ type AddEvidenceResponse = {
   inventory?: MonitoringInventoryResponse;
   guide_id?: string;
   guide_key?: string;
-};
-
-type AddEvidenceAllResponse = {
-  success?: boolean;
-  message?: string;
-  added_count?: number;
-  skipped_count?: number;
-  failed_count?: number;
-  inventory?: MonitoringInventoryResponse;
 };
 
   type EditEvidenceForm = {
@@ -203,8 +222,15 @@ async function apiAddEvidence(
   );
 }
 
-async function apiAddEvidenceAll(year: number): Promise<AddEvidenceAllResponse> {
-  return apiPostJSONBody<AddEvidenceAllResponse>(
+async function apiAddEvidenceAll(year: number): Promise<{
+  success?: boolean;
+  message?: string;
+  added_count?: number;
+  skipped_count?: number;
+  failed_count?: number;
+  inventory?: MonitoringInventoryResponse;
+}> {
+  return apiPostJSONBody(
     "/api/monitoring-improvement/add-evidence-all",
     { year }
   );
@@ -237,7 +263,7 @@ async function apiEditEvidence(
   );
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);
@@ -351,7 +377,19 @@ async function apiSubmitMonitoringImprovement(year: number, confirm = false): Pr
 }
 
 async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>("/api/system/status");
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>("/api/system/status");
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
@@ -898,6 +936,80 @@ export default function MonitoringImprovement() {
     });
   };
 
+  const buildAutoEvidenceForm = (
+    control: MonitoringImprovementCVE,
+    host: MonitoringImprovementHost
+  ): MonitoringImprovementEvidenceForm => {
+    const controlId = (control.CVE || "").trim();
+    const vulnerability = (control.vulnerability || host.vulnerability_name || "").trim();
+    const recommendedAction = (control.recommended_action || "").trim();
+    const hostname = (host.hostname || "").trim();
+    const role = (host.role || "").trim();
+
+    const responsibleByRole = (() => {
+      const roleL = role.toLowerCase();
+
+      if (
+        roleL.includes("server") ||
+        roleL.includes("domain controller") ||
+        roleL.includes("dns") ||
+        roleL.includes("database") ||
+        roleL.includes("web")
+      ) {
+        return "System Administrator + Security Monitoring Team";
+      }
+
+      if (
+        roleL.includes("workstation") ||
+        roleL.includes("endpoint") ||
+        roleL.includes("user") ||
+        roleL.includes("employee")
+      ) {
+        return "Endpoint Administrator + Security Monitoring Team";
+      }
+
+      if (
+        roleL.includes("network") ||
+        roleL.includes("firewall") ||
+        roleL.includes("router") ||
+        roleL.includes("switch")
+      ) {
+        return "Network Administrator + Security Monitoring Team";
+      }
+
+      return "Asset Responsible Team + Security Monitoring Team";
+    })();
+
+    const briefDesc = (() => {
+      if (recommendedAction) {
+        const firstLine = recommendedAction
+          .split("\n")
+          .map((x) => x.trim())
+          .find((x) => x && x !== "Recommended monitoring actions:" && x !== "-");
+
+        const cleaned = (firstLine || recommendedAction)
+          .replace(/^[-•]\s*/, "")
+          .trim();
+
+        return cleaned
+          ? `Monitoring evidence for ${hostname} under ${controlId}: ${cleaned}.`
+          : `Monitoring evidence for ${hostname} under ${controlId} related to ${vulnerability}.`;
+      }
+
+      return `Monitoring evidence for ${hostname} under ${controlId} related to ${vulnerability}.`;
+    })();
+
+    return {
+      responsible: responsibleByRole,
+      resources: [hostname ? `Host: ${hostname}` : "", role ? `Role: ${role}` : ""]
+        .filter(Boolean)
+        .join(" | "),
+      date: "",
+      url: "",
+      desc: briefDesc,
+    };
+  };
+
   const selectedMonitoringImprovementControl =
     selectedControlIndex !== null ? monitoringImprovementControls[selectedControlIndex] : null;
 
@@ -1103,24 +1215,62 @@ export default function MonitoringImprovement() {
       return;
     }
 
+    const pendingRows = monitoringImprovementControls.flatMap((control) => {
+      const controlId = (control.CVE || "").trim();
+      if (!controlId || !Array.isArray(control.hosts)) {
+        return [];
+      }
+
+      return control.hosts
+        .filter((host) => {
+          const hostname = (host.hostname || "").trim();
+          return hostname && getMeaningfulEvidence(host.evidence).length === 0;
+        })
+        .map((host) => ({
+          control,
+          controlId,
+          hostname: (host.hostname || "").trim(),
+          vulnerabilityName: (host.vulnerability_name || "").trim(),
+          evidence: buildAutoEvidenceForm(control, host),
+        }));
+    });
+
+    if (pendingRows.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Every host row already has at least one evidence item.",
+        },
+      ]);
+      scrollChatToBottom();
+      return;
+    }
+
     setSending(true);
     setMessages((prev) => [
       ...prev,
       {
         role: "assistant",
         content:
-          "Please wait while the system generates one evidence item for every host that does not already have evidence.",
+          `Please wait while the system generates one evidence item for ${pendingRows.length} host row(s) that do not already have evidence.`,
       },
     ]);
 
     try {
       const data = await apiAddEvidenceAll(YEAR);
 
-      if (data?.success === false && (data.added_count || 0) === 0 && (data.skipped_count || 0) === 0) {
+      if (
+        data?.success === false &&
+        (data.added_count || 0) === 0 &&
+        (data.skipped_count || 0) === 0
+      ) {
         throw new Error(data.message || "Failed to generate evidence for all hosts.");
       }
 
-      setMonitoringImprovementControls(Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []);
+      setMonitoringImprovementControls(
+        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
+      );
 
       setMessages((prev) => {
         const updated = [...prev];
@@ -1478,7 +1628,6 @@ export default function MonitoringImprovement() {
   const monitoringImprovementStatus: StepStatus = useMemo(() => {
     const backendStatus = systemStatus?.sections?.monitoring_improvement?.status ?? systemStatus?.sections?.action_plan_implementation?.status;
     if (backendStatus === "Completed") return "Completed";
-    if (backendStatus === "Blocked") return "Blocked";
     if (backendStatus === "In Progress") return "In Progress";
     if (monitoringImprovementControls.length > 0) return "In Progress";
     return "Not Started";
@@ -1968,22 +2117,7 @@ export default function MonitoringImprovement() {
                           </div>
                         ) : (
                           c.hosts.map((host, hostIdx) => {
-                            const validEvidence = Array.isArray(host.evidence)
-                              ? host.evidence
-                                  .map((ev, rawIndex) => ({ ev, rawIndex }))
-                                  .filter(
-                                    ({ ev }) =>
-                                      ev &&
-                                      typeof ev === "object" &&
-                                      (
-                                        (ev.responsible && ev.responsible.trim() !== "") ||
-                                        (ev.resources && ev.resources.trim() !== "") ||
-                                        (ev.date && ev.date.trim() !== "") ||
-                                        (ev.url && ev.url.trim() !== "") ||
-                                        (ev.desc && ev.desc.trim() !== "")
-                                      )
-                                  )
-                              : [];                        
+                            const validEvidence = getMeaningfulEvidence(host.evidence);
                             return (
                               <React.Fragment key={`${c.CVE}-${hostIdx}`}>
                                 <div
@@ -2064,17 +2198,24 @@ export default function MonitoringImprovement() {
           <div className="space-y-3">
             {messages.map((m, idx) => {
               const isUser = m.role === "user";
+              const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
 
               return (
                 <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                    className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                      isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                    } ${
                       isUser
-                        ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                        : "bg-white/5 text-slate-200 ring-white/10"
+                        ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                        : "w-full bg-white/5 text-slate-200 ring-white/10"
                     }`}
                   >
-                    <div>{m.content}</div>
+                    {isCommandMessage ? (
+                      <CommandHelpMessage content={m.content} />
+                    ) : (
+                      <div>{m.content}</div>
+                    )}
 
                     {!isUser &&
                     m.confirmAction === pendingAssistantAction &&
@@ -2265,10 +2406,7 @@ export default function MonitoringImprovement() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-slate-300">({monitoringImprovementCount} controls)</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                      {monitoringImprovementStatus}
-                    </span>
+                    <StepStatusBadge status={monitoringImprovementStatus} />
                   </div>
                 </div>
               </div>
@@ -2402,10 +2540,7 @@ export default function MonitoringImprovement() {
 
                   <span className="text-sm text-slate-300">- ({monitoringImprovementCount} CVEs)</span>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                    {monitoringImprovementStatus}
-                  </span>
+                  <StepStatusBadge status={monitoringImprovementStatus} />
                 </div>
               </div>
             </div>

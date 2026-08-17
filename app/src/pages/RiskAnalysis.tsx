@@ -9,6 +9,10 @@ import {
   AlertTriangle,
   Activity,
 } from "lucide-react";
+import CommandHelpMessage, {
+  isCommandHelpMessage,
+} from "../components/CommandHelpMessage";
+import StepStatusBadge from "../components/StepStatusBadge";
 
 type SeverityValue = "Critical" | "High" | "Medium" | "Low" | "Unscanned";
 type StepStatus = "Blocked" | "Not Started" | "In Progress" | "Completed";
@@ -149,7 +153,7 @@ type SubmitResponse = {
   requires_confirmation?: boolean;
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiTrainBehaviorModel(year: number): Promise<TrainResponse> {
   return apiPostJSONBody<TrainResponse>("/api/risk-analysis/train", {
@@ -203,12 +207,20 @@ async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-async function apiUnblockRiskAnalysis(year: number) {
-  return apiPostJSON(`/api/risk-analysis/unblock?year=${year}`);
-}
-
 async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>("/api/system/status");
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>("/api/system/status");
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
@@ -758,7 +770,6 @@ export default function RiskAnalysis() {
 
   const riskAnalysisStatus: StepStatus = useMemo(() => {
     if (backendRiskStatus === "Completed") return "Completed";
-    if (backendRiskStatus === "Blocked") return "Blocked";
     if (backendRiskStatus === "In Progress") return "In Progress";
     if (rows.length > 0) return "In Progress";
     return "Not Started";
@@ -1009,13 +1020,6 @@ export default function RiskAnalysis() {
       if (!(await hasSubmittedScopeDocument())) {
         showPopup(SCOPE_REQUIRED_MESSAGE);
         return;
-      }
-
-      if (riskAnalysisStatus === "Blocked") {
-        await apiUnblockRiskAnalysis(YEAR);
-
-        const sys = await apiGetSystemStatus();
-        setSystemStatus(sys);
       }
 
       const doc = await apiGetRiskInventory(YEAR);
@@ -1827,16 +1831,23 @@ export default function RiskAnalysis() {
           <div className="space-y-3">
             {messages.map((m, idx) => {
               const isUser = m.role === "user";
+              const isCommandMessage = !isUser && isCommandHelpMessage(m.content);
               return (
                 <div key={idx} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[90%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                    className={`whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm ring-1 ${
+                      isCommandMessage ? "font-mono text-[13px] leading-6" : ""
+                    } ${
                       isUser
-                        ? "bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
-                        : "bg-white/5 text-slate-200 ring-white/10"
+                        ? "max-w-[90%] bg-indigo-600/30 text-slate-50 ring-indigo-500/30"
+                        : "w-full bg-white/5 text-slate-200 ring-white/10"
                     }`}
                   >
-                    {m.content}
+                    {isCommandMessage ? (
+                      <CommandHelpMessage content={m.content} />
+                    ) : (
+                      m.content
+                    )}
                   </div>
                 </div>
               );
@@ -1974,7 +1985,7 @@ export default function RiskAnalysis() {
 
             {sending ? (
               <div className="flex justify-start">
-                <div className="max-w-[90%] rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
+                <div className="w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
                   …
                 </div>
               </div>
@@ -2120,10 +2131,7 @@ export default function RiskAnalysis() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm text-slate-300">({rowCount} assets)</span>
-                    <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                      {riskAnalysisStatus}
-                    </span>
+                    <StepStatusBadge status={riskAnalysisStatus} />
                   </div>
                 </div>
               </div>
@@ -2273,10 +2281,7 @@ export default function RiskAnalysis() {
 
                   <span className="text-sm text-slate-300">- ({rowCount} assets)</span>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-3 py-1 text-xs text-orange-200 ring-1 ring-orange-500/25">
-                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-orange-400" />
-                    {riskAnalysisStatus}
-                  </span>
+                  <StepStatusBadge status={riskAnalysisStatus} />
                 </div>
               </div>
             </div>

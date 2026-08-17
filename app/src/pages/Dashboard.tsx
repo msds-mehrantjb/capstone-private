@@ -96,7 +96,7 @@ const STEP_TO_SECTION_KEY: Record<number, string> = {
   9: "monitoring_improvement",
 };
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8002";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
 async function apiGetJSON<T>(path: string): Promise<T> {
   const sep = path.includes("?") ? "&" : "?";
@@ -122,9 +122,21 @@ async function apiGetDashboardRaw(year: number): Promise<DashboardRawDTO> {
 }
 
 async function apiGetSystemStatus(year: number): Promise<SystemStatusDTO> {
-  return apiGetJSON<SystemStatusDTO>(
-    `/api/system/status?year=${encodeURIComponent(String(year))}`
-  );
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      return await apiGetJSON<SystemStatusDTO>(
+        `/api/system/status?year=${encodeURIComponent(String(year))}`
+      );
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 3) break;
+      await new Promise((resolve) => setTimeout(resolve, attempt * 400));
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
 async function apiResetAudit(year: number): Promise<DashboardRawDTO> {

@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Show the text caret only inside real editing controls. */
+*:not(input):not(textarea):not([contenteditable="true"]):not([contenteditable="plaintext-only"]) {
+  caret-color: transparent;
+}
+
+input,
+textarea,
+[contenteditable="true"],
+[contenteditable="plaintext-only"] {
+  caret-color: auto;
+}
+
 /* Asset Inventory & CIA desktop layout
    Keep the inventory card inside the remaining viewport instead of letting
    its old 460px minimum height push the table below the visible screen. */
