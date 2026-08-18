@@ -122,7 +122,7 @@ Useful starting points:
 - [`app/api/README.md`](app/api/README.md) — FastAPI route layer
 - [`app/api/sections/README.md`](app/api/sections/README.md) — Final Deliverables section builders
 - [`app/agent/README.md`](app/agent/README.md) — agent runtime and collection flow
-- [`app/behavior/Agent/README.md`](app/behavior/README.md) — behavior collection and aggregation
+- [`app/behavior/Agent/README.md`](app/behavior/agent/README.md) — behavior collection and aggregation
 - [`app/rag/README.md`](app/rag/README.md) — RAG and Chroma integration
 - [`app/src/README.md`](app/src/README.md) — React frontend source
 - [`app/src/pages/README.md`](app/src/pages/README.md) — workflow page components
