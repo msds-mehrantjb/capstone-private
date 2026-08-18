@@ -23,7 +23,7 @@ Route modules expose endpoints for:
 
 The application registers these routers from `app/main.py`.
 
-## AI / ML and RAG Usage by Page
+## AI / ML and RAG Usage
 
 ![AI/ML Dashboard](../../docs/images/AI-ML_Dashboard.png)
 
