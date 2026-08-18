@@ -133,7 +133,6 @@ Useful starting points:
 - [`data/docker_lab/README.md`](data/docker_lab/README.md) — Docker network lab
 - [`lab-scanner/README.md`](lab-scanner/README.md) — scanner workflow
 - [`scripts/README.md`](scripts/README.md) — startup/setup helper scripts
-- [`docs/README.md`](docs/README.md) — documentation assets
 
 Generated or runtime-oriented folders also contain README files that explain when their contents should **not** be manually edited.
 
