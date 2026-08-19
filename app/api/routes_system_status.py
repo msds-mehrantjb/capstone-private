@@ -136,36 +136,71 @@ def _read_json(path: Path, default: Any) -> Any:
         return default
 
 
+def _normalize_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
 def _has_submitted_scope_document(year: int) -> bool:
     dashboard = _read_json(_dashboard_file(), {})
     scope_file_name = str((dashboard or {}).get("scope_file_name") or "").strip().lower()
     return bool(scope_file_name) and re.search(r"-v0\.json$", scope_file_name) is None
 
 
-def _asset_inventory_has_records(year: int) -> bool:
+def _asset_inventory_status_from_file(year: int) -> str:
     raw = _read_json(_asset_inventory_file(year), {})
+    if not isinstance(raw, dict):
+        return "Not Started"
+
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
     subnets = raw.get("subnets", []) if isinstance(raw, dict) else []
     for subnet in subnets if isinstance(subnets, list) else []:
         assets = subnet.get("assets", []) if isinstance(subnet, dict) else []
         if isinstance(assets, list) and assets:
-            return True
-    return False
+            return "In Progress"
+    return "Not Started"
 
 
 def _threats_status_from_file(year: int) -> str:
     raw = _read_json(_threats_file(year), {})
+    if not isinstance(raw, dict):
+        return "Not Started"
+
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
     hosts = raw.get("hosts", []) if isinstance(raw, dict) else []
     if not isinstance(hosts, list) or not hosts:
         return "Not Started"
     for host in hosts:
         items = host.get("vulnerabilities_threats", []) if isinstance(host, dict) else []
         if isinstance(items, list) and items:
-            return "Completed"
+            return "In Progress"
     return "In Progress"
 
 
 def _controls_status_from_file(year: int) -> str:
     raw = _read_json(_controls_postures_file(year), {})
+    if not isinstance(raw, dict):
+        return "Not Started"
+
+    explicit_status = str(raw.get("status") or "").strip()
+    if explicit_status == "Completed":
+        return "Completed"
+
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
+    if explicit_status == "In Progress":
+        return "In Progress"
+
+    if explicit_status == "Not Started":
+        return "Not Started"
+
     hosts = raw.get("hosts", []) if isinstance(raw, dict) else []
     if not isinstance(hosts, list) or not hosts:
         return "Not Started"
@@ -174,39 +209,117 @@ def _controls_status_from_file(year: int) -> str:
             continue
         controls = host.get("existing_controls", {})
         if isinstance(controls, dict) and any(isinstance(values, list) and values for values in controls.values()):
-            return "Completed"
+            return "In Progress"
         if isinstance(controls, list) and controls:
-            return "Completed"
+            return "In Progress"
     return "In Progress"
 
 
 def _risk_analysis_status_from_file(year: int) -> str:
     raw = _read_json(_risk_analysis_file(year), {})
-    hosts = raw.get("hosts", []) if isinstance(raw, dict) else []
-    return "Completed" if isinstance(hosts, list) and hosts else "Not Started"
+    if not isinstance(raw, dict):
+        return "Not Started"
+
+    explicit_status = str(raw.get("status") or "").strip()
+    if explicit_status == "Completed":
+        return "Completed"
+
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
+    if explicit_status == "In Progress":
+        return "In Progress"
+
+    if explicit_status == "Not Started":
+        return "Not Started"
+
+    hosts = raw.get("hosts", [])
+    return "In Progress" if isinstance(hosts, list) and hosts else "Not Started"
 
 
 def _risk_evaluation_status_from_file(year: int) -> str:
     raw = _read_json(_risk_evaluation_file(year), {})
-    hosts = raw.get("hosts", []) if isinstance(raw, dict) else []
-    return "Completed" if isinstance(hosts, list) and hosts else "Not Started"
+    if not isinstance(raw, dict):
+        return "Not Started"
+
+    explicit_status = str(raw.get("status") or "").strip()
+    if explicit_status == "Completed":
+        return "Completed"
+
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
+    if explicit_status == "In Progress":
+        return "In Progress"
+
+    if explicit_status == "Not Started":
+        return "Not Started"
+
+    hosts = raw.get("hosts", [])
+    return "In Progress" if isinstance(hosts, list) and hosts else "Not Started"
 
 
 def _annex_status_from_file(year: int) -> str:
     raw = _read_json(_annex_soa_file(year), {})
-    controls = raw.get("controls", []) if isinstance(raw, dict) else []
-    return "Completed" if isinstance(controls, list) and controls else "Not Started"
+    if not isinstance(raw, dict):
+        return "Not Started"
+
+    explicit_status = str(raw.get("status") or "").strip()
+    if explicit_status == "Completed":
+        return "Completed"
+
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
+    if explicit_status == "In Progress":
+        return "In Progress"
+
+    if explicit_status == "Not Started":
+        return "Not Started"
+
+    controls = raw.get("controls", [])
+    return "In Progress" if isinstance(controls, list) and controls else "Not Started"
 
 
 def _action_plan_status_from_file(year: int) -> str:
     raw = _read_json(_action_plan_file(year), {})
-    controls = raw.get("controls", []) if isinstance(raw, dict) else []
+    if not isinstance(raw, dict):
+        return "Not Started"
+
+    explicit_status = str(raw.get("status") or "").strip()
+    if explicit_status == "Completed":
+        return "Completed"
+
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
+    if explicit_status == "In Progress":
+        return "In Progress"
+
+    if explicit_status == "Not Started":
+        return "Not Started"
+
+    controls = raw.get("controls", [])
     return "In Progress" if isinstance(controls, list) and controls else "Not Started"
 
 
 def _monitoring_status_from_file(year: int) -> str:
     raw = _read_json(_monitoring_file(year), {})
     if not isinstance(raw, dict):
+        return "Not Started"
+    explicit_status = _normalize_text(raw.get("status"))
+    if explicit_status == "Completed":
+        return "Completed"
+    meta = raw.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+    if explicit_status == "In Progress":
+        return "In Progress"
+    if explicit_status == "Not Started":
         return "Not Started"
     controls = raw.get("controls", [])
     if isinstance(controls, list) and controls:
@@ -234,7 +347,7 @@ def _sync_status_from_artifacts(data: Dict[str, Any], year: int) -> Dict[str, An
 
     synced = {
         "scope_context": "Completed" if _has_submitted_scope_document(year) else "Not Started",
-        "assets_cia": "Completed" if _asset_inventory_has_records(year) else "Not Started",
+        "assets_cia": _asset_inventory_status_from_file(year),
         "threats_vulns": _threats_status_from_file(year),
         "existing_controls_postures": _controls_status_from_file(year),
         "risk_analysis": _risk_analysis_status_from_file(year),

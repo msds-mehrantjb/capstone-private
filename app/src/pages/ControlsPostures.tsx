@@ -193,6 +193,28 @@ async function apiAssessControlPostures(
   return data;
 }
 
+async function apiSubmitControlPostures(
+  year: number
+): Promise<{ success: boolean; message?: string; status?: string }> {
+  const res = await fetch(`${API_BASE}/api/controls-postures/submit`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    },
+    body: JSON.stringify({ year }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data?.detail || `HTTP ${res.status}`);
+  }
+
+  return data;
+}
+
 async function apiResetControlPostures(
   year: number
 ): Promise<ResetControlPostureAssessmentResponse> {
@@ -966,11 +988,16 @@ export default function ControlsPostures() {
       }
 
       if (text === "/submit") {
+        const result = await apiSubmitControlPostures(YEAR);
+        await refreshControlPostureSection();
+
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: "The Copntrol & Postures has been finalyzed",
+            content:
+              result.message ||
+              "Existing Controls & Postures assessment submitted successfully.",
           },
         ]);
         return;
@@ -981,6 +1008,21 @@ export default function ControlsPostures() {
         {
           role: "assistant",
           content: "Unknown command. Type /commands to see available commands.",
+        },
+      ]);
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+          ? e
+          : JSON.stringify(e);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: `Command failed: ${msg}`,
         },
       ]);
     } finally {

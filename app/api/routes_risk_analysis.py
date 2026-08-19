@@ -609,6 +609,14 @@ def _derive_risk_analysis_status_from_inventory(inventory: dict) -> str:
     if not isinstance(inventory, dict):
         return "Not Started"
 
+    explicit_status = str(inventory.get("status") or "").strip()
+    if explicit_status in {"Not Started", "In Progress", "Completed"}:
+        return explicit_status
+
+    meta = inventory.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
     if len(_all_hosts(inventory)) == 0:
         return "Not Started"
 
@@ -1288,7 +1296,14 @@ def create_new_risk_inventory(
             "inventory": current,
         }
 
-    new_doc = {"hosts": []}
+    new_doc = {
+        "status": "Not Started",
+        "meta": {
+            "submitted": False,
+            "read_only": False,
+        },
+        "hosts": [],
+    }
 
     _save_json(_risk_analysis_file(year), new_doc)
     _set_risk_analysis_status(year, "Not Started")
@@ -1346,6 +1361,14 @@ def run_risk_analysis(payload: AnalysisRequest):
             "message": "No risk records were generated.",
             "inventory": current,
         }
+
+    risk_inventory["status"] = "In Progress"
+    meta = risk_inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        risk_inventory["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
 
     _save_json(_risk_analysis_file(year), risk_inventory)
     _set_risk_analysis_status(year, "In Progress")
@@ -1412,6 +1435,14 @@ def set_risk(payload: SetRiskRequest):
         hosts[idx] = record
         inventory["hosts"] = hosts
 
+    inventory["status"] = "In Progress"
+    meta = inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
+
     _save_json(_risk_analysis_file(year), inventory)
     _sync_risk_analysis_status(year, inventory)
     if old_risk != normalized_risk:
@@ -1465,6 +1496,18 @@ def delete_risk_record(payload: DeleteRequest):
 
     deleted_record = hosts.pop(idx)
     inventory["hosts"] = hosts
+
+    if len(hosts) == 0:
+        inventory["status"] = "Not Started"
+    else:
+        inventory["status"] = "In Progress"
+
+    meta = inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
 
     _save_json(_risk_analysis_file(year), inventory)
 
@@ -1645,6 +1688,15 @@ def submit_risk_analysis(payload: SubmitRequest):
             "message": f"Risk analysis finalization failed during model retraining: {e}",
             "inventory": inventory,
         }
+
+    meta = inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    inventory["status"] = "Completed"
+    meta["submitted"] = True
+    meta["read_only"] = True
+    _save_json(_risk_analysis_file(year), inventory)
 
     # 4. Build RiskEvaluationTreatment.json
     risk_eval_doc = _build_risk_evaluation_treatment(inventory)

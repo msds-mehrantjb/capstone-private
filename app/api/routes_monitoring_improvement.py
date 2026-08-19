@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, Query, UploadFile, File
 from pydantic import BaseModel
 import csv
 import json
@@ -214,7 +214,32 @@ def _load_json(path: Path) -> Any:
 
 
 def _blank_monitoring_improvement_doc() -> dict:
-    return {"cves": []}
+    return {
+        "status": "Not Started",
+        "meta": {
+            "submitted": False,
+            "read_only": False,
+        },
+        "cves": [],
+    }
+
+
+def _set_monitoring_improvement_doc_state(
+    doc: dict,
+    *,
+    status: str,
+    submitted: bool,
+    read_only: bool,
+) -> dict:
+    if not isinstance(doc, dict):
+        doc = {}
+    if not isinstance(doc.get("meta"), dict):
+        doc["meta"] = {}
+
+    doc["status"] = status
+    doc["meta"]["submitted"] = submitted
+    doc["meta"]["read_only"] = read_only
+    return doc
 
 
 def _blank_monitoring_implementation_guides_doc(year: int) -> dict:
@@ -422,6 +447,15 @@ def _set_section_status(year: int, section_name: str, new_status: str) -> None:
 
 
 def _monitoring_improvement_section_is_read_only(year: int) -> bool:
+    doc = _load_monitoring_improvement_doc_or_blank(year)
+    explicit_status = _normalize_text(doc.get("status"))
+    if explicit_status == "Completed":
+        return True
+
+    meta = doc.get("meta", {})
+    if isinstance(meta, dict):
+        return bool(meta.get("submitted") or meta.get("read_only"))
+
     return False
 
 
@@ -1461,6 +1495,27 @@ def _replace_monitoring_guide_for_evidence(
     return guide
 
 
+def _refresh_monitoring_guide_async(
+    year: int,
+    control_snapshot: dict,
+    host_snapshot: dict,
+    evidence_snapshot: dict,
+    guide_id: str = "",
+) -> None:
+    try:
+        _replace_monitoring_guide_for_evidence(
+            year=year,
+            control=control_snapshot,
+            host=host_snapshot,
+            evidence=evidence_snapshot,
+            prefer_fallback=False,
+            guide_id_override=guide_id,
+        )
+    except Exception:
+        # Keep the already-saved draft guide if the full background refresh fails.
+        return
+
+
 def _find_monitoring_guide_by_id(year: int, guide_id: str) -> dict | None:
     normalized_guide_id = _normalize_key(guide_id)
     if normalized_guide_id == "":
@@ -1909,7 +1964,12 @@ def _load_monitoring_improvement_doc_or_blank(year: int) -> dict:
             try:
                 legacy_doc = _load_json(legacy_path)
                 if isinstance(legacy_doc, dict) and isinstance(legacy_doc.get("cves"), list):
-                    return legacy_doc
+                    doc = legacy_doc
+                    if not isinstance(doc.get("meta"), dict):
+                        doc["meta"] = {"submitted": False, "read_only": False}
+                    if not _normalize_text(doc.get("status")):
+                        doc["status"] = "In Progress" if doc["cves"] else "Not Started"
+                    return doc
             except Exception:
                 pass
         return _blank_monitoring_improvement_doc()
@@ -1925,10 +1985,30 @@ def _load_monitoring_improvement_doc_or_blank(year: int) -> dict:
     if not isinstance(doc.get("cves"), list):
         doc["cves"] = []
 
+    if not isinstance(doc.get("meta"), dict):
+        doc["meta"] = {"submitted": False, "read_only": False}
+
+    if not _normalize_text(doc.get("status")):
+        doc["status"] = "In Progress" if doc["cves"] else "Not Started"
+
     return doc
 
 
 def _derive_monitoring_improvement_status_from_doc(doc: dict) -> str:
+    explicit_status = _normalize_text(doc.get("status"))
+    if explicit_status == "Completed":
+        return "Completed"
+
+    meta = doc.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
+    if explicit_status == "In Progress":
+        return "In Progress"
+
+    if explicit_status == "Not Started":
+        return "Not Started"
+
     return "Not Started" if len(_all_cves(doc)) == 0 else "In Progress"
 
 
@@ -1937,6 +2017,21 @@ def _sync_monitoring_improvement_status(year: int, doc: dict | None = None) -> s
         doc = _load_monitoring_improvement_doc_or_blank(year)
 
     new_status = _derive_monitoring_improvement_status_from_doc(doc)
+    if new_status == "Completed":
+        _set_monitoring_improvement_doc_state(
+            doc,
+            status="Completed",
+            submitted=True,
+            read_only=True,
+        )
+    else:
+        _set_monitoring_improvement_doc_state(
+            doc,
+            status=new_status,
+            submitted=False,
+            read_only=False,
+        )
+    _save_json(_monitoring_improvement_file(year), doc)
     _set_section_status(year, "monitoring_improvement", new_status)
     return new_status
 
@@ -2873,8 +2968,7 @@ def reset_monitoring_improvement(payload: ResetRequest):
             cve["hosts"] = hosts
 
     doc["cves"] = cves
-    _save_json(_monitoring_improvement_file(year), doc)
-    _set_section_status(year, "monitoring_improvement", "In Progress")
+    _sync_monitoring_improvement_status(year, doc)
 
     return {
         "success": True,
@@ -2980,19 +3074,13 @@ def submit_monitoring_improvement(payload: SubmitRequest):
             "inventory": doc,
         }
 
-    _save_json(_monitoring_improvement_file(year), doc)
-
-    status_doc = _load_system_status_or_default(year)
-    
-    current_status = status_doc["sections"]["monitoring_improvement"].get("status")
-    
-    # Rule: keep In Progress, otherwise set to In Progress
-    if current_status == "In Progress":
-        status_doc["sections"]["monitoring_improvement"]["status"] = "In Progress"
-    else:
-        status_doc["sections"]["monitoring_improvement"]["status"] = "In Progress"
-    
-    _save_json(_system_status_file(year), status_doc)
+    _set_monitoring_improvement_doc_state(
+        doc,
+        status="Completed",
+        submitted=True,
+        read_only=True,
+    )
+    _sync_monitoring_improvement_status(year, doc)
     return {
         "success": True,
         "message": "The Monitoring / Improvement table data submitted succcesfully.",
@@ -3097,7 +3185,7 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
     }
 
 @router.post("/add-evidence")
-def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
+def add_evidence_to_monitoring_host(payload: AddEvidenceRequest, background_tasks: BackgroundTasks):
     year = int(payload.year or 2026)
     doc = _load_monitoring_improvement_doc_or_blank(year)
 
@@ -3154,41 +3242,47 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
         host.get("vulnerability_name") or payload.vulnerability_name or control_name
     )
 
-    host_lines = _build_host_lines_for_rag(hosts)
+    provided_responsible = _normalize_text(payload.evidence.responsible)
+    provided_resources = _normalize_text(payload.evidence.resources)
+    provided_desc = _normalize_text(payload.evidence.desc)
 
-    try:
-        retrieved_controls = _retrieve_relevant_iso_controls(
+    auto_responsible = provided_responsible or _map_responsible_from_role(role)
+    auto_resources = provided_resources or _build_resources_value(hostname, role)
+    auto_desc = provided_desc
+
+    if auto_desc == "":
+        host_lines = _build_host_lines_for_rag(hosts)
+        try:
+            retrieved_controls = _retrieve_relevant_iso_controls(
+                year=year,
+                control_id=control_id,
+                control_name=control_name,
+                justification=justification,
+                host_lines=host_lines,
+                top_k=3,
+            )
+        except Exception:
+            retrieved_controls = []
+
+        auto_desc = _generate_evidence_desc_with_llama3(
             year=year,
             control_id=control_id,
             control_name=control_name,
             justification=justification,
-            host_lines=host_lines,
-            top_k=3,
+            hostname=hostname,
+            role=role,
+            vulnerability_name=vulnerability_name,
+            recommended_action=recommended_action,
+            retrieved_controls=retrieved_controls,
         )
-    except Exception:
-        retrieved_controls = []
-
-    auto_responsible = _map_responsible_from_role(role)
-    auto_resources = _build_resources_value(hostname, role)
-    auto_desc = _generate_evidence_desc_with_llama3(
-        year=year,
-        control_id=control_id,
-        control_name=control_name,
-        justification=justification,
-        hostname=hostname,
-        role=role,
-        vulnerability_name=vulnerability_name,
-        recommended_action=recommended_action,
-        retrieved_controls=retrieved_controls,
-    )
 
     new_evidence = {
         "evidence_id": _next_monitoring_evidence_id(year, doc),
-        "responsible": _normalize_text(payload.evidence.responsible) or auto_responsible,
-        "resources": _normalize_text(payload.evidence.resources) or auto_resources,
+        "responsible": auto_responsible,
+        "resources": auto_resources,
         "date": _normalize_text(payload.evidence.date),
         "url": _normalize_text(payload.evidence.url),
-        "desc": _normalize_text(payload.evidence.desc) or auto_desc,
+        "desc": auto_desc,
     }
 
     if not any(new_evidence.values()):
@@ -3212,7 +3306,13 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
 
     guide = None
     try:
-        guide = _replace_monitoring_guide_for_evidence(year, control, host, new_evidence)
+        guide = _replace_monitoring_guide_for_evidence(
+            year,
+            control,
+            host,
+            new_evidence,
+            prefer_fallback=True,
+        )
     except Exception as e:
         return {
             "success": False,
@@ -3220,11 +3320,23 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
             "inventory": doc,
         }
 
+    background_tasks.add_task(
+        _refresh_monitoring_guide_async,
+        year,
+        json.loads(json.dumps(control)),
+        json.loads(json.dumps(host)),
+        json.loads(json.dumps(new_evidence)),
+        _normalize_text(guide.get("guide_id")) if isinstance(guide, dict) else "",
+    )
+
     _sync_monitoring_improvement_status(year, doc)
 
     return {
         "success": True,
-        "message": f"Evidence added for host {payload.hostname} under CVE {payload.control_id}. Guide generated successfully.",
+        "message": (
+            f"Evidence added for host {payload.hostname} under CVE {payload.control_id}. "
+            "A draft monitoring guide was linked immediately, and the full guide is being refined in the background."
+        ),
         "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
         "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,
@@ -3328,7 +3440,7 @@ def delete_monitoring_evidence(payload: DeleteEvidenceRequest):
 
 
 @router.post("/edit-evidence")
-def edit_monitoring_evidence(payload: EditEvidenceRequest):
+def edit_monitoring_evidence(payload: EditEvidenceRequest, background_tasks: BackgroundTasks):
     year = int(payload.year or 2026)
     doc = _load_monitoring_improvement_doc_or_blank(year)
 
@@ -3421,7 +3533,13 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest):
 
     guide = None
     try:
-        guide = _replace_monitoring_guide_for_evidence(year, control, host, updated_evidence)
+        guide = _replace_monitoring_guide_for_evidence(
+            year,
+            control,
+            host,
+            updated_evidence,
+            prefer_fallback=True,
+        )
     except Exception as e:
         return {
             "success": False,
@@ -3429,11 +3547,23 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest):
             "inventory": doc,
         }
 
+    background_tasks.add_task(
+        _refresh_monitoring_guide_async,
+        year,
+        json.loads(json.dumps(control)),
+        json.loads(json.dumps(host)),
+        json.loads(json.dumps(updated_evidence)),
+        _normalize_text(guide.get("guide_id")) if isinstance(guide, dict) else "",
+    )
+
     _sync_monitoring_improvement_status(year, doc)
 
     return {
         "success": True,
-        "message": f"Evidence updated for host '{payload.hostname}'. Guide regenerated successfully.",
+        "message": (
+            f"Evidence updated for host '{payload.hostname}'. "
+            "A draft monitoring guide was refreshed immediately, and the full guide is being refined in the background."
+        ),
         "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
         "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,

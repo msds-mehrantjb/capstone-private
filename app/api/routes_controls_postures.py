@@ -27,6 +27,10 @@ class AssessControlsPosturesRequest(BaseModel):
     year: int = 2026
 
 
+class SubmitControlsPosturesRequest(BaseModel):
+    year: int = 2026
+
+
 def find_project_root() -> Path:
     current = Path(__file__).resolve()
     for parent in [current] + list(current.parents):
@@ -61,7 +65,7 @@ def _asset_details_file(year: int) -> Path:
 
 
 def _system_status_file(year: int) -> Path:
-    return _work_dir(year) / "systemstatus.json"
+    return _work_dir(year) / "SystemStatus.json"
 
 
 def _dashboard_file() -> Path:
@@ -202,12 +206,12 @@ def _update_system_status(year: int, new_status: str):
     path = _system_status_file(year)
 
     if not path.exists():
-        raise FileNotFoundError(f"systemstatus.json not found: {path}")
+        raise FileNotFoundError(f"SystemStatus.json not found: {path}")
 
     data = _read_json(path, None)
 
     if not isinstance(data, dict):
-        raise ValueError(f"Invalid systemstatus.json structure: {path}")
+        raise ValueError(f"Invalid SystemStatus.json structure: {path}")
 
     sections = data.get("sections")
     if not isinstance(sections, dict):
@@ -282,7 +286,14 @@ def _build_controls_file_from_inventory(inventory_data: Any) -> dict:
             }
         )
 
-    return {"hosts": hosts}
+    return {
+        "status": "In Progress",
+        "meta": {
+            "submitted": False,
+            "read_only": False,
+        },
+        "hosts": hosts,
+    }
 
 
 def _read_current_controls_status(year: int) -> str:
@@ -575,7 +586,7 @@ def create_new_controls_postures(req: CreateControlsPosturesRequest):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to update systemstatus.json: {e}",
+            detail=f"Failed to update SystemStatus.json: {e}",
         ) from e
 
     return {
@@ -666,6 +677,7 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
             other_hosts.append(hostname)
 
     raw["hosts"] = hosts
+    raw["status"] = "In Progress"
     _write_json(controls_path, raw)
 
     try:
@@ -673,7 +685,7 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Assessment completed, but failed to update systemstatus.json: {e}",
+            detail=f"Assessment completed, but failed to update SystemStatus.json: {e}",
         ) from e
 
     lines = [
@@ -761,6 +773,13 @@ def reset_controls_postures(req: ResetControlsPosturesRequest):
         host["existing_controls"] = {}
 
     raw["hosts"] = hosts
+    raw["status"] = "Not Started"
+    meta = raw.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        raw["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
     _write_json(controls_path, raw)
 
     try:
@@ -768,7 +787,7 @@ def reset_controls_postures(req: ResetControlsPosturesRequest):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Controls/Postures reset succeeded, but failed to update systemstatus.json: {e}",
+            detail=f"Controls/Postures reset succeeded, but failed to update SystemStatus.json: {e}",
         ) from e
 
     return {
@@ -777,6 +796,72 @@ def reset_controls_postures(req: ResetControlsPosturesRequest):
         "status": "Not Started",
         "message": "Existing Controls and Postures Assessment restarted.",
         "cleared_items": cleared_items,
+    }
+
+
+@router.post("/submit")
+def submit_controls_postures(req: SubmitControlsPosturesRequest):
+    controls_path = _controls_file(req.year)
+
+    if not controls_path.exists():
+        raise HTTPException(status_code=404, detail=f"Controls/Postures file not found: {controls_path}")
+
+    raw = _read_json(controls_path, None)
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=500, detail=f"Invalid JSON structure in: {controls_path}")
+
+    hosts = _normalize_hosts(raw)
+    if not hosts:
+        raise HTTPException(
+            status_code=400,
+            detail="There are no Existing Controls & Postures hosts to submit yet. Run /assess first.",
+        )
+
+    total_controls = sum(_count_controls(host) for host in hosts if isinstance(host, dict))
+    if total_controls == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Existing Controls & Postures has no control records yet. Run /assess before /submit.",
+        )
+
+    meta = raw.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        raw["meta"] = meta
+    raw["status"] = "Completed"
+    meta["submitted"] = True
+    meta["read_only"] = True
+    _write_json(controls_path, raw)
+
+    try:
+        _update_system_status(req.year, "Completed")
+        status_doc = _read_json(_system_status_file(req.year), {})
+        if isinstance(status_doc, dict):
+            sections = status_doc.get("sections")
+            if not isinstance(sections, dict):
+                sections = {}
+                status_doc["sections"] = sections
+
+            next_section = sections.get("risk_analysis")
+            if not isinstance(next_section, dict):
+                next_section = {}
+                sections["risk_analysis"] = next_section
+
+            if next_section.get("status") != "Completed":
+                next_section["status"] = "In Progress"
+
+            _write_json(_system_status_file(req.year), status_doc)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Existing Controls & Postures submit succeeded logically, but failed to update SystemStatus.json: {e}",
+        ) from e
+
+    return {
+        "success": True,
+        "year": req.year,
+        "status": "Completed",
+        "message": "Existing Controls & Postures assessment submitted successfully.",
     }
 
 

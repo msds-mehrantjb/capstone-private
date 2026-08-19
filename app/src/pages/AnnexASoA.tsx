@@ -644,6 +644,17 @@ export default function AnnexASoA() {
     }
   };
 
+  const refreshSystemStatus = async () => {
+    try {
+      setScopeErr(null);
+      const sys = await apiGetSystemStatus();
+      setSystemStatus(sys);
+    } catch (e) {
+      setScopeErr(e instanceof Error ? e.message : String(e));
+      setSystemStatus(null);
+    }
+  };
+
   const createAnnexTableConfirmed  = async () => {
     setSending(true);
 
@@ -1009,6 +1020,7 @@ export default function AnnexASoA() {
     try {
       const data = await apiSubmitAnnex(YEAR, true);
       setControls(Array.isArray(data?.inventory?.controls) ? data.inventory.controls : []);
+      await refreshSystemStatus();
 
       setMessages((prev) => [
         ...prev,

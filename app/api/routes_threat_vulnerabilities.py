@@ -1648,6 +1648,14 @@ def submit_threat_assessment(req: SubmitThreatAssessmentRequest):
         )
 
     try:
+        meta = raw.get("meta", {})
+        if not isinstance(meta, dict):
+            meta = {}
+            raw["meta"] = meta
+        meta["submitted"] = True
+        meta["read_only"] = True
+        _write_json(threat_path, raw)
+
         _update_system_status(req.year, "Completed")
         status_doc = _read_json(_system_status_file(req.year), _default_system_status(req.year))
         if isinstance(status_doc, dict):

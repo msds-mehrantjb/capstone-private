@@ -175,7 +175,14 @@ def _derive_risk_evaluation_from_risk(risk: str) -> str:
 
 
 def _blank_risk_evaluation_treatment_inventory() -> dict:
-    return {"hosts": []}
+    return {
+        "status": "Not Started",
+        "meta": {
+            "submitted": False,
+            "read_only": False,
+        },
+        "hosts": [],
+    }
 
 
 def _all_hosts(inventory: dict) -> list[dict]:
@@ -252,6 +259,10 @@ def _load_risk_evaluation_treatment_inventory_or_blank(year: int) -> dict:
     try:
         data = _load_json(path)
         if isinstance(data, dict):
+            if not isinstance(data.get("meta"), dict):
+                data["meta"] = {"submitted": False, "read_only": False}
+            if str(data.get("status") or "").strip() not in VALID_STEP_STATUSES:
+                data["status"] = "Not Started" if len(_all_hosts(data)) == 0 else "In Progress"
             if not isinstance(data.get("hosts"), list):
                 data["hosts"] = []
             original_hosts = _all_hosts(data)
@@ -339,17 +350,25 @@ def _set_monitoring_improvement_status(year: int, new_status: str) -> None:
 
 
 def _risk_evaluation_treatment_is_read_only(year: int) -> bool:
-    doc = _load_system_status_or_default(year)
-    status = doc.get("sections", {}).get("risk_evaluation_treatment", {}).get("status")
-    return status == "Completed"
+    inventory = _load_risk_evaluation_treatment_inventory_or_blank(year)
+    explicit_status = str(inventory.get("status") or "").strip()
+    if explicit_status == "Completed":
+        return True
+
+    meta = inventory.get("meta", {})
+    return isinstance(meta, dict) and bool(meta.get("submitted") or meta.get("read_only"))
 
 
 def _ensure_risk_evaluation_treatment_editable(year: int, inventory: dict | None = None) -> None:
     doc = inventory if isinstance(inventory, dict) else _load_risk_evaluation_treatment_inventory_or_blank(year)
     if len(_all_hosts(doc)) == 0:
+        _set_risk_evaluation_treatment_status(year, "Not Started")
         return
     if _risk_evaluation_treatment_is_read_only(year):
-        _set_risk_evaluation_treatment_status(year, "In Progress")
+        _set_risk_evaluation_treatment_status(year, "Completed")
+        return
+
+    _set_risk_evaluation_treatment_status(year, "In Progress")
 
 
 def _find_record_by_hostname_and_cve(
@@ -796,6 +815,14 @@ def set_treatment(payload: SetTreatmentRequest):
             hosts[idx] = _normalize_existing_record(record)
             inventory["hosts"] = hosts
 
+        inventory["status"] = "In Progress"
+        meta = inventory.get("meta", {})
+        if not isinstance(meta, dict):
+            meta = {}
+            inventory["meta"] = meta
+        meta["submitted"] = False
+        meta["read_only"] = False
+
         _save_json(_risk_evaluation_treatment_file(year), inventory)
         _set_risk_evaluation_treatment_status(year, "In Progress")
 
@@ -828,6 +855,14 @@ def set_treatment(payload: SetTreatmentRequest):
     if isinstance(hosts, list):
         hosts[idx] = _normalize_existing_record(record)
         inventory["hosts"] = hosts
+
+    inventory["status"] = "In Progress"
+    meta = inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
 
     _save_json(_risk_evaluation_treatment_file(year), inventory)
     _set_risk_evaluation_treatment_status(year, "In Progress")
@@ -889,6 +924,14 @@ def submit_risk_evaluation_treatment(payload: SubmitRequest):
     monitoring_doc = _build_monitoring_improvement_doc(normalized_hosts, year=year)
     monitoring_count = len(monitoring_doc.get("cves", []))
 
+    inventory["status"] = "Completed"
+    meta = inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    meta["submitted"] = True
+    meta["read_only"] = True
+
     _save_json(_risk_evaluation_treatment_file(year), inventory)
     _save_json(_annex_a_soa_file(year), _blank_controls_doc())
     _save_json(_action_plan_implementation_file(year), _blank_controls_doc())
@@ -896,7 +939,7 @@ def submit_risk_evaluation_treatment(payload: SubmitRequest):
     _save_json(_monitoring_improvement_file(year), monitoring_doc)
     _save_json(_monitoring_implementation_guides_file(year), {"guides": []})
 
-    _set_risk_evaluation_treatment_status(year, "In Progress")
+    _set_risk_evaluation_treatment_status(year, "Completed")
     _set_annex_a_soa_status(year, "Not Started")
     _set_action_plan_implementation_status(year, "Not Started")
     _set_monitoring_improvement_status(year, "In Progress" if monitoring_count > 0 else "Not Started")
@@ -956,6 +999,14 @@ def reinitialize_risk_evaluation_treatment(payload: ReinitializeRequest):
 
     inventory["hosts"] = new_hosts
 
+    inventory["status"] = "In Progress"
+    meta = inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
+
     _save_json(_risk_evaluation_treatment_file(year), inventory)
     _set_risk_evaluation_treatment_status(year, "In Progress")
 
@@ -1004,6 +1055,14 @@ def set_evaluation(payload: SetEvaluationRequest):
     if isinstance(hosts, list):
         hosts[idx] = _normalize_existing_record(record)
         inventory["hosts"] = hosts
+
+    inventory["status"] = "In Progress"
+    meta = inventory.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
 
     _save_json(_risk_evaluation_treatment_file(year), inventory)
     _set_risk_evaluation_treatment_status(year, "In Progress")

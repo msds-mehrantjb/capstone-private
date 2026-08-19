@@ -2,8 +2,8 @@
   "meta": {
     "year": 2026,
     "name": "Asset Inventory & CIA",
-    "submitted": false,
-    "read_only": false
+    "submitted": true,
+    "read_only": true
   },
   "network_mask": "10.0.0.0",
   "subnets": [
@@ -80,7 +80,7 @@
               "predicted_roles": [
                 "Domain Controller (Active Directory)"
               ],
-              "confidence": "0.8467",
+              "confidence": "0.8667",
               "feature_completeness_ratio": 1.0
             },
             "rag_based_role_detection": {
@@ -153,7 +153,7 @@
               "predicted_roles": [
                 "DHCP Server"
               ],
-              "confidence": "0.5067",
+              "confidence": "0.5233",
               "feature_completeness_ratio": 1.0,
               "error": "Server ML confidence is below the minimum threshold of 0.60."
             },
@@ -431,7 +431,7 @@
               "predicted_roles": [
                 "File Server"
               ],
-              "confidence": "0.79",
+              "confidence": "0.7567",
               "feature_completeness_ratio": 1.0
             },
             "rag_based_role_detection": {
@@ -503,7 +503,7 @@
               "predicted_roles": [
                 "Application Server"
               ],
-              "confidence": "0.8967",
+              "confidence": "0.85",
               "feature_completeness_ratio": 1.0
             },
             "rag_based_role_detection": {

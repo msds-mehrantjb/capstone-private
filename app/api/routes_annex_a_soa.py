@@ -1101,16 +1101,64 @@ def _set_section_status(year: int, section_name: str, new_status: str) -> None:
 
 
 def _annex_section_is_read_only(year: int) -> bool:
-    doc = _load_system_status_or_default(year)
-    status = doc.get("sections", {}).get("annex_a_soa", {}).get("status")
-    return status == "Completed"
+    doc = _load_annex_doc_or_blank(year)
+    explicit_status = _normalize_text(doc.get("status"))
+    if explicit_status == "Completed":
+        return True
+
+    meta = doc.get("meta", {})
+    return isinstance(meta, dict) and bool(meta.get("submitted") or meta.get("read_only"))
 
 
 # =========================================================
 # ANNEX DOCUMENT HELPERS
 # =========================================================
 def _blank_annex_doc() -> dict:
-    return {"controls": []}
+    return {
+        "status": "Not Started",
+        "meta": {
+            "submitted": False,
+            "read_only": False,
+        },
+        "controls": [],
+    }
+
+
+def _set_annex_doc_state(
+    doc: dict,
+    *,
+    status: str | None = None,
+    submitted: bool | None = None,
+    read_only: bool | None = None,
+) -> dict:
+    meta = doc.get("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+
+    if submitted is None:
+        meta.setdefault("submitted", False)
+    else:
+        meta["submitted"] = submitted
+
+    if read_only is None:
+        meta.setdefault("read_only", False)
+    else:
+        meta["read_only"] = read_only
+
+    doc["meta"] = meta
+
+    if status is not None:
+        doc["status"] = status
+        return doc
+
+    controls = _all_controls(doc)
+    if meta.get("submitted") or meta.get("read_only"):
+        doc["status"] = "Completed"
+    elif controls:
+        doc["status"] = "In Progress"
+    else:
+        doc["status"] = "Not Started"
+    return doc
 
 
 def _load_annex_doc_or_blank(year: int) -> dict:
@@ -1128,7 +1176,11 @@ def _load_annex_doc_or_blank(year: int) -> dict:
         if not isinstance(controls, list):
             data["controls"] = []
 
-        return data
+        explicit_status = _normalize_text(data.get("status"))
+        if explicit_status not in VALID_STEP_STATUSES:
+            data["status"] = "In Progress" if data["controls"] else "Not Started"
+
+        return _set_annex_doc_state(data)
     except Exception:
         return _blank_annex_doc()
 
@@ -1148,15 +1200,17 @@ def _derive_annex_status_from_doc(doc: dict) -> str:
 
 
 def _sync_annex_status(year: int, doc: dict | None = None) -> str:
-    if _annex_section_is_read_only(year):
+    if doc is None:
+        doc = _load_annex_doc_or_blank(year)
+
+    doc = _set_annex_doc_state(doc)
+    if _normalize_text(doc.get("status")) == "Completed":
         status_doc = _mark_annex_prerequisites_completed(_load_system_status_or_default(year))
         _save_json(_system_status_file(year), status_doc)
         return "Completed"
 
-    if doc is None:
-        doc = _load_annex_doc_or_blank(year)
-
     new_status = _derive_annex_status_from_doc(doc)
+    doc["status"] = new_status
     _set_section_status(year, "annex_a_soa", new_status)
     return new_status
 
@@ -2375,6 +2429,7 @@ def create_annex_a_soa(payload: CreateRequest):
             "inventory": current,
         }
 
+    _set_annex_doc_state(new_doc, status="In Progress", submitted=False, read_only=False)
     _save_json(_annex_a_soa_file(year), new_doc)
     _set_section_status(year, "annex_a_soa", "In Progress")
 
@@ -2445,6 +2500,7 @@ def update_control_status(payload: UpdateStatusRequest):
         controls[idx] = control
         doc["controls"] = controls
 
+    _set_annex_doc_state(doc, status="In Progress", submitted=False, read_only=False)
     _save_json(_annex_a_soa_file(year), doc)
     _sync_annex_status(year, doc)
 
@@ -2486,6 +2542,7 @@ def reset_annex_a_soa(payload: ResetRequest):
 
     doc["controls"] = controls
 
+    _set_annex_doc_state(doc, status="In Progress", submitted=False, read_only=False)
     _save_json(_annex_a_soa_file(year), doc)
     _set_section_status(year, "annex_a_soa", "In Progress")
 
@@ -2581,6 +2638,8 @@ def submit_annex_a_soa(payload: SubmitRequest):
     if status_doc["sections"].get("action_plan_implementation", {}).get("status") != "Completed":
         status_doc["sections"]["action_plan_implementation"]["status"] = "In Progress"
 
+    _set_annex_doc_state(doc, status="Completed", submitted=True, read_only=True)
+    _save_json(_annex_a_soa_file(year), doc)
     _save_json(_system_status_file(year), status_doc)
 
     return {
@@ -2619,6 +2678,7 @@ def delete_annex_control(payload: DeleteRequest):
 
     doc["controls"] = new_controls
 
+    _set_annex_doc_state(doc, submitted=False, read_only=False)
     _save_json(_annex_a_soa_file(year), doc)
     _sync_annex_status(year, doc)
 
@@ -2766,6 +2826,7 @@ def add_control_to_annex(payload: AddRequest):
     controls.append(new_control)
     doc["controls"] = sorted(controls, key=lambda x: x.get("control_id", ""))
 
+    _set_annex_doc_state(doc, status="In Progress", submitted=False, read_only=False)
     _save_json(_annex_a_soa_file(year), doc)
     _sync_annex_status(year, doc)
 

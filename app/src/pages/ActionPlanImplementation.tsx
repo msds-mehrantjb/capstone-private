@@ -1279,12 +1279,26 @@ export default function ActionPlanImplentation() {
         });
 
         try {
+          const defaults = await apiGetEvidenceDefaults(
+            YEAR,
+            row.controlId,
+            row.hostname,
+            row.vulnerabilityName
+          );
+
           const data = await apiAddEvidence(
             YEAR,
             row.controlId,
             row.hostname,
             row.vulnerabilityName,
-            row.evidence
+            {
+              responsible:
+                defaults?.evidence?.responsible || row.evidence.responsible,
+              resources: defaults?.evidence?.resources || row.evidence.resources,
+              date: defaults?.evidence?.date || row.evidence.date,
+              url: defaults?.evidence?.url || row.evidence.url,
+              desc: defaults?.evidence?.desc || row.evidence.desc,
+            }
           );
 
           if (Array.isArray(data?.inventory?.controls)) {

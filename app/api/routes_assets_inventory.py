@@ -4116,6 +4116,15 @@ def submit_inventory(payload: SubmitRequest):
         train_error = f"{type(e).__name__}: {e}"
         print("[submit] automatic retrain failed:")
         traceback.print_exc()
+
+    meta = inventory.setdefault("meta", {})
+    if not isinstance(meta, dict):
+        meta = {}
+        inventory["meta"] = meta
+    meta["submitted"] = True
+    meta["read_only"] = True
+    _save_json(_asset_file(year), inventory)
+    _sync_assets_cia_status(year, inventory)
         
     status = _load_status(year)
     sections = status.get("sections", {})

@@ -415,6 +415,15 @@ def _set_section_status(year: int, section_name: str, new_status: str) -> None:
 
 
 def _action_plan_section_is_read_only(year: int) -> bool:
+    doc = _load_action_plan_doc_or_blank(year)
+    explicit_status = _normalize_text(doc.get("status"))
+    if explicit_status == "Completed":
+        return True
+
+    meta = doc.get("meta", {})
+    if isinstance(meta, dict):
+        return bool(meta.get("submitted") or meta.get("read_only"))
+
     return False
 
 
@@ -422,7 +431,32 @@ def _action_plan_section_is_read_only(year: int) -> bool:
 # ACTION PLAN DOCUMENT HELPERS
 # =========================================================
 def _blank_action_plan_doc() -> dict:
-    return {"controls": []}
+    return {
+        "status": "Not Started",
+        "meta": {
+            "submitted": False,
+            "read_only": False,
+        },
+        "controls": [],
+    }
+
+
+def _set_action_plan_doc_state(
+    doc: dict,
+    *,
+    status: str,
+    submitted: bool,
+    read_only: bool,
+) -> dict:
+    if not isinstance(doc, dict):
+        doc = {}
+    if not isinstance(doc.get("meta"), dict):
+        doc["meta"] = {}
+
+    doc["status"] = status
+    doc["meta"]["submitted"] = submitted
+    doc["meta"]["read_only"] = read_only
+    return doc
 
 
 def _all_controls(doc: dict) -> list[dict]:
@@ -509,7 +543,12 @@ def _build_action_plan_doc(year: int, annex_doc: dict) -> dict:
             }
         )
 
-    return {"controls": action_plan_controls}
+    return _set_action_plan_doc_state(
+        {"controls": action_plan_controls},
+        status="In Progress" if action_plan_controls else "Not Started",
+        submitted=False,
+        read_only=False,
+    )
 
 
 def _restore_action_plan_doc_if_missing(year: int) -> tuple[Path, dict, str]:
@@ -551,10 +590,30 @@ def _load_action_plan_doc_or_blank(year: int) -> dict:
     if not isinstance(doc.get("controls"), list):
         doc["controls"] = []
 
+    if not isinstance(doc.get("meta"), dict):
+        doc["meta"] = {"submitted": False, "read_only": False}
+
+    if not _normalize_text(doc.get("status")):
+        doc["status"] = "In Progress" if doc["controls"] else "Not Started"
+
     return doc
 
 
 def _derive_action_plan_status_from_doc(doc: dict) -> str:
+    explicit_status = _normalize_text(doc.get("status"))
+    if explicit_status == "Completed":
+        return "Completed"
+
+    meta = doc.get("meta", {})
+    if isinstance(meta, dict) and (meta.get("submitted") or meta.get("read_only")):
+        return "Completed"
+
+    if explicit_status == "In Progress":
+        return "In Progress"
+
+    if explicit_status == "Not Started":
+        return "Not Started"
+
     return "Not Started" if len(_all_controls(doc)) == 0 else "In Progress"
 
 
@@ -563,6 +622,16 @@ def _sync_action_plan_status(year: int, doc: dict | None = None) -> str:
         doc = _load_action_plan_doc_or_blank(year)
 
     new_status = _derive_action_plan_status_from_doc(doc)
+    if new_status == "Completed":
+        _set_action_plan_doc_state(doc, status="Completed", submitted=True, read_only=True)
+    else:
+        _set_action_plan_doc_state(
+            doc,
+            status=new_status,
+            submitted=False,
+            read_only=False,
+        )
+    _save_json(_action_plan_implementation_file(year), doc)
     _set_section_status(year, "action_plan_implementation", new_status)
     return new_status
 
@@ -2385,8 +2454,7 @@ def create_action_plan_implementation(year: int = 2026):
         }
 
     new_doc = _build_action_plan_doc(int(year), annex_doc)
-    _save_json(_action_plan_implementation_file(int(year)), new_doc)
-    _set_section_status(int(year), "action_plan_implementation", "In Progress")
+    _sync_action_plan_status(int(year), new_doc)
 
     return {
         "success": True,
@@ -2506,22 +2574,11 @@ def reset_action_plan(payload: ResetRequest):
             control["hosts"] = hosts
 
     doc["controls"] = controls
-    _save_json(_action_plan_implementation_file(year), doc)
-    
-    status_doc = _load_system_status_or_default(year)
-    
-    current_status = status_doc["sections"]["action_plan_implementation"].get("status")
-    
-    if current_status == "In Progress":
-        status_doc["sections"]["action_plan_implementation"]["status"] = "In Progress"
-    else:
-        status_doc["sections"]["action_plan_implementation"]["status"] = "In Progress"
-    
-    _save_json(_system_status_file(year), status_doc)
+    _sync_action_plan_status(year, doc)
 
     return {
         "success": True,
-        "message": "The Action Plan / Implementation table data submitted succcesfully.",
+        "message": "The Action Plan / Implementation table was reset successfully.",
         "records_finalized": len(controls),
         "inventory": doc,
     }
@@ -2626,16 +2683,13 @@ def submit_action_plan(payload: SubmitRequest):
             "inventory": doc,
         }
 
-    _save_json(_action_plan_implementation_file(year), doc)
-    
-    status_doc = _load_system_status_or_default(year)
-    
-    current_status = status_doc["sections"]["action_plan_implementation"].get("status")
-    
-    if current_status != "In Progress":
-        status_doc["sections"]["action_plan_implementation"]["status"] = "In Progress"
-    
-    _save_json(_system_status_file(year), status_doc)
+    _set_action_plan_doc_state(
+        doc,
+        status="Completed",
+        submitted=True,
+        read_only=True,
+    )
+    _sync_action_plan_status(year, doc)
     
     return {
         "success": True,

@@ -1,0 +1,68 @@
+{
+  "meta": {
+    "year": 2026,
+    "version": "v14",
+    "title": "2026 ISO 27001 Scope Statement - Healthcare Provider",
+    "industry": "Healthcare",
+    "created_at": "2026-02-24T00:00:00Z",
+    "source_file": "2026-Scope-v14.json"
+  },
+  "sections": [
+    {
+      "id": "introduction",
+      "title": "1. Introduction and Purpose",
+      "body": "The Information Security Management System (ISMS) of MedSecure Health Services is established to protect the confidentiality, integrity, and availability of patient information and clinical systems supporting healthcare delivery operations."
+    },
+    {
+      "id": "organizational_boundaries",
+      "title": "2. Organizational Boundaries",
+      "body": "The ISMS applies to the following departments within MedSecure Health Services:",
+      "bullets": [
+        "Information Technology Department",
+        "Clinical Operations",
+        "Medical Records Department",
+        "Billing and Insurance Processing"
+      ]
+    },
+    {
+      "id": "geographic_boundaries",
+      "title": "3. Geographic and Physical Boundaries",
+      "body": "The scope includes all information processing facilities located at:",
+      "bullets": [
+        "Main Hospital Campus: Including secure server rooms hosting EHR systems.",
+        "Satellite Clinic Locations: Connected via encrypted MPLS links.",
+        "Remote Access for Physicians via VPN with MFA."
+      ]
+    },
+    {
+      "id": "technical_boundaries",
+      "title": "4. Technical and Logical Boundaries",
+      "body": "This ISMS encompasses the healthcare IT ecosystem, specifically:",
+      "bullets": [
+        "Electronic Health Record (EHR) Systems hosted on Windows Server infrastructure.",
+        "Active Directory and Azure AD for identity management.",
+        "Endpoint Management via Microsoft Endpoint Manager.",
+        "Network segmentation protecting clinical systems and medical devices."
+      ]
+    },
+    {
+      "id": "exclusions",
+      "title": "5. Exclusions and Justifications",
+      "body": "The following areas are excluded from the scope:",
+      "bullets": [
+        "Medical devices not connected to the corporate network.",
+        "Third-party insurance clearinghouses operating under separate compliance programs."
+      ]
+    },
+    {
+      "id": "stakeholders",
+      "title": "6. Stakeholders and External Dependencies",
+      "body": "The scope accounts for the security requirements of:",
+      "bullets": [
+        "Patients and healthcare providers.",
+        "Regulatory compliance with HIPAA and state healthcare regulations.",
+        "Cloud hosting provider Microsoft Azure for backup and disaster recovery."
+      ]
+    }
+  ]
+}

@@ -222,20 +222,6 @@ async function apiAddEvidence(
   );
 }
 
-async function apiAddEvidenceAll(year: number): Promise<{
-  success?: boolean;
-  message?: string;
-  added_count?: number;
-  skipped_count?: number;
-  failed_count?: number;
-  inventory?: MonitoringInventoryResponse;
-}> {
-  return apiPostJSONBody(
-    "/api/monitoring-improvement/add-evidence-all",
-    { year }
-  );
-}
-
 async function apiEditEvidence(
   year: number,
   control_id: string,
@@ -1258,27 +1244,82 @@ export default function MonitoringImprovement() {
     ]);
 
     try {
-      const data = await apiAddEvidenceAll(YEAR);
+      let addedCount = 0;
+      let failedCount = 0;
+      const failedItems: string[] = [];
 
-      if (
-        data?.success === false &&
-        (data.added_count || 0) === 0 &&
-        (data.skipped_count || 0) === 0
-      ) {
-        throw new Error(data.message || "Failed to generate evidence for all hosts.");
+      for (let index = 0; index < pendingRows.length; index += 1) {
+        const row = pendingRows[index];
+
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: `Generating evidence ${index + 1} of ${pendingRows.length} for ${row.hostname} under ${row.controlId}...`,
+          };
+          return updated;
+        });
+
+        try {
+          const defaults = await apiGetEvidenceDefaults(
+            YEAR,
+            row.controlId,
+            row.hostname,
+            row.vulnerabilityName
+          );
+
+          const data = await apiAddEvidence(
+            YEAR,
+            row.controlId,
+            row.hostname,
+            row.vulnerabilityName,
+            {
+              responsible:
+                defaults?.evidence?.responsible || row.evidence.responsible,
+              resources: defaults?.evidence?.resources || row.evidence.resources,
+              date: defaults?.evidence?.date || row.evidence.date,
+              url: defaults?.evidence?.url || row.evidence.url,
+              desc: defaults?.evidence?.desc || row.evidence.desc,
+            }
+          );
+
+          if (Array.isArray(data?.inventory?.cves)) {
+            setMonitoringImprovementControls(data.inventory.cves);
+          }
+
+          if (data?.success === false) {
+            failedCount += 1;
+            failedItems.push(`${row.controlId} / ${row.hostname}`);
+          } else {
+            addedCount += 1;
+          }
+        } catch (error) {
+          failedCount += 1;
+          failedItems.push(`${row.controlId} / ${row.hostname}`);
+
+          setMessages((prev) => {
+            const updated = [...prev];
+            updated[updated.length - 1] = {
+              role: "assistant",
+              content:
+                error instanceof Error
+                  ? `${error.message} Continuing with the remaining host rows.`
+                  : "Failed to generate evidence for one host row. Continuing with the remaining host rows.",
+            };
+            return updated;
+          });
+        }
       }
-
-      setMonitoringImprovementControls(
-        Array.isArray(data?.inventory?.cves) ? data.inventory.cves : []
-      );
 
       setMessages((prev) => {
         const updated = [...prev];
+        const failurePreview =
+          failedItems.length > 0
+            ? ` Failed rows: ${failedItems.slice(0, 5).join(", ")}${failedItems.length > 5 ? ", ..." : ""}`
+            : "";
         updated[updated.length - 1] = {
           role: "assistant",
-          content:
-            data.message ||
-            "Evidence generation completed for all Monitoring and Improvement host rows.",
+          content: `Evidence generation completed. Added ${addedCount} evidence item(s) across ${pendingRows.length} host row(s). Failed ${failedCount}.${failurePreview}`,
         };
         return updated;
       });

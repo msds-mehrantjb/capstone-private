@@ -1458,7 +1458,7 @@ export default function RiskEvaluationTreatment() {
 
             {sending ? (
               <div className="flex justify-start">
-                <div className="w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
+                <div className="inline-flex min-w-[3rem] justify-center rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
                   …
                 </div>
               </div>
