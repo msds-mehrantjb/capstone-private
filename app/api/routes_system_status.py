@@ -146,6 +146,21 @@ def _has_submitted_scope_document(year: int) -> bool:
     return bool(scope_file_name) and re.search(r"-v0\.json$", scope_file_name) is None
 
 
+def _scope_context_status_from_state(data: Dict[str, Any], year: int) -> str:
+    if _has_submitted_scope_document(year):
+        return "Completed"
+
+    sections = data.get("sections")
+    if isinstance(sections, dict):
+        scope_section = sections.get("scope_context")
+        if isinstance(scope_section, dict):
+            current_status = _normalize_text(scope_section.get("status"))
+            if current_status == "In Progress":
+                return "In Progress"
+
+    return "Not Started"
+
+
 def _asset_inventory_status_from_file(year: int) -> str:
     raw = _read_json(_asset_inventory_file(year), {})
     if not isinstance(raw, dict):
@@ -166,6 +181,14 @@ def _asset_inventory_status_from_file(year: int) -> str:
 def _threats_status_from_file(year: int) -> str:
     raw = _read_json(_threats_file(year), {})
     if not isinstance(raw, dict):
+        return "Not Started"
+
+    explicit_status = str(raw.get("status") or "").strip()
+    if explicit_status == "Completed":
+        return "Completed"
+    if explicit_status == "In Progress":
+        return "In Progress"
+    if explicit_status == "Not Started":
         return "Not Started"
 
     meta = raw.get("meta", {})
@@ -346,7 +369,7 @@ def _sync_status_from_artifacts(data: Dict[str, Any], year: int) -> Dict[str, An
         data["sections"] = sections
 
     synced = {
-        "scope_context": "Completed" if _has_submitted_scope_document(year) else "Not Started",
+        "scope_context": _scope_context_status_from_state(data, year),
         "assets_cia": _asset_inventory_status_from_file(year),
         "threats_vulns": _threats_status_from_file(year),
         "existing_controls_postures": _controls_status_from_file(year),

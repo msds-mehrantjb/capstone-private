@@ -6,7 +6,7 @@
   },
   "role_model_training_runs": [
     {
-      "run_id": "role_train_2026-08-19_08-06-09",
+      "run_id": "role_train_2026-08-19_14-55-21",
       "model_type": "role_prediction",
       "server_training_rows": 1004,
       "server_feature_count": 66,
@@ -51,60 +51,12 @@
         "Role model accuracy is recorded as a weighted training-set score across the server and workstation role models trained in this run.",
         "Role accuracy and F1 can still be computed from role_prediction_events after /assignroles runs."
       ],
-      "created_at": "2026-08-19T08:06:09-07:00"
-    },
-    {
-      "run_id": "role_train_2026-08-19_08-06-33",
-      "model_type": "role_prediction",
-      "server_training_rows": 1004,
-      "server_feature_count": 66,
-      "server_class_counts": {
-        "Backup Server": 25,
-        "DHCP Server": 25,
-        "DNS Server": 25,
-        "Database Server": 25,
-        "Domain Controller": 25,
-        "File Server": 25,
-        "Firewall": 25,
-        "Mail Server": 25,
-        "VPN Server": 25,
-        "Web Server": 25,
-        "Domain Controller (Active Directory)": 3
-      },
-      "server_accuracy_pct": 99.7,
-      "server_model_path": "C:\\Users\\mehra\\Capstone-main\\data\\ml\\models\\server_role_prediction_random_forest.joblib",
-      "workstation_training_rows": 10,
-      "workstation_feature_count": 13,
-      "workstation_features_used": [
-        "operating_system",
-        "criticality",
-        "os_type",
-        "os_version",
-        "is_domain_joined",
-        "hostname_pattern",
-        "open_ports",
-        "running_services",
-        "installed_roles",
-        "installed_software",
-        "department",
-        "business_function",
-        "business_criticality"
-      ],
-      "workstation_accuracy_pct": 70.0,
-      "accuracy_pct": 99.41,
-      "accuracy_source": "training_set_score",
-      "workstation_model_path": "C:\\Users\\mehra\\Capstone-main\\data\\ml\\models\\workstation_role_prediction_random_forest.joblib",
-      "source_endpoint": "/api/assets/train",
-      "notes": [
-        "Role model accuracy is recorded as a weighted training-set score across the server and workstation role models trained in this run.",
-        "Role accuracy and F1 can still be computed from role_prediction_events after /assignroles runs."
-      ],
-      "created_at": "2026-08-19T08:06:33-07:00"
+      "created_at": "2026-08-19T14:55:21-07:00"
     }
   ],
   "role_prediction_events": [
     {
-      "event_id": "role_pred_SRV-01_2026-08-19_08-00-42",
+      "event_id": "role_pred_SRV-01_2026-08-19_14-54-56",
       "hostname": "SRV-01",
       "model_type": "role_prediction",
       "asset_type": "server",
@@ -115,10 +67,10 @@
       "selected_method": "indicator",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_SRV-02_2026-08-19_08-00-42",
+      "event_id": "role_pred_SRV-02_2026-08-19_14-54-56",
       "hostname": "SRV-02",
       "model_type": "role_prediction",
       "asset_type": "server",
@@ -129,10 +81,10 @@
       "selected_method": "indicator",
       "model_error": "Server ML confidence is below the minimum threshold of 0.60.",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_WS-01_2026-08-19_08-00-42",
+      "event_id": "role_pred_WS-01_2026-08-19_14-54-56",
       "hostname": "WS-01",
       "model_type": "role_prediction",
       "asset_type": "workstation",
@@ -143,10 +95,10 @@
       "selected_method": "ml",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_WS-02_2026-08-19_08-00-42",
+      "event_id": "role_pred_WS-02_2026-08-19_14-54-56",
       "hostname": "WS-02",
       "model_type": "role_prediction",
       "asset_type": "workstation",
@@ -157,10 +109,10 @@
       "selected_method": "ml",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_WS-03_2026-08-19_08-00-42",
+      "event_id": "role_pred_WS-03_2026-08-19_14-54-56",
       "hostname": "WS-03",
       "model_type": "role_prediction",
       "asset_type": "workstation",
@@ -171,10 +123,10 @@
       "selected_method": "indicator",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_SRV-03_2026-08-19_08-00-42",
+      "event_id": "role_pred_SRV-03_2026-08-19_14-54-56",
       "hostname": "SRV-03",
       "model_type": "role_prediction",
       "asset_type": "server",
@@ -185,10 +137,10 @@
       "selected_method": "indicator",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_SRV-04_2026-08-19_08-00-42",
+      "event_id": "role_pred_SRV-04_2026-08-19_14-54-56",
       "hostname": "SRV-04",
       "model_type": "role_prediction",
       "asset_type": "server",
@@ -199,10 +151,10 @@
       "selected_method": "indicator",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_WS-04_2026-08-19_08-00-42",
+      "event_id": "role_pred_WS-04_2026-08-19_14-54-56",
       "hostname": "WS-04",
       "model_type": "role_prediction",
       "asset_type": "workstation",
@@ -213,10 +165,10 @@
       "selected_method": "indicator",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_WS-05_2026-08-19_08-00-42",
+      "event_id": "role_pred_WS-05_2026-08-19_14-54-56",
       "hostname": "WS-05",
       "model_type": "role_prediction",
       "asset_type": "workstation",
@@ -227,10 +179,10 @@
       "selected_method": "indicator",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     },
     {
-      "event_id": "role_pred_WS-06_2026-08-19_08-00-42",
+      "event_id": "role_pred_WS-06_2026-08-19_14-54-56",
       "hostname": "WS-06",
       "model_type": "role_prediction",
       "asset_type": "workstation",
@@ -241,13 +193,13 @@
       "selected_method": "indicator",
       "model_error": "",
       "source_endpoint": "/api/assets/assignroles",
-      "created_at": "2026-08-19T08:00:42-07:00"
+      "created_at": "2026-08-19T14:54:56-07:00"
     }
   ],
   "cia_prediction_events": [],
   "behavior_model_training_runs": [
     {
-      "run_id": "behavior_train_2026-08-19_08-33-56",
+      "run_id": "behavior_train_2026-08-19_15-05-05",
       "model_type": "user_behavior",
       "dataset_path": "C:\\Users\\mehra\\Capstone-main\\data\\ml\\user_behavior_training_dataset.parquet",
       "model_path": "C:\\Users\\mehra\\Capstone-main\\data\\ml\\models\\rf_behavior_model.joblib",
@@ -374,12 +326,12 @@
         }
       ],
       "source_endpoint": "/api/risk-analysis/submit",
-      "created_at": "2026-08-19T08:33:56-07:00"
+      "created_at": "2026-08-19T15:05:05-07:00"
     }
   ],
   "behavior_prediction_events": [
     {
-      "event_id": "behavior_WS-01_2026-08-19_08-30-29",
+      "event_id": "behavior_WS-01_2026-08-19_15-04-52",
       "hostname": "WS-01",
       "cve": "UB-WS-01",
       "model_type": "user_behavior",
@@ -394,10 +346,10 @@
       "likelihood": "Low",
       "risk": "Low",
       "source_endpoint": "/api/risk-analysis/analysis",
-      "created_at": "2026-08-19T08:30:29-07:00"
+      "created_at": "2026-08-19T15:04:52-07:00"
     },
     {
-      "event_id": "behavior_WS-02_2026-08-19_08-30-29",
+      "event_id": "behavior_WS-02_2026-08-19_15-04-52",
       "hostname": "WS-02",
       "cve": "UB-WS-02",
       "model_type": "user_behavior",
@@ -412,10 +364,10 @@
       "likelihood": "Low",
       "risk": "Low",
       "source_endpoint": "/api/risk-analysis/analysis",
-      "created_at": "2026-08-19T08:30:29-07:00"
+      "created_at": "2026-08-19T15:04:52-07:00"
     },
     {
-      "event_id": "behavior_WS-03_2026-08-19_08-30-29",
+      "event_id": "behavior_WS-03_2026-08-19_15-04-52",
       "hostname": "WS-03",
       "cve": "UB-WS-03",
       "model_type": "user_behavior",
@@ -430,10 +382,10 @@
       "likelihood": "Low",
       "risk": "Low",
       "source_endpoint": "/api/risk-analysis/analysis",
-      "created_at": "2026-08-19T08:30:29-07:00"
+      "created_at": "2026-08-19T15:04:52-07:00"
     },
     {
-      "event_id": "behavior_WS-04_2026-08-19_08-30-29",
+      "event_id": "behavior_WS-04_2026-08-19_15-04-52",
       "hostname": "WS-04",
       "cve": "UB-WS-04",
       "model_type": "user_behavior",
@@ -448,10 +400,10 @@
       "likelihood": "Low",
       "risk": "Low",
       "source_endpoint": "/api/risk-analysis/analysis",
-      "created_at": "2026-08-19T08:30:29-07:00"
+      "created_at": "2026-08-19T15:04:52-07:00"
     },
     {
-      "event_id": "behavior_WS-05_2026-08-19_08-30-29",
+      "event_id": "behavior_WS-05_2026-08-19_15-04-52",
       "hostname": "WS-05",
       "cve": "UB-WS-05",
       "model_type": "user_behavior",
@@ -466,10 +418,10 @@
       "likelihood": "High",
       "risk": "Medium",
       "source_endpoint": "/api/risk-analysis/analysis",
-      "created_at": "2026-08-19T08:30:29-07:00"
+      "created_at": "2026-08-19T15:04:52-07:00"
     },
     {
-      "event_id": "behavior_WS-06_2026-08-19_08-30-29",
+      "event_id": "behavior_WS-06_2026-08-19_15-04-52",
       "hostname": "WS-06",
       "cve": "UB-WS-06",
       "model_type": "user_behavior",
@@ -484,18 +436,18 @@
       "likelihood": "High",
       "risk": "Medium",
       "source_endpoint": "/api/risk-analysis/analysis",
-      "created_at": "2026-08-19T08:30:29-07:00"
+      "created_at": "2026-08-19T15:04:52-07:00"
     }
   ],
   "manual_correction_events": [],
   "rag_events": [],
   "llm_events": [],
   "rag_llm_counters": {
-    "rag_query_count": 46,
-    "rag_success_count": 46,
+    "rag_query_count": 12,
+    "rag_success_count": 12,
     "rag_failure_count": 0,
-    "llm_reasoning_calls": 56,
-    "llm_total_tokens": 43390
+    "llm_reasoning_calls": 24,
+    "llm_total_tokens": 12584
   },
   "human_trust_counters": {
     "manual_role_corrections": 0,

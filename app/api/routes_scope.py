@@ -93,6 +93,10 @@ def _dashboard_path() -> Path:
     return _project_root() / "data" / "raw" / "dashboard.json"
 
 
+def _system_status_path(year: int) -> Path:
+    return _project_root() / "data" / "work" / str(year) / "systemstatus.json"
+
+
 def _read_dashboard() -> dict:
     p = _dashboard_path()
     if not p.exists():
@@ -102,6 +106,22 @@ def _read_dashboard() -> dict:
         return json.loads(p.read_text(encoding="utf-8"))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to read dashboard.json: {e}")
+
+
+def _scope_status_prefers_working_draft(year: int) -> bool:
+    p = _system_status_path(year)
+    if not p.exists():
+        return False
+
+    try:
+        status_doc = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return False
+
+    status = (
+        ((status_doc.get("sections") or {}).get("scope_context") or {}).get("status") or ""
+    ).strip()
+    return status.lower() in {"not started", "in progress"}
 
 
 _SCOPE_FILE_RE = re.compile(r"^\d{4}-Scope(?:-[A-Za-z0-9_]+)?-v\d+\.json$")
@@ -194,6 +214,14 @@ def _load_or_create(year: int, filename: str) -> dict:
 def get_scope_context(year: int = 2026):
     default_filename = _default_draft_filename(year)
     _ensure_default_draft_exists(year)
+
+    if _scope_status_prefers_working_draft(year):
+        doc = _load_or_create(year, default_filename)
+        doc.setdefault("meta", {})
+        doc["meta"]["fallback_used"] = False
+        doc["meta"]["missing_saved_file"] = None
+        doc["meta"]["popup_message"] = None
+        return doc
 
     filename = _scope_filename_from_dashboard(year)
     if filename:

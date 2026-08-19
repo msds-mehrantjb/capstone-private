@@ -198,6 +198,15 @@ def load_default_draft(year: int) -> Dict[str, Any]:
     draft["meta"]["source_file"] = filename
     return draft
 
+def save_working_draft(year: int, draft: Dict[str, Any]) -> Dict[str, Any]:
+    filename = default_draft_filename(year)
+    out = copy.deepcopy(draft)
+    out.setdefault("meta", {})
+    out["meta"]["year"] = year
+    out["meta"]["source_file"] = filename
+    write_json(get_data_dir() / filename, out)
+    return out
+
 # -------------------------
 # Helpers
 # -------------------------
@@ -319,6 +328,14 @@ def _update_system_status_after_submit(year: int) -> None:
     obj["sections"]["scope_context"]["status"] = "Completed"
     obj["sections"]["assets_cia"]["status"] = "Not Started"
 
+    write_system_status(year, obj)
+
+
+def _set_scope_context_status(year: int, status: str) -> None:
+    obj = read_system_status(year)
+    obj.setdefault("sections", {})
+    obj["sections"].setdefault("scope_context", {})
+    obj["sections"]["scope_context"]["status"] = status
     write_system_status(year, obj)
 
 def _update_dashboard_after_scope_reset(year: int, draft: Dict[str, Any]) -> None:
@@ -544,7 +561,12 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         return AgentResponse(message="No pending confirmation.", draft=draft)
 
     if cmd == "reset":
-        fresh = load_default_draft(year)
+        fresh = default_scope_template(year)
+        fresh.setdefault("meta", {})
+        fresh["meta"]["year"] = year
+        fresh["meta"]["version"] = "v0"
+        fresh["meta"]["source_file"] = default_draft_filename(year)
+        fresh = save_working_draft(year, fresh)
         _reset_fill_state(year)
         try:
             _update_dashboard_after_scope_reset(year, fresh)
@@ -554,6 +576,10 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 draft=fresh,
                 saved_version="v0",
             )
+        try:
+            _set_scope_context_status(year, "Not Started")
+        except FileNotFoundError:
+            pass
         return AgentResponse(message="Returned to baseline template (v0).", draft=fresh, saved_version="v0")
 
     if cmd == "cancel":
@@ -567,6 +593,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         except Exception:
             latest = load_saved(year, latest_saved_version(year))
 
+        latest = save_working_draft(year, latest)
         _reset_fill_state(year)
         return AgentResponse(
             message="Discarded unsaved changes and reloaded the latest saved version.",
@@ -592,6 +619,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         if _looks_like_scope_filename(year, answer_raw):
             try:
                 loaded = load_by_filename_if_exists(year, answer_raw)
+                loaded = save_working_draft(year, loaded)
+                try:
+                    _set_scope_context_status(year, "In Progress")
+                except FileNotFoundError:
+                    pass
                 return AgentResponse(
                     message=f"Loaded {_scope_display_name(loaded, answer_raw)}",
                     draft=loaded,
@@ -608,6 +640,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded = read_json(p)
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
+            loaded = save_working_draft(year, loaded)
+            try:
+                _set_scope_context_status(year, "In Progress")
+            except FileNotFoundError:
+                pass
             return AgentResponse(
                 message=f"Loaded {_scope_display_name(loaded, p.name)}",
                 draft=loaded,
@@ -621,6 +658,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded = read_json(p)
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
+            loaded = save_working_draft(year, loaded)
+            try:
+                _set_scope_context_status(year, "In Progress")
+            except FileNotFoundError:
+                pass
             return AgentResponse(
                 message=f"Loaded {_scope_display_name(loaded, p.name)}",
                 draft=loaded,
@@ -634,6 +676,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded = read_json(p)
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
+            loaded = save_working_draft(year, loaded)
+            try:
+                _set_scope_context_status(year, "In Progress")
+            except FileNotFoundError:
+                pass
             return AgentResponse(
                 message=f"Loaded {_scope_display_name(loaded, p.name)}",
                 draft=loaded,
@@ -647,6 +694,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
             loaded = read_json(p)
             loaded.setdefault("meta", {})
             loaded["meta"]["source_file"] = p.name
+            loaded = save_working_draft(year, loaded)
+            try:
+                _set_scope_context_status(year, "In Progress")
+            except FileNotFoundError:
+                pass
             return AgentResponse(
                 message=f"Loaded {_scope_display_name(loaded, p.name)}",
                 draft=loaded,
@@ -662,6 +714,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
         loaded = read_json(p)
         loaded.setdefault("meta", {})
         loaded["meta"]["source_file"] = p.name
+        loaded = save_working_draft(year, loaded)
+        try:
+            _set_scope_context_status(year, "In Progress")
+        except FileNotFoundError:
+            pass
         return AgentResponse(message=f"Loaded version {ver}.", draft=loaded, saved_version=loaded["meta"].get("version"))
 
     if cmd == "load":
@@ -684,6 +741,11 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
 
         try:
             loaded = load_by_filename_if_exists(year, answer_raw)
+            loaded = save_working_draft(year, loaded)
+            try:
+                _set_scope_context_status(year, "In Progress")
+            except FileNotFoundError:
+                pass
             return AgentResponse(
                 message=f"Loaded {_scope_display_name(loaded, answer_raw)}",
                 draft=loaded,
@@ -769,6 +831,10 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
 
         state = _FILL_STATE.get(year) or {"in_fill": True, "active": None, "step": 0, "buffer": None, "exit_stage": 0}
         state["in_fill"] = True
+        try:
+            _set_scope_context_status(year, "In Progress")
+        except FileNotFoundError:
+            pass
 
         sections = _fill_sections()
         by_id = {sid: label for sid, label, _ in sections}
@@ -901,6 +967,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 )
                 out.setdefault("meta", {})
                 out["meta"]["placeholders_retained"] = False
+                out = save_working_draft(year, out)
 
                 state.update({"active": None, "step": 0, "buffer": None, "exit_stage": 0})
                 _FILL_STATE[year] = state
@@ -931,6 +998,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 if sec is None:
                     return AgentResponse(message="⚠️ Could not find Section 2 in the document (id/title mismatch).", draft=draft, next_question="__FILL__")
                 sec["bullets"] = clean
+                out = save_working_draft(year, out)
 
                 state.update({"active": None, "step": 0, "buffer": None, "exit_stage": 0})
                 _FILL_STATE[year] = state
@@ -992,6 +1060,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                     )
 
                 sec["bullets"] = bullets
+                out = save_working_draft(year, out)
 
                 state.update({"active": None, "step": 0, "buffer": None, "exit_stage": 0})
                 _FILL_STATE[year] = state
@@ -1049,6 +1118,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 bullets.append(_replace_first_bracket_value(tpls[2], buf["endpoint"]))
                 bullets.append(f"Network Infrastructure: {buf['network']}")
                 sec["bullets"] = bullets
+                out = save_working_draft(year, out)
 
                 state.update({"active": None, "step": 0, "buffer": None, "exit_stage": 0})
                 _FILL_STATE[year] = state
@@ -1079,6 +1149,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 if sec is None:
                     return AgentResponse(message="⚠️ Could not find Section 5 in the document (id/title mismatch).", draft=draft, next_question="__FILL__")
                 sec["bullets"] = clean
+                out = save_working_draft(year, out)
 
                 state.update({"active": None, "step": 0, "buffer": None, "exit_stage": 0})
                 _FILL_STATE[year] = state
@@ -1133,6 +1204,7 @@ def scope_agent(req: AgentRequest) -> AgentResponse:
                 if buf.get("vendors"):
                     bullets.append(f"Third-Party Vendors: {buf['vendors']}")
                 sec["bullets"] = bullets
+                out = save_working_draft(year, out)
 
                 state.update({"active": None, "step": 0, "buffer": None, "exit_stage": 0})
                 _FILL_STATE[year] = state

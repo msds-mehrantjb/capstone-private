@@ -1,9 +1,4 @@
 {
-  "status": "Completed",
-  "meta": {
-    "submitted": true,
-    "read_only": true
-  },
   "hosts": [
     {
       "hostname": "SRV-01",
@@ -269,5 +264,10 @@
       "evaluation": "Monitor",
       "treatment": "-"
     }
-  ]
+  ],
+  "meta": {
+    "submitted": true,
+    "read_only": true
+  },
+  "status": "Completed"
 }

@@ -1071,6 +1071,27 @@ export default function ThreatVulnerabilities() {
       if (text === "/submit") {
         const result = await apiSubmitThreatAssessment(YEAR);
         await refreshThreatSection();
+        setSystemStatus((prev) =>
+          prev
+            ? {
+                ...prev,
+                sections: {
+                  ...prev.sections,
+                  threats_vulns: {
+                    ...(prev.sections.threats_vulns ?? { status: "Not Started" as StepStatus }),
+                    status: result.status || "Completed",
+                  },
+                },
+              }
+            : {
+                meta: { name: "SystemStatus", version: "1.0" },
+                sections: {
+                  threats_vulns: {
+                    status: result.status || "Completed",
+                  },
+                },
+              }
+        );
 
         setMessages((prev) => [
           ...prev,

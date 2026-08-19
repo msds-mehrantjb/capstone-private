@@ -279,7 +279,14 @@ def _build_threat_file_from_inventory(inventory_data: Any) -> dict:
             }
         )
 
-    return {"hosts": hosts}
+    return {
+        "status": "Not Started",
+        "meta": {
+            "submitted": False,
+            "read_only": False,
+        },
+        "hosts": hosts,
+    }
 
 
 def _load_nvd_cve_data() -> list[dict]:
@@ -1447,6 +1454,13 @@ def create_new_threat_assessment(req: CreateThreatAssessmentRequest):
 
     try:
         status = _compute_threat_status_from_data(hosts)
+        threat_data["status"] = status
+        meta = threat_data.get("meta")
+        if not isinstance(meta, dict):
+            meta = {}
+            threat_data["meta"] = meta
+        meta["submitted"] = False
+        meta["read_only"] = False
         _update_system_status(req.year, status)
 
         any_mapping_logged = False
@@ -1600,10 +1614,16 @@ def reset_threat_assessment(req: ResetThreatAssessmentRequest):
 
         host["vulnerabilities_threats"] = []
 
-    raw["hosts"] = hosts
-    _write_json(threat_path, raw)
-
     status = _compute_threat_status_from_data([host for host in hosts if isinstance(host, dict)])
+    raw["hosts"] = hosts
+    raw["status"] = status
+    meta = raw.get("meta")
+    if not isinstance(meta, dict):
+        meta = {}
+        raw["meta"] = meta
+    meta["submitted"] = False
+    meta["read_only"] = False
+    _write_json(threat_path, raw)
 
     try:
         _update_system_status(req.year, status)
@@ -1654,6 +1674,7 @@ def submit_threat_assessment(req: SubmitThreatAssessmentRequest):
             raw["meta"] = meta
         meta["submitted"] = True
         meta["read_only"] = True
+        raw["status"] = "Completed"
         _write_json(threat_path, raw)
 
         _update_system_status(req.year, "Completed")

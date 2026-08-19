@@ -85,6 +85,17 @@ async function apiGetSystemStatus(): Promise<SystemStatusDTO> {
   throw lastErr instanceof Error ? lastErr : new Error("Failed to fetch system status");
 }
 
+async function refreshSystemStatusState(
+  setSystemStatus: (status: SystemStatusDTO | null) => void
+) {
+  try {
+    const status = await apiGetSystemStatus();
+    setSystemStatus(status);
+  } catch {
+    setSystemStatus(null);
+  }
+}
+
 function renderWithPlaceholders(text: string) {
   const parts = (text ?? "").split(/(\[[^\]]+\])/g);
 
@@ -207,14 +218,7 @@ export default function ScopeContext() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const status = await apiGetSystemStatus();
-        setSystemStatus(status);
-      } catch {
-        setSystemStatus(null);
-      }
-    })();
+    void refreshSystemStatusState(setSystemStatus);
   }, []);
 
   useEffect(() => {
@@ -297,6 +301,7 @@ export default function ScopeContext() {
       setMessages((prev) => [...prev, { role: "assistant", content: resp.message }]);
       setLoadOptions(resp.load_options ?? null);
       setFillQuestion(resp.next_question ?? null);
+      await refreshSystemStatusState(setSystemStatus);
     } catch (e) {
       setMessages((prev) => [
         ...prev,
@@ -330,6 +335,7 @@ export default function ScopeContext() {
           setMessages((prev) => [...prev, { role: "assistant", content: resp.message }]);
           setLoadOptions(resp.load_options ?? null);
           setFillQuestion(resp.next_question ?? null);
+          await refreshSystemStatusState(setSystemStatus);
           return;
         }
 
@@ -339,6 +345,7 @@ export default function ScopeContext() {
         setMessages((prev) => [...prev, { role: "assistant", content: resp.message }]);
         setLoadOptions(resp.load_options ?? null);
         setFillQuestion(resp.next_question ?? null);
+        await refreshSystemStatusState(setSystemStatus);
         return;
       }
 
@@ -370,6 +377,7 @@ export default function ScopeContext() {
       setMessages((prev) => [...prev, { role: "assistant", content: resp.message }]);
       setLoadOptions(resp.load_options ?? null);
       setFillQuestion(resp.next_question ?? null);
+      await refreshSystemStatusState(setSystemStatus);
     } catch (e) {
       setMessages((prev) => [
         ...prev,
@@ -393,6 +401,7 @@ export default function ScopeContext() {
       setMessages((prev) => [...prev, { role: "assistant", content: resp.message }]);
       setLoadOptions(resp.load_options ?? null);
       setFillQuestion(resp.next_question ?? null);
+      await refreshSystemStatusState(setSystemStatus);
       setStartScopeConfirmOpen(false);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);

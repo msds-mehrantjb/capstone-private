@@ -1,8 +1,4 @@
 {
-  "meta": {
-    "submitted": true,
-    "read_only": true
-  },
   "hosts": [
     {
       "hostname": "SRV-01",
@@ -742,5 +738,6 @@
         }
       ]
     }
-  ]
+  ],
+  "status": "Completed"
 }
