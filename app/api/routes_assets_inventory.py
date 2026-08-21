@@ -22,6 +22,7 @@ from app.api.routes_system_status import (
     _atomic_write_json,
     _system_status_file,
 )
+from app.api.workflow_gate import ensure_previous_steps_completed
 from app.api.aiml_kpi_telemetry import (
     append_aiml_kpi_event,
     append_aiml_kpi_events,
@@ -4022,6 +4023,7 @@ def assign_roles(payload: dict):
 @router.post("/submit")
 def submit_inventory(payload: SubmitRequest):
     year = int(payload.year or 2026)
+    ensure_previous_steps_completed(year, "assets_cia")
     inventory = _load_inventory_or_blank(year)
 
     assets = _all_assets(inventory)

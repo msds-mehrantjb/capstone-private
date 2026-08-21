@@ -6,16 +6,28 @@
       "domain": "People Controls",
       "applicable": true,
       "implementation_status": "Planned",
-      "justification": "Control 6.7 (Remote working) is recommended because the risk context includes high, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Ensure security in remote work.",
+      "justification": "Control 6.7 (Remote working) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Ensure security in remote work.",
       "related_risks": [
+        "CVE-2020-1350",
         "CVE-2017-0144",
         "CVE-2021-31166"
       ],
       "risk_ids": [
+        "R-003",
         "R-007",
+        "R-008",
         "R-010"
       ],
       "source_records": [
+        {
+          "hostname": "SRV-02",
+          "role": "DNS Server",
+          "riskid": "R-003",
+          "risk": "High",
+          "vulnerability_name": "Windows DNS Server Remote Code Execution",
+          "cve": "CVE-2020-1350",
+          "reason": "Control 6.7 (Remote working) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Ensure security in remote work."
+        },
         {
           "hostname": "SRV-03",
           "role": "File Server",
@@ -24,6 +36,15 @@
           "vulnerability_name": "SMB Remote Code Execution",
           "cve": "CVE-2017-0144",
           "reason": "Control 6.7 (Remote working) is recommended because the risk context includes high, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Ensure security in remote work."
+        },
+        {
+          "hostname": "SRV-03",
+          "role": "File Server",
+          "riskid": "R-008",
+          "risk": "High",
+          "vulnerability_name": "WinRM Remote Command Execution Exposure",
+          "cve": "CVE-2021-31166",
+          "reason": "Control 6.7 (Remote working) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Ensure security in remote work."
         },
         {
           "hostname": "SRV-04",
@@ -41,7 +62,7 @@
       "control_name": "Network security",
       "domain": "Technological Controls",
       "applicable": true,
-      "implementation_status": "Planned",
+      "implementation_status": "In Progress",
       "justification": "Control 8.2 (Network security) is recommended because the risk context includes medium, technical vulnerability; its ISO 27002 purpose is Protect networks.",
       "related_risks": [
         "CVE-2020-1472",
@@ -49,8 +70,7 @@
       ],
       "risk_ids": [
         "R-001",
-        "R-002",
-        "R-003"
+        "R-002"
       ],
       "source_records": [
         {
@@ -69,16 +89,7 @@
           "risk": "Critical",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "The vulnerability is network-based, so implementing network security measures such as firewalls and intrusion detection systems can help mitigate the risk."
-        },
-        {
-          "hostname": "SRV-02",
-          "role": "DNS Server",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "reason": "This control aims to protect networks, which is essential in preventing unauthorized access and exploitation through the network."
+          "reason": "This control aims to protect networks, which is crucial for preventing unauthorized access and exploitation of the vulnerability."
         }
       ]
     },
@@ -122,7 +133,7 @@
           "risk": "Critical",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "The vulnerability is exploited through network-based attacks, so securing network services is essential."
+          "reason": "This control focuses on securing services, which is necessary to mitigate the network-based exploitation aspect of the vulnerability."
         },
         {
           "hostname": "SRV-02",
@@ -131,7 +142,7 @@
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "This control focuses on securing services, which is relevant to mitigating network-based exploitation of the DNS server vulnerability."
+          "reason": "Control 8.21 (Network services security) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Secure services."
         },
         {
           "hostname": "SRV-03",
@@ -149,7 +160,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "This control focuses on securing network services, which is essential for mitigating the network-based exploitation risk associated with the vulnerability."
+          "reason": "Control 8.21 (Network services security) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Secure services."
         },
         {
           "hostname": "SRV-04",
@@ -158,7 +169,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "This control helps secure network services, which is essential for mitigating network-based exploitation risks associated with the vulnerability."
+          "reason": "Control 8.21 (Network services security) is recommended because the risk context includes configuration weakness, critical, network-based exploitation; its ISO 27002 purpose is Secure services."
         },
         {
           "hostname": "SRV-04",
@@ -172,72 +183,11 @@
       ]
     },
     {
-      "control_id": "8.28",
-      "control_name": "Secure coding",
-      "domain": "Technological Controls",
-      "applicable": true,
-      "implementation_status": "Implemented",
-      "justification": "This control helps reduce vulnerabilities by ensuring that code is developed with security in mind, which is relevant to the technical nature of the vulnerability.",
-      "related_risks": [
-        "CVE-2020-1350",
-        "CVE-2021-31166"
-      ],
-      "risk_ids": [
-        "R-003",
-        "R-008"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-02",
-          "role": "DNS Server",
-          "riskid": "R-003",
-          "risk": "High",
-          "vulnerability_name": "Windows DNS Server Remote Code Execution",
-          "cve": "CVE-2020-1350",
-          "reason": "This control helps reduce vulnerabilities by ensuring that code is developed with security in mind, which is relevant to the technical nature of the vulnerability."
-        },
-        {
-          "hostname": "SRV-03",
-          "role": "File Server",
-          "riskid": "R-008",
-          "risk": "High",
-          "vulnerability_name": "WinRM Remote Command Execution Exposure",
-          "cve": "CVE-2021-31166",
-          "reason": "Implementing secure coding practices helps reduce the likelihood of vulnerabilities like the one described, ensuring that future code is less prone to such exploits."
-        }
-      ]
-    },
-    {
-      "control_id": "8.7",
-      "control_name": "Protection against malware",
-      "domain": "Technological Controls",
-      "applicable": true,
-      "implementation_status": "Planned",
-      "justification": "This control helps prevent malware attacks, which could be a potential outcome of exploiting the remote code execution vulnerability.",
-      "related_risks": [
-        "CVE-2021-44228"
-      ],
-      "risk_ids": [
-        "R-009"
-      ],
-      "source_records": [
-        {
-          "hostname": "SRV-04",
-          "role": "Application Server",
-          "riskid": "R-009",
-          "risk": "High",
-          "vulnerability_name": "Web Application Remote Code Execution",
-          "cve": "CVE-2021-44228",
-          "reason": "This control helps prevent malware attacks, which could be a potential outcome of exploiting the remote code execution vulnerability."
-        }
-      ]
-    },
-    {
       "control_id": "8.8",
       "control_name": "Technical vulnerability management",
       "domain": "Technological Controls",
       "applicable": true,
-      "implementation_status": "Planned",
+      "implementation_status": "Implemented",
       "justification": "Control 8.8 (Technical vulnerability management) is recommended because the risk context includes medium, technical vulnerability; its ISO 27002 purpose is Manage vulnerabilities.",
       "related_risks": [
         "CVE-2020-1472",
@@ -272,7 +222,7 @@
           "risk": "Critical",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "The vulnerability is a technical issue that requires management through vulnerability scanning and patching processes."
+          "reason": "This control is designed to manage vulnerabilities, which is essential for addressing the critical vulnerability described in the query."
         },
         {
           "hostname": "SRV-02",
@@ -281,7 +231,7 @@
           "risk": "High",
           "vulnerability_name": "Windows DNS Server Remote Code Execution",
           "cve": "CVE-2020-1350",
-          "reason": "This control is designed to manage vulnerabilities, which directly addresses the technical vulnerability described in the query."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Manage vulnerabilities."
         },
         {
           "hostname": "SRV-03",
@@ -299,7 +249,7 @@
           "risk": "High",
           "vulnerability_name": "WinRM Remote Command Execution Exposure",
           "cve": "CVE-2021-31166",
-          "reason": "This control is directly related to managing technical vulnerabilities, which is crucial for addressing the high-risk CVE-2021-31166 vulnerability mentioned in the query."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended because the risk context includes critical, network-based exploitation, technical vulnerability; its ISO 27002 purpose is Manage vulnerabilities."
         },
         {
           "hostname": "SRV-04",
@@ -308,7 +258,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "This control ensures that technical vulnerabilities, such as the Apache Log4j2 vulnerability, are identified, assessed, and mitigated through a structured vulnerability management process."
+          "reason": "Control 8.8 (Technical vulnerability management) is recommended because the risk context includes configuration weakness, critical, network-based exploitation; its ISO 27002 purpose is Manage vulnerabilities."
         },
         {
           "hostname": "SRV-04",
@@ -326,8 +276,8 @@
       "control_name": "Configuration management",
       "domain": "Technological Controls",
       "applicable": true,
-      "implementation_status": "In Progress",
-      "justification": "This control ensures that secure configurations are maintained, which is critical for addressing the configuration weakness related to the Apache Log4j2 JNDI features.",
+      "implementation_status": "Implemented",
+      "justification": "Control 8.9 (Configuration management) is recommended because the risk context includes configuration weakness, critical, network-based exploitation; its ISO 27002 purpose is Ensure secure configurations.",
       "related_risks": [
         "CVE-2021-44228"
       ],
@@ -342,7 +292,7 @@
           "risk": "High",
           "vulnerability_name": "Web Application Remote Code Execution",
           "cve": "CVE-2021-44228",
-          "reason": "This control ensures that secure configurations are maintained, which is critical for addressing the configuration weakness related to the Apache Log4j2 JNDI features."
+          "reason": "Control 8.9 (Configuration management) is recommended because the risk context includes configuration weakness, critical, network-based exploitation; its ISO 27002 purpose is Ensure secure configurations."
         }
       ]
     }

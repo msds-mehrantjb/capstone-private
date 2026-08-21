@@ -7,6 +7,8 @@ import sys
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
+from app.api.workflow_gate import ensure_previous_steps_completed
+
 router = APIRouter(
     prefix="/api/controls-postures",
     tags=["controls-postures"],
@@ -801,6 +803,7 @@ def reset_controls_postures(req: ResetControlsPosturesRequest):
 
 @router.post("/submit")
 def submit_controls_postures(req: SubmitControlsPosturesRequest):
+    ensure_previous_steps_completed(req.year, "existing_controls_postures")
     controls_path = _controls_file(req.year)
 
     if not controls_path.exists():

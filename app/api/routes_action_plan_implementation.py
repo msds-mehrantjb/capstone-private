@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 from typing import Any
 import math
+from datetime import date
 
 import requests
 
@@ -17,6 +18,7 @@ from app.api.aiml_kpi_telemetry import (
     safe_increment_llm_counter,
     safe_increment_rag_counter,
 )
+from app.api.workflow_gate import ensure_previous_steps_completed
 
 print("LOADED routes_action_plan_implementation.py")
 
@@ -280,6 +282,15 @@ def _normalize_text(value: Any) -> str:
 
 def _normalize_key(value: Any) -> str:
     return _normalize_text(value).lower()
+
+
+def _default_date_when_url_present(date_value: Any, url_value: Any) -> str:
+    normalized_date = _normalize_text(date_value)
+    if normalized_date:
+        return normalized_date
+    if _normalize_text(url_value):
+        return date.today().isoformat()
+    return ""
 
 
 GENERIC_RETRIEVAL_FALLBACK_REASON = "Fallback from retrieval because LLM returned no valid controls."
@@ -654,6 +665,159 @@ def _format_control_label(control: dict) -> str:
     control_id = _normalize_text(control.get("control_id") or control.get("control")) or "Unknown Control"
     control_name = _normalize_text(control.get("control_name"))
     return control_id if control_name == "" else f"{control_id} ({control_name})"
+
+
+ACTION_PLAN_EVIDENCE_FIELDS = (
+    "responsible",
+    "resources",
+    "date",
+    "url",
+    "desc",
+    "description",
+    "evidence_name",
+    "evidence_description",
+    "file_name",
+    "path",
+)
+
+
+def _has_meaningful_evidence(evidence: Any) -> bool:
+    if not isinstance(evidence, list):
+        return False
+
+    for item in evidence:
+        if not isinstance(item, dict):
+            continue
+        if any(_normalize_text(item.get(field)) for field in ACTION_PLAN_EVIDENCE_FIELDS):
+            return True
+
+    return False
+
+
+def _evidence_item_has_meaningful_content(evidence: Any) -> bool:
+    if not isinstance(evidence, dict):
+        return False
+    return any(_normalize_text(evidence.get(field)) for field in ACTION_PLAN_EVIDENCE_FIELDS)
+
+
+def _format_host_label(control: dict, host: dict) -> str:
+    control_label = _normalize_text(control.get("control_id") or control.get("control")) or "Unknown Control"
+    hostname = _normalize_text(host.get("hostname")) or "Unknown Host"
+    return f"{control_label} / {hostname}"
+
+
+def _preview_labels(labels: list[str], limit: int = 8) -> str:
+    preview = labels[:limit]
+    suffix = "" if len(labels) <= limit else f", and {len(labels) - limit} more"
+    return ", ".join(preview) + suffix
+
+
+def _action_guides_by_evidence_id(year: int) -> dict[str, dict]:
+    guides_doc = _load_action_implementation_guides_doc_or_blank(year)
+    return {
+        _normalize_key(guide.get("evidence_id")): guide
+        for guide in _all_guides(guides_doc)
+        if _normalize_key(guide.get("evidence_id")) != ""
+    }
+
+
+def _action_guide_matches_evidence_row(guide: dict, control: dict, host: dict) -> bool:
+    guide_control = _normalize_key(guide.get("control_id"))
+    row_control = _normalize_key(control.get("control_id") or control.get("control"))
+    guide_host = _normalize_key(guide.get("hostname"))
+    row_host = _normalize_key(host.get("hostname"))
+    guide_vulnerability = _normalize_key(guide.get("vulnerability_name"))
+    row_vulnerability = _normalize_key(host.get("vulnerability_name"))
+
+    if guide_control and row_control and guide_control != row_control:
+        return False
+    if guide_host and row_host and guide_host != row_host:
+        return False
+    if guide_vulnerability and row_vulnerability and guide_vulnerability != row_vulnerability:
+        return False
+
+    return True
+
+
+def ensure_action_guides_for_evidence_rows(
+    year: int,
+    action_doc: dict | None = None,
+    *,
+    prefer_fallback: bool = True,
+) -> dict:
+    doc = action_doc if isinstance(action_doc, dict) else _load_action_plan_doc_or_blank(year)
+    guides_by_evidence_id = _action_guides_by_evidence_id(year)
+    created_labels: list[str] = []
+    failed_labels: list[str] = []
+    doc_changed = False
+
+    for control in _all_controls(doc):
+        control_label = _normalize_text(control.get("control_id") or control.get("control")) or "Unknown Control"
+        hosts = control.get("hosts", [])
+        if not isinstance(hosts, list):
+            continue
+
+        for host in hosts:
+            if not isinstance(host, dict):
+                continue
+
+            if _ensure_evidence_ids_for_host(year, doc, host):
+                doc_changed = True
+
+            hostname = _normalize_text(host.get("hostname")) or "Unknown Host"
+            evidence_list = host.get("evidence", [])
+            if not isinstance(evidence_list, list):
+                continue
+
+            for evidence in evidence_list:
+                if not isinstance(evidence, dict):
+                    continue
+                if not _evidence_item_has_meaningful_content(evidence):
+                    continue
+
+                evidence_id = _normalize_text(evidence.get("evidence_id"))
+                if evidence_id == "":
+                    evidence["evidence_id"] = _next_evidence_id(year, doc)
+                    evidence_id = _normalize_text(evidence.get("evidence_id"))
+                    doc_changed = True
+
+                evidence_key = _normalize_key(evidence_id)
+                existing_guide = guides_by_evidence_id.get(evidence_key)
+                if isinstance(existing_guide, dict) and _action_guide_matches_evidence_row(
+                    existing_guide,
+                    control,
+                    host,
+                ):
+                    continue
+
+                row_label = f"{control_label} / {hostname}"
+                try:
+                    guide = _replace_guide_for_evidence(
+                        year,
+                        control,
+                        host,
+                        evidence,
+                        prefer_fallback=prefer_fallback,
+                        guide_id_override=(
+                            _normalize_text(existing_guide.get("guide_id"))
+                            if isinstance(existing_guide, dict)
+                            else None
+                        ),
+                    )
+                    guides_by_evidence_id[evidence_key] = guide
+                    created_labels.append(row_label)
+                except Exception:
+                    failed_labels.append(row_label)
+
+    if doc_changed:
+        _save_json(_action_plan_implementation_file(year), doc)
+
+    return {
+        "doc": doc,
+        "created_count": len(created_labels),
+        "created": created_labels,
+        "failed": failed_labels,
+    }
 
 
 # =========================================================
@@ -2216,6 +2380,214 @@ def _fallback_action_implementation_steps(context: dict) -> list[dict]:
         f"Apply the treatment action defined for {control_id} ({control_name})."
     )
     cve_suffix = f" ({cve_id})" if cve_id else ""
+    vuln_l = vulnerability_name.lower()
+    cve_l = cve_id.lower()
+    role_l = role.lower()
+
+    if "dns" in vuln_l or cve_l == "cve-2020-1350":
+        return [
+            {
+                "step_no": 1,
+                "title": "Confirm DNS Service Exposure",
+                "description": (
+                    f"Confirm that {hostname} is operating the Windows DNS Server role and identify DNS "
+                    f"listener exposure before applying the treatment for {vulnerability_name}{cve_suffix}."
+                ),
+                "commands": [
+                    "Get-Service DNS",
+                    "Get-NetTCPConnection -LocalPort 53 -ErrorAction SilentlyContinue",
+                    "Get-NetUDPEndpoint -LocalPort 53 -ErrorAction SilentlyContinue",
+                    "Get-DnsServerDiagnostics",
+                ],
+                "expected_result": (
+                    f"DNS service status, TCP/UDP 53 listeners, and DNS diagnostic configuration are captured for {hostname}."
+                ),
+                "output_type": "DNS service status / listener list / DNS diagnostics",
+                "evidence_capture": (
+                    f"Save the DNS service output, port 53 listener output, and DNS diagnostics from {hostname}."
+                ),
+            },
+            {
+                "step_no": 2,
+                "title": "Validate DNS Server Security Updates",
+                "description": (
+                    f"Check whether {hostname} has the Windows security updates required to remediate "
+                    f"{vulnerability_name}{cve_suffix}; patch the server through the approved maintenance process if gaps remain."
+                ),
+                "commands": [
+                    "Get-ComputerInfo | Select-Object OsName,OsVersion,WindowsVersion",
+                    "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 20",
+                    "Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue",
+                ],
+                "expected_result": (
+                    f"Patch state for {hostname} is known and missing DNS Server security updates are identified or installed."
+                ),
+                "output_type": "Patch inventory / update scan output",
+                "evidence_capture": (
+                    f"Capture installed hotfix output and the update scan or change ticket showing DNS Server patch status."
+                ),
+            },
+            {
+                "step_no": 3,
+                "title": "Apply DNS-Specific Mitigation",
+                "description": (
+                    f"If the approved treatment requires interim mitigation for {vulnerability_name}, apply the DNS Server "
+                    f"packet-size mitigation and restart DNS during the approved change window."
+                ),
+                "commands": [
+                    r'reg add "HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v TcpReceivePacketSize /t REG_DWORD /d 65280 /f',
+                    "Restart-Service DNS -Force",
+                    r'reg query "HKLM\SYSTEM\CurrentControlSet\Services\DNS\Parameters" /v TcpReceivePacketSize',
+                ],
+                "expected_result": (
+                    f"The DNS mitigation value is present on {hostname} and DNS service is restarted successfully."
+                ),
+                "output_type": "Registry value / service restart output",
+                "evidence_capture": (
+                    f"Capture the registry query result and DNS service restart output for {hostname}."
+                ),
+            },
+            {
+                "step_no": 4,
+                "title": "Restrict DNS Network Access",
+                "description": (
+                    f"Restrict DNS traffic to approved resolver/client networks so {hostname} is not broadly exposed while "
+                    f"supporting required DNS operations."
+                ),
+                "commands": [
+                    'Get-NetFirewallRule | Where-Object {$_.DisplayName -match "DNS"} | Select-Object DisplayName,Enabled,Direction,Action',
+                    'Get-NetFirewallPortFilter | Where-Object {$_.LocalPort -eq "53"}',
+                    'New-NetFirewallRule -DisplayName "Allow DNS from approved subnets" -Direction Inbound -Protocol UDP -LocalPort 53 -Action Allow',
+                ],
+                "expected_result": (
+                    f"DNS firewall rules are reviewed and restricted to the approved network path for {hostname}."
+                ),
+                "output_type": "Firewall rule list / firewall change record",
+                "evidence_capture": (
+                    f"Export firewall rule evidence showing allowed DNS paths for {hostname}."
+                ),
+            },
+            {
+                "step_no": 5,
+                "title": "Verify DNS Resolution And Logs",
+                "description": (
+                    f"Validate that DNS service still resolves expected names after remediation and review DNS events for errors."
+                ),
+                "commands": [
+                    f"Resolve-DnsName {hostname}",
+                    "Get-WinEvent -LogName 'DNS Server' -MaxEvents 30",
+                    "Get-Service DNS",
+                ],
+                "expected_result": (
+                    f"DNS resolution works, DNS service remains running, and no new critical DNS errors are observed."
+                ),
+                "output_type": "DNS query output / DNS event log excerpt / service status",
+                "evidence_capture": (
+                    f"Capture DNS query results, DNS event log excerpts, and final DNS service status for {hostname}."
+                ),
+            },
+        ]
+
+    if "netlogon" in vuln_l or cve_l == "cve-2020-1472" or "domain controller" in role_l or "active directory" in role_l:
+        return [
+            {
+                "step_no": 1,
+                "title": "Confirm Domain Controller Role And Secure Channel Scope",
+                "description": (
+                    f"Confirm {hostname} is a domain controller and identify Netlogon secure channel exposure before "
+                    f"applying treatment for {vulnerability_name}{cve_suffix}."
+                ),
+                "commands": [
+                    "Get-ADDomainController -Identity $env:COMPUTERNAME",
+                    "nltest /dsgetdc:%USERDNSDOMAIN%",
+                    "Get-Service Netlogon",
+                ],
+                "expected_result": (
+                    f"Domain controller identity, Netlogon service status, and domain secure channel context are captured."
+                ),
+                "output_type": "Domain controller details / Netlogon service status",
+                "evidence_capture": (
+                    f"Save the domain controller query output and Netlogon service status from {hostname}."
+                ),
+            },
+            {
+                "step_no": 2,
+                "title": "Validate Netlogon Remediation Patch State",
+                "description": (
+                    f"Verify that {hostname} has the Windows Server security updates required for "
+                    f"{vulnerability_name}{cve_suffix}; remediate through the domain controller patch process if needed."
+                ),
+                "commands": [
+                    "Get-ComputerInfo | Select-Object OsName,OsVersion,WindowsVersion",
+                    "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 30",
+                    "Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue",
+                ],
+                "expected_result": (
+                    f"Patch evidence confirms whether {hostname} has the required Netlogon remediation updates."
+                ),
+                "output_type": "Patch inventory / update scan output",
+                "evidence_capture": (
+                    f"Capture hotfix inventory and update/change ticket evidence for the domain controller patch."
+                ),
+            },
+            {
+                "step_no": 3,
+                "title": "Enforce Secure Netlogon Behavior",
+                "description": (
+                    f"Apply or verify secure Netlogon enforcement on {hostname} so vulnerable secure channel behavior is blocked."
+                ),
+                "commands": [
+                    r'reg query "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" /v FullSecureChannelProtection',
+                    r'reg add "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" /v FullSecureChannelProtection /t REG_DWORD /d 1 /f',
+                    "Restart-Service Netlogon -Force",
+                ],
+                "expected_result": (
+                    f"Secure Netlogon enforcement is configured and Netlogon restarts successfully on {hostname}."
+                ),
+                "output_type": "Registry value / Netlogon service restart output",
+                "evidence_capture": (
+                    f"Capture the Netlogon registry value and service restart output for {hostname}."
+                ),
+            },
+            {
+                "step_no": 4,
+                "title": "Review Netlogon Enforcement Events",
+                "description": (
+                    f"Review Netlogon-related events on {hostname} to identify denied or non-compliant secure channel activity."
+                ),
+                "commands": [
+                    "Get-WinEvent -LogName System | Where-Object {$_.Id -in 5827,5828,5829,5830,5831} | Select-Object -First 50",
+                    "Get-WinEvent -LogName Security -MaxEvents 50",
+                ],
+                "expected_result": (
+                    f"Netlogon enforcement events are reviewed and any non-compliant clients are identified for follow-up."
+                ),
+                "output_type": "System event log excerpt / security event log excerpt",
+                "evidence_capture": (
+                    f"Export Netlogon enforcement events and related security log excerpts from {hostname}."
+                ),
+            },
+            {
+                "step_no": 5,
+                "title": "Validate Domain Authentication Health",
+                "description": (
+                    f"Confirm domain authentication and replication remain healthy after Netlogon hardening on {hostname}."
+                ),
+                "commands": [
+                    "dcdiag /test:netlogons",
+                    "dcdiag /test:replications",
+                    "repadmin /replsummary",
+                    "nltest /sc_verify:%USERDNSDOMAIN%",
+                ],
+                "expected_result": (
+                    f"Domain controller checks pass and secure channel validation succeeds after treatment."
+                ),
+                "output_type": "DCDIAG output / replication summary / secure channel validation",
+                "evidence_capture": (
+                    f"Capture DCDIAG, replication, and secure channel validation output for {hostname}."
+                ),
+            },
+        ]
 
     return [
         {
@@ -2308,6 +2680,12 @@ def _generate_flat_action_implementation_guide(year: int, control: dict, host: d
     evidence_description = _normalize_text(evidence.get("desc")) or evidence_name
     evidence_format = "PDF + Logs + Firewall Export"
 
+    generation_hints = _build_vulnerability_generation_hints(
+        cve_id,
+        vulnerability_name,
+        role,
+    )
+
     references = _build_action_guide_references(
         year=year,
         control=control,
@@ -2316,11 +2694,6 @@ def _generate_flat_action_implementation_guide(year: int, control: dict, host: d
         asset_host=asset_host,
         generation_hints=generation_hints,
         method_label="LLM-generated implementation guide",
-    )
-    generation_hints = _build_vulnerability_generation_hints(
-        cve_id,
-        vulnerability_name,
-        role
     )
     
     implementation_steps = _generate_real_implementation_steps_with_llm(year, {
@@ -2333,7 +2706,7 @@ def _generate_flat_action_implementation_guide(year: int, control: dict, host: d
         "cve_id": cve_id,
         "severity": severity,
         "treatment_action": treatment_action,
-        "generation_hints": generation_hints,   # 🔥 ADD THIS
+        "generation_hints": generation_hints,
     })
     return {
         "guide_id": _next_guide_id(year, guides_doc),
@@ -2352,10 +2725,19 @@ def _generate_flat_action_implementation_guide(year: int, control: dict, host: d
         "evidence_description": evidence_description,
         "evidence_format": evidence_format,
         "references": references,
+        "generation_quality": "full",
+        "generation_method": "llm_rag",
         "implementation_steps": implementation_steps,
     }
 
-def _replace_guide_for_evidence(year: int, control: dict, host: dict, evidence: dict) -> dict:
+def _replace_guide_for_evidence(
+    year: int,
+    control: dict,
+    host: dict,
+    evidence: dict,
+    prefer_fallback: bool = False,
+    guide_id_override: str | None = None,
+) -> dict:
     evidence_id = _normalize_text(evidence.get("evidence_id"))
     if evidence_id == "":
         raise ValueError("Evidence item is missing evidence_id.")
@@ -2363,6 +2745,17 @@ def _replace_guide_for_evidence(year: int, control: dict, host: dict, evidence: 
     _ensure_action_implementation_guides_file_exists(year)
     doc = _load_action_implementation_guides_doc_or_blank(year)
     print("REPLACING GUIDE FOR EVIDENCE:", evidence_id)
+    existing_guide = next(
+        (
+            guide
+            for guide in _all_guides(doc)
+            if _normalize_key(guide.get("evidence_id")) == _normalize_key(evidence_id)
+        ),
+        None,
+    )
+    preserved_guide_id = _normalize_text(guide_id_override)
+    if preserved_guide_id == "" and isinstance(existing_guide, dict):
+        preserved_guide_id = _normalize_text(existing_guide.get("guide_id"))
 
     doc["guides"] = [
         g for g in doc.get("guides", [])
@@ -2370,7 +2763,12 @@ def _replace_guide_for_evidence(year: int, control: dict, host: dict, evidence: 
     ]
 
     try:
+        if prefer_fallback:
+            raise ValueError("Using deterministic action guide path for backfill generation.")
+
         guide = _generate_flat_action_implementation_guide(year, control, host, evidence)
+        if preserved_guide_id != "":
+            guide["guide_id"] = preserved_guide_id
     except Exception:
         asset_host = _find_asset_inventory_host(year, _normalize_text(host.get("hostname")))
         hostname = _normalize_text(host.get("hostname"))
@@ -2384,7 +2782,7 @@ def _replace_guide_for_evidence(year: int, control: dict, host: dict, evidence: 
         evidence_description = _normalize_text(evidence.get("desc")) or evidence_name
 
         guide = {
-            "guide_id": _next_guide_id(year, doc),
+            "guide_id": preserved_guide_id or _next_guide_id(year, doc),
             "evidence_id": evidence_id,
             "hostname": hostname,
             "role": role,
@@ -2408,6 +2806,8 @@ def _replace_guide_for_evidence(year: int, control: dict, host: dict, evidence: 
                 generation_hints="Deterministic fallback guide steps generated from control, host, vulnerability, and treatment context.",
                 method_label="Deterministic fallback implementation guide",
             ),
+            "generation_quality": "fallback",
+            "generation_method": "deterministic_fallback",
             "implementation_steps": _fallback_action_implementation_steps(
                 {
                     "hostname": hostname,
@@ -2625,6 +3025,7 @@ def delete_action_plan_control(payload: DeleteRequest):
 @router.post("/submit")
 def submit_action_plan(payload: SubmitRequest):
     year = int(payload.year or 2026)
+    ensure_previous_steps_completed(year, "action_plan_implementation")
     doc = _load_action_plan_doc_or_blank(year)
 
     if _action_plan_section_is_read_only(year):
@@ -2652,6 +3053,8 @@ def submit_action_plan(payload: SubmitRequest):
 
     missing_status = []
     invalid_status = []
+    missing_treatment = []
+    missing_evidence = []
 
     for control in controls:
         status_value = _normalize_text(control.get("implementation_status"))
@@ -2662,6 +3065,17 @@ def submit_action_plan(payload: SubmitRequest):
 
         if status_value not in VALID_IMPLEMENTATION_STATUSES:
             invalid_status.append(f"{_format_control_label(control)} -> {status_value}")
+
+        if _normalize_text(control.get("treatment_action")) == "":
+            missing_treatment.append(_format_control_label(control))
+
+        hosts = control.get("hosts", [])
+        if isinstance(hosts, list):
+            for host in hosts:
+                if not isinstance(host, dict):
+                    continue
+                if not _has_meaningful_evidence(host.get("evidence")):
+                    missing_evidence.append(_format_host_label(control, host))
 
     if missing_status:
         return {
@@ -2679,6 +3093,28 @@ def submit_action_plan(payload: SubmitRequest):
             "message": (
                 "One or more controls have an invalid implementation status value. "
                 f"Please update these rows and try again: {', '.join(invalid_status)}"
+            ),
+            "inventory": doc,
+        }
+
+    if missing_treatment:
+        return {
+            "success": False,
+            "message": (
+                "Please add a treatment action for every control before submitting the "
+                "Action Plan / Implementation table. Missing treatment action: "
+                f"{_preview_labels(missing_treatment)}"
+            ),
+            "inventory": doc,
+        }
+
+    if missing_evidence:
+        return {
+            "success": False,
+            "message": (
+                "Please add at least one evidence item for every host before submitting the "
+                "Action Plan / Implementation table. Missing evidence: "
+                f"{_preview_labels(missing_evidence)}"
             ),
             "inventory": doc,
         }
@@ -3020,35 +3456,13 @@ def add_evidence_to_host(payload: AddEvidenceRequest):
 
     _save_json(_action_plan_implementation_file(year), doc)
 
-    guide = None
-    try:
-        _ensure_action_implementation_guides_file_exists(year)
-    
-        guide = _replace_guide_for_evidence(
-            year=year,
-            control=control,
-            host=host,
-            evidence=new_evidence,
-        )
-    
-    except Exception as e:
-        import traceback
-        print("GUIDE GENERATION FAILED")
-        print(traceback.format_exc())
-    
-        return {
-            "success": False,
-            "message": f"Evidence was added but guide generation failed: {str(e)}",
-            "inventory": doc,
-        }
-
     _sync_action_plan_status(year, doc)
-    print("GUIDE FILE PATH:", _action_implementation_guides_file(year))
     return {
         "success": True,
-        "message": f"Evidence added for host {payload.hostname} under control {payload.control_id}. Guide generated successfully.",
-        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
-        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
+        "message": (
+            f"Evidence added for host {payload.hostname} under control {payload.control_id}. "
+            "Guide document will be generated from the Action Plan / Implementation report."
+        ),
         "inventory": doc,
     }
 
@@ -3096,7 +3510,6 @@ def add_evidence_to_all_hosts(payload: EvidenceAllRequest):
     skipped_count = 0
     failed_count = 0
     failed_items: list[str] = []
-    _ensure_action_implementation_guides_file_exists(year)
 
     for control_idx, control in enumerate(controls):
         if not isinstance(control, dict):
@@ -3184,17 +3597,7 @@ def add_evidence_to_all_hosts(payload: EvidenceAllRequest):
             controls[control_idx] = control
             doc["controls"] = controls
 
-            try:
-                _replace_guide_for_evidence(year, control, host, new_evidence)
-                added_count += 1
-            except Exception:
-                host["evidence"] = []
-                hosts[host_idx] = host
-                control["hosts"] = hosts
-                controls[control_idx] = control
-                doc["controls"] = controls
-                failed_count += 1
-                failed_items.append(f"{control_id} / {hostname}")
+            added_count += 1
 
     _save_json(_action_plan_implementation_file(year), doc)
     _sync_action_plan_status(year, doc)
@@ -3202,6 +3605,7 @@ def add_evidence_to_all_hosts(payload: EvidenceAllRequest):
     message = (
         f"Evidence generation completed. Generated {treatment_created_count} treatment action(s), "
         f"added {added_count} evidence item(s). "
+        "Guide documents will be generated from the Action Plan / Implementation report. "
         f"Skipped {skipped_count} host row(s) that already had evidence."
     )
     if failed_count > 0:
@@ -3372,13 +3776,15 @@ def edit_evidence(payload: EditEvidenceRequest):
 
     old_item = evidence_list[evidence_index] if isinstance(evidence_list[evidence_index], dict) else {}
     evidence_id = _normalize_text(old_item.get("evidence_id")) or _next_evidence_id(year, doc)
+    updated_url = _normalize_text(payload.evidence.url)
+    updated_date = _default_date_when_url_present(payload.evidence.date, updated_url)
 
     updated_evidence = {
         "evidence_id": evidence_id,
         "responsible": _normalize_text(payload.evidence.responsible),
         "resources": _normalize_text(payload.evidence.resources),
-        "date": _normalize_text(payload.evidence.date),
-        "url": _normalize_text(payload.evidence.url),
+        "date": updated_date,
+        "url": updated_url,
         "desc": _normalize_text(payload.evidence.desc),
     }
 
@@ -3401,23 +3807,17 @@ def edit_evidence(payload: EditEvidenceRequest):
 
     _save_json(_action_plan_implementation_file(year), doc)
 
-    guide = None
-    try:
-        guide = _replace_guide_for_evidence(year, control, host, updated_evidence)
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"Evidence was updated but guide regeneration failed: {str(e)}",
-            "inventory": doc,
-        }
+    if evidence_id:
+        _remove_guide_by_key(year, evidence_id)
 
     _sync_action_plan_status(year, doc)
 
     return {
         "success": True,
-        "message": f"Evidence updated for host '{payload.hostname}'. Guide regenerated successfully.",
-        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
-        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
+        "message": (
+            f"Evidence updated for host '{payload.hostname}'. "
+            "Guide document will be regenerated from the Action Plan / Implementation report."
+        ),
         "inventory": doc,
     }
 

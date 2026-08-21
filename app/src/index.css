@@ -16,6 +16,12 @@ textarea,
    Keep the inventory card inside the remaining viewport instead of letting
    its old 460px minimum height push the table below the visible screen. */
 @media (min-width: 1280px) {
+  /* Sidebar nav: leave room for the first active item's border/ring so it
+     does not clip against the top of the nav scroll area. */
+  aside nav[class*="px-3"] {
+    padding-top: 4px;
+  }
+
   /* Dashboard: match Start New Audit button height to the 71px Audit Scope card. */
   div[class*="grid-rows-[auto_auto_auto_auto_minmax(0,1fr)]"]
     > div[class*="row-[2]"]

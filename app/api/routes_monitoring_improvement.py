@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Query, UploadFile, File
+from fastapi import APIRouter, Query, UploadFile, File
 from pydantic import BaseModel
 import csv
 import json
@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 from typing import Any
 from datetime import datetime
+from datetime import date
 import requests
 
 from app.api.aiml_kpi_telemetry import (
@@ -16,6 +17,7 @@ from app.api.aiml_kpi_telemetry import (
     safe_increment_llm_counter,
     safe_increment_rag_counter,
 )
+from app.api.workflow_gate import ensure_previous_steps_completed
 
 
 router = APIRouter(
@@ -268,6 +270,15 @@ def _normalize_text(value: Any) -> str:
 
 def _normalize_key(value: Any) -> str:
     return _normalize_text(value).lower()
+
+
+def _default_date_when_url_present(date_value: Any, url_value: Any) -> str:
+    normalized_date = _normalize_text(date_value)
+    if normalized_date:
+        return normalized_date
+    if _normalize_text(url_value):
+        return date.today().isoformat()
+    return ""
 
 
 def _safe_join_lines(items: list[str]) -> str:
@@ -1320,6 +1331,252 @@ def _fallback_monitoring_implementation_steps(context: dict) -> list[dict]:
         f"Perform the approved monitoring activity for {control_id} ({control_name})."
     )
     cve_suffix = f" ({cve_id})" if cve_id else ""
+    vuln_l = vulnerability_name.lower()
+    cve_l = cve_id.lower()
+    role_l = role.lower()
+
+    if "remote desktop" in vuln_l or "rdp" in vuln_l or cve_l == "cve-2019-0708":
+        return [
+            {
+                "step_no": 1,
+                "title": "Validate RDP Exposure And Listener State",
+                "description": (
+                    f"Confirm whether {hostname} exposes Remote Desktop Services before reviewing monitoring evidence for "
+                    f"{vulnerability_name}{cve_suffix} on the {role} role."
+                ),
+                "commands": [
+                    "Get-Service TermService",
+                    "Get-NetTCPConnection -LocalPort 3389 -ErrorAction SilentlyContinue",
+                    'Get-NetFirewallRule -DisplayGroup "Remote Desktop" | Select-Object DisplayName,Enabled,Direction,Action',
+                ],
+                "expected_result": f"RDP service, TCP 3389 listener state, and Remote Desktop firewall rules are captured for {hostname}.",
+                "output_type": "RDP service status / listener output / firewall rule export",
+                "evidence_capture": f"Attach the RDP service, listener, and firewall outputs for {hostname}.",
+            },
+            {
+                "step_no": 2,
+                "title": "Review RDP Authentication Events",
+                "description": (
+                    f"Review logon activity that may indicate exploitation attempts or brute-force activity related to "
+                    f"{vulnerability_name}{cve_suffix}."
+                ),
+                "commands": [
+                    "Get-WinEvent -FilterHashtable @{LogName='Security'; Id=4624,4625,4778,4779} -MaxEvents 80",
+                    "Get-WinEvent -LogName 'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational' -MaxEvents 80",
+                ],
+                "expected_result": f"Successful, failed, and session-based RDP logon events are available for review on {hostname}.",
+                "output_type": "Security log excerpt / Terminal Services operational log",
+                "evidence_capture": f"Export RDP authentication and session event records for {hostname}.",
+            },
+            {
+                "step_no": 3,
+                "title": "Confirm RDP Patch And Hardening State",
+                "description": (
+                    f"Validate that patch and hardening controls for {vulnerability_name}{cve_suffix} are tracked while monitoring continues."
+                ),
+                "commands": [
+                    "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 30",
+                    r'reg query "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication',
+                    'Get-ItemProperty -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server" -Name fDenyTSConnections',
+                ],
+                "expected_result": f"Patch status, Network Level Authentication state, and RDP enablement state are documented for {hostname}.",
+                "output_type": "Patch inventory / registry output / configuration state",
+                "evidence_capture": f"Capture patch and RDP hardening output plus any related vulnerability scan result for {hostname}.",
+            },
+            {
+                "step_no": 4,
+                "title": "Correlate RDP Alerts And Escalations",
+                "description": f"Correlate RDP activity with the approved monitoring action: {recommended_action}",
+                "commands": [
+                    "Get-MpThreatDetection",
+                    "Get-WinEvent -LogName System -MaxEvents 50",
+                ],
+                "expected_result": f"RDP-related alerts or abnormal access patterns are either documented as clean or escalated for {hostname}.",
+                "output_type": "Defender alert output / system log excerpt / ticket reference",
+                "evidence_capture": f"Attach SIEM or Defender alert screenshots and any escalation ticket for {hostname}.",
+            },
+        ]
+
+    if "docker" in vuln_l or "container escape" in vuln_l or cve_l == "cve-2019-5736":
+        return [
+            {
+                "step_no": 1,
+                "title": "Confirm Docker Runtime Presence",
+                "description": (
+                    f"Verify whether {hostname} runs Docker or container tooling before collecting monitoring evidence for "
+                    f"{vulnerability_name}{cve_suffix}."
+                ),
+                "commands": [
+                    "docker version",
+                    "docker info",
+                    "docker ps --all",
+                ],
+                "expected_result": f"Docker runtime version, daemon configuration, and container inventory are captured for {hostname}.",
+                "output_type": "Docker version / daemon info / container inventory",
+                "evidence_capture": f"Save Docker runtime and container inventory output for {hostname}.",
+            },
+            {
+                "step_no": 2,
+                "title": "Review Container Privilege And Mount Risk",
+                "description": (
+                    f"Identify risky container settings that could increase exposure to {vulnerability_name}{cve_suffix}, "
+                    "including privileged mode and sensitive host mounts."
+                ),
+                "commands": [
+                    "docker ps --format \"table {{.ID}}\\t{{.Image}}\\t{{.Names}}\"",
+                    "docker inspect $(docker ps -q) --format '{{.Name}} Privileged={{.HostConfig.Privileged}} Binds={{.HostConfig.Binds}}'",
+                    "docker images --digests",
+                ],
+                "expected_result": f"Privileged containers, host bind mounts, and image inventory are documented for {hostname}.",
+                "output_type": "Docker inspect output / image inventory",
+                "evidence_capture": f"Attach Docker inspect output showing privilege and mount review for {hostname}.",
+            },
+            {
+                "step_no": 3,
+                "title": "Validate Docker Patch And Package State",
+                "description": f"Track Docker package and runtime patch state while monitoring {vulnerability_name}{cve_suffix}.",
+                "commands": [
+                    "docker version --format '{{json .}}'",
+                    "Get-Package | Where-Object {$_.Name -match 'Docker|container'}",
+                    "winget list | findstr /i docker",
+                ],
+                "expected_result": f"Docker package/runtime version evidence is available for remediation tracking on {hostname}.",
+                "output_type": "Package inventory / Docker version JSON",
+                "evidence_capture": f"Capture package inventory, Docker version, and vulnerability scan/ticket evidence for {hostname}.",
+            },
+            {
+                "step_no": 4,
+                "title": "Review Container Security Logs",
+                "description": f"Review Docker and endpoint logs for suspicious container activity on {hostname}.",
+                "commands": [
+                    "docker events --since 24h",
+                    "Get-WinEvent -LogName System -MaxEvents 80",
+                    "Get-MpThreatDetection",
+                ],
+                "expected_result": f"Container lifecycle events and endpoint alerts are reviewed and exceptions are escalated for {hostname}.",
+                "output_type": "Docker event output / endpoint alert output / system log excerpt",
+                "evidence_capture": f"Attach Docker event logs, alert review output, and any escalation record for {hostname}.",
+            },
+        ]
+
+    if "jupyter" in vuln_l or cve_l == "cve-2021-32797":
+        return [
+            {
+                "step_no": 1,
+                "title": "Identify Jupyter Service Exposure",
+                "description": f"Confirm whether {hostname} exposes Jupyter notebooks or lab services for {vulnerability_name}{cve_suffix}.",
+                "commands": [
+                    "jupyter server list",
+                    "jupyter notebook list",
+                    "Get-NetTCPConnection | Where-Object {$_.LocalPort -in 8888,8889,8890}",
+                ],
+                "expected_result": f"Jupyter service URLs, tokens, and exposed ports are identified for {hostname}.",
+                "output_type": "Jupyter server list / port listener output",
+                "evidence_capture": f"Capture Jupyter server list and listening port evidence for {hostname}.",
+            },
+            {
+                "step_no": 2,
+                "title": "Review Jupyter Authentication Configuration",
+                "description": f"Validate authentication, token, password, and remote access settings for Jupyter on {hostname}.",
+                "commands": [
+                    "jupyter --paths",
+                    "Get-ChildItem $env:USERPROFILE\\.jupyter -Force -ErrorAction SilentlyContinue",
+                    "Select-String -Path $env:USERPROFILE\\.jupyter\\*.py -Pattern 'token|password|ip|allow_origin' -ErrorAction SilentlyContinue",
+                ],
+                "expected_result": f"Jupyter authentication and binding configuration is available for review on {hostname}.",
+                "output_type": "Jupyter config file excerpt / path list",
+                "evidence_capture": f"Attach redacted Jupyter configuration evidence for {hostname}.",
+            },
+            {
+                "step_no": 3,
+                "title": "Review Notebook Access Logs",
+                "description": f"Collect Jupyter access and application logs to detect unauthorized use or exposure for {vulnerability_name}{cve_suffix}.",
+                "commands": [
+                    "Get-ChildItem $env:USERPROFILE\\.jupyter -Recurse -Include *.log -ErrorAction SilentlyContinue",
+                    "Get-WinEvent -LogName Application -MaxEvents 80",
+                ],
+                "expected_result": f"Jupyter and application logs are collected or their absence is documented for {hostname}.",
+                "output_type": "Jupyter log file list / application log excerpt",
+                "evidence_capture": f"Attach Jupyter log excerpts, SIEM events, or a screenshot of monitored access for {hostname}.",
+            },
+        ]
+
+    if "tensorboard" in vuln_l or "containerd" in vuln_l or cve_l == "cve-2020-15257":
+        return [
+            {
+                "step_no": 1,
+                "title": "Confirm TensorBoard And Container Runtime Exposure",
+                "description": (
+                    f"Identify TensorBoard, Python, and container runtime exposure on {hostname} before monitoring "
+                    f"{vulnerability_name}{cve_suffix}."
+                ),
+                "commands": [
+                    "Get-Process | Where-Object {$_.ProcessName -match 'tensorboard|python|containerd|docker'}",
+                    "Get-NetTCPConnection | Where-Object {$_.LocalPort -in 6006,8080,8888}",
+                    "docker ps --all",
+                ],
+                "expected_result": f"TensorBoard processes, listening ports, and related containers are documented for {hostname}.",
+                "output_type": "Process list / listener output / container inventory",
+                "evidence_capture": f"Capture process, port, and container evidence for {hostname}.",
+            },
+            {
+                "step_no": 2,
+                "title": "Validate TensorBoard Binding And Access Controls",
+                "description": f"Check whether TensorBoard is bound to localhost or protected by approved access controls on {hostname}.",
+                "commands": [
+                    "Get-NetTCPConnection | Where-Object {$_.LocalPort -eq 6006}",
+                    "Get-ChildItem -Recurse -Filter '*tensorboard*' -ErrorAction SilentlyContinue",
+                    "docker inspect $(docker ps -q) --format '{{.Name}} NetworkMode={{.HostConfig.NetworkMode}} Ports={{.NetworkSettings.Ports}}'",
+                ],
+                "expected_result": f"TensorBoard binding, exposed ports, and container network mode are reviewed for {hostname}.",
+                "output_type": "Listener output / file inventory / Docker network config",
+                "evidence_capture": f"Attach binding and access-control evidence for TensorBoard on {hostname}.",
+            },
+            {
+                "step_no": 3,
+                "title": "Monitor Unauthorized Access Indicators",
+                "description": f"Review endpoint and application logs for unauthorized access attempts against TensorBoard on {hostname}.",
+                "commands": [
+                    "Get-WinEvent -LogName Application -MaxEvents 80",
+                    "Get-WinEvent -LogName Security -MaxEvents 80",
+                    "Get-MpThreatDetection",
+                ],
+                "expected_result": f"Unauthorized TensorBoard access indicators are documented as absent or escalated for {hostname}.",
+                "output_type": "Application log / security log / Defender alert output",
+                "evidence_capture": f"Attach log excerpts, alert output, or SIEM screenshots for {hostname}.",
+            },
+        ]
+
+    if "dns" in vuln_l or cve_l == "cve-2020-1350":
+        return [
+            {
+                "step_no": 1,
+                "title": "Confirm DNS Monitoring Scope",
+                "description": f"Validate DNS service and listener exposure on {hostname} for monitoring {vulnerability_name}{cve_suffix}.",
+                "commands": ["Get-Service DNS", "Get-NetTCPConnection -LocalPort 53 -ErrorAction SilentlyContinue", "Get-DnsServerDiagnostics"],
+                "expected_result": f"DNS service state and listener exposure are captured for {hostname}.",
+                "output_type": "DNS service status / listener output / diagnostic settings",
+                "evidence_capture": f"Attach DNS service and listener evidence for {hostname}.",
+            },
+            {
+                "step_no": 2,
+                "title": "Review DNS Server Events",
+                "description": f"Review DNS logs for errors, suspicious queries, or exploitation indicators related to {vulnerability_name}{cve_suffix}.",
+                "commands": ["Get-WinEvent -LogName 'DNS Server' -MaxEvents 100", "Get-WinEvent -LogName System -MaxEvents 80"],
+                "expected_result": f"DNS operational and system events are reviewed for {hostname}.",
+                "output_type": "DNS event log excerpt / system log excerpt",
+                "evidence_capture": f"Export DNS event evidence and any SIEM alerts for {hostname}.",
+            },
+            {
+                "step_no": 3,
+                "title": "Track DNS Patch And Restriction State",
+                "description": f"Confirm patch status and firewall restrictions for DNS exposure while monitoring continues.",
+                "commands": ["Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 30", 'Get-NetFirewallRule | Where-Object {$_.DisplayName -match "DNS"}'],
+                "expected_result": f"DNS patch and firewall state are documented for {hostname}.",
+                "output_type": "Patch inventory / firewall rule output",
+                "evidence_capture": f"Capture patch, firewall, and scan result evidence for {hostname}.",
+            },
+        ]
 
     return [
         {
@@ -1467,12 +1724,8 @@ def _replace_monitoring_guide_for_evidence(
                 generation_hints="Deterministic fallback monitoring guide steps generated from control, host, vulnerability, and monitoring context.",
                 method_label="Deterministic fallback monitoring guide",
             ),
-            "generation_quality": "draft" if prefer_fallback else "fallback",
-            "generation_method": (
-                "bulk_deterministic_draft"
-                if prefer_fallback
-                else "deterministic_fallback"
-            ),
+            "generation_quality": "fallback",
+            "generation_method": "deterministic_fallback",
             "implementation_steps": _fallback_monitoring_implementation_steps(
                 {
                     "hostname": hostname,
@@ -2051,6 +2304,124 @@ def _format_cve_label(item: dict) -> str:
     cve_value = _normalize_text(item.get("CVE")) or "Unknown CVE"
     vulnerability = _normalize_text(item.get("vulnerability"))
     return cve_value if vulnerability == "" else f"{cve_value} ({vulnerability})"
+
+
+def _preview_labels(labels: list[str], limit: int = 8) -> str:
+    preview = labels[:limit]
+    suffix = "" if len(labels) <= limit else f", and {len(labels) - limit} more"
+    return ", ".join(preview) + suffix
+
+
+def _monitoring_guides_by_evidence_id(year: int) -> dict[str, dict]:
+    guides_doc = _load_monitoring_implementation_guides_doc_or_blank(year)
+    return {
+        _normalize_key(guide.get("evidence_id")): guide
+        for guide in _all_guides(guides_doc)
+        if _normalize_key(guide.get("evidence_id")) != ""
+    }
+
+
+def _monitoring_guide_matches_evidence_row(
+    guide: dict,
+    control: dict,
+    host: dict,
+) -> bool:
+    guide_control = _normalize_key(guide.get("control_id") or guide.get("cve_id"))
+    row_control = _normalize_key(control.get("CVE"))
+    guide_host = _normalize_key(guide.get("hostname"))
+    row_host = _normalize_key(host.get("hostname"))
+    guide_vulnerability = _normalize_key(guide.get("vulnerability_name") or guide.get("control_name"))
+    row_vulnerability = _normalize_key(host.get("vulnerability_name") or control.get("vulnerability"))
+
+    if guide_control and row_control and guide_control != row_control:
+        return False
+    if guide_host and row_host and guide_host != row_host:
+        return False
+    if guide_vulnerability and row_vulnerability and guide_vulnerability != row_vulnerability:
+        return False
+
+    return True
+
+
+def ensure_monitoring_guides_for_evidence_rows(
+    year: int,
+    monitoring_doc: dict | None = None,
+    *,
+    prefer_fallback: bool = True,
+) -> dict:
+    doc = monitoring_doc if isinstance(monitoring_doc, dict) else _load_monitoring_improvement_doc_or_blank(year)
+    guides_by_evidence_id = _monitoring_guides_by_evidence_id(year)
+    created_labels: list[str] = []
+    failed_labels: list[str] = []
+    doc_changed = False
+
+    for control in _all_cves(doc):
+        control_label = _normalize_text(control.get("CVE")) or "Unknown CVE"
+        hosts = control.get("hosts", [])
+        if not isinstance(hosts, list):
+            continue
+
+        for host in hosts:
+            if not isinstance(host, dict):
+                continue
+
+            if _ensure_monitoring_evidence_ids_for_host(year, doc, host):
+                doc_changed = True
+
+            hostname = _normalize_text(host.get("hostname")) or "Unknown Host"
+            evidence_list = host.get("evidence", [])
+            if not isinstance(evidence_list, list):
+                continue
+
+            for evidence in evidence_list:
+                if not isinstance(evidence, dict):
+                    continue
+                if not _evidence_has_meaningful_content(evidence):
+                    continue
+
+                evidence_id = _normalize_text(evidence.get("evidence_id"))
+                if evidence_id == "":
+                    evidence["evidence_id"] = _next_monitoring_evidence_id(year, doc)
+                    evidence_id = _normalize_text(evidence.get("evidence_id"))
+                    doc_changed = True
+
+                evidence_key = _normalize_key(evidence_id)
+                existing_guide = guides_by_evidence_id.get(evidence_key)
+                if isinstance(existing_guide, dict) and _monitoring_guide_matches_evidence_row(
+                    existing_guide,
+                    control,
+                    host,
+                ):
+                    continue
+
+                row_label = f"{control_label} / {hostname}"
+                try:
+                    guide = _replace_monitoring_guide_for_evidence(
+                        year,
+                        control,
+                        host,
+                        evidence,
+                        prefer_fallback=prefer_fallback,
+                        guide_id_override=(
+                            _normalize_text(existing_guide.get("guide_id"))
+                            if isinstance(existing_guide, dict)
+                            else None
+                        ),
+                    )
+                    guides_by_evidence_id[evidence_key] = guide
+                    created_labels.append(row_label)
+                except Exception:
+                    failed_labels.append(row_label)
+
+    if doc_changed:
+        _save_json(_monitoring_improvement_file(year), doc)
+
+    return {
+        "doc": doc,
+        "created_count": len(created_labels),
+        "created": created_labels,
+        "failed": failed_labels,
+    }
 
 
 # =========================================================
@@ -3016,6 +3387,7 @@ def delete_monitoring_improvement_control(payload: DeleteRequest):
 @router.post("/submit")
 def submit_monitoring_improvement(payload: SubmitRequest):
     year = int(payload.year or 2026)
+    ensure_previous_steps_completed(year, "monitoring_improvement")
     doc = _load_monitoring_improvement_doc_or_blank(year)
 
     if _monitoring_improvement_section_is_read_only(year):
@@ -3185,7 +3557,7 @@ def recommend_monitoring_action(payload: RecommendTreatmentRequest):
     }
 
 @router.post("/add-evidence")
-def add_evidence_to_monitoring_host(payload: AddEvidenceRequest, background_tasks: BackgroundTasks):
+def add_evidence_to_monitoring_host(payload: AddEvidenceRequest):
     year = int(payload.year or 2026)
     doc = _load_monitoring_improvement_doc_or_blank(year)
 
@@ -3304,41 +3676,14 @@ def add_evidence_to_monitoring_host(payload: AddEvidenceRequest, background_task
 
     _save_json(_monitoring_improvement_file(year), doc)
 
-    guide = None
-    try:
-        guide = _replace_monitoring_guide_for_evidence(
-            year,
-            control,
-            host,
-            new_evidence,
-            prefer_fallback=True,
-        )
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"Evidence was added but guide generation failed: {str(e)}",
-            "inventory": doc,
-        }
-
-    background_tasks.add_task(
-        _refresh_monitoring_guide_async,
-        year,
-        json.loads(json.dumps(control)),
-        json.loads(json.dumps(host)),
-        json.loads(json.dumps(new_evidence)),
-        _normalize_text(guide.get("guide_id")) if isinstance(guide, dict) else "",
-    )
-
     _sync_monitoring_improvement_status(year, doc)
 
     return {
         "success": True,
         "message": (
             f"Evidence added for host {payload.hostname} under CVE {payload.control_id}. "
-            "A draft monitoring guide was linked immediately, and the full guide is being refined in the background."
+            "Guide document will be generated from the Monitoring & Improvement report."
         ),
-        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
-        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,
     }
 
@@ -3440,7 +3785,7 @@ def delete_monitoring_evidence(payload: DeleteEvidenceRequest):
 
 
 @router.post("/edit-evidence")
-def edit_monitoring_evidence(payload: EditEvidenceRequest, background_tasks: BackgroundTasks):
+def edit_monitoring_evidence(payload: EditEvidenceRequest):
     year = int(payload.year or 2026)
     doc = _load_monitoring_improvement_doc_or_blank(year)
 
@@ -3502,13 +3847,15 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest, background_tasks: Bac
 
     old_item = evidence_list[evidence_index] if isinstance(evidence_list[evidence_index], dict) else {}
     evidence_id = _normalize_text(old_item.get("evidence_id")) or _next_monitoring_evidence_id(year, doc)
+    updated_url = _normalize_text(payload.evidence.url)
+    updated_date = _default_date_when_url_present(payload.evidence.date, updated_url)
 
     updated_evidence = {
         "evidence_id": evidence_id,
         "responsible": _normalize_text(payload.evidence.responsible),
         "resources": _normalize_text(payload.evidence.resources),
-        "date": _normalize_text(payload.evidence.date),
-        "url": _normalize_text(payload.evidence.url),
+        "date": updated_date,
+        "url": updated_url,
         "desc": _normalize_text(payload.evidence.desc),
     }
 
@@ -3531,30 +3878,8 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest, background_tasks: Bac
 
     _save_json(_monitoring_improvement_file(year), doc)
 
-    guide = None
-    try:
-        guide = _replace_monitoring_guide_for_evidence(
-            year,
-            control,
-            host,
-            updated_evidence,
-            prefer_fallback=True,
-        )
-    except Exception as e:
-        return {
-            "success": False,
-            "message": f"Evidence was updated but guide regeneration failed: {str(e)}",
-            "inventory": doc,
-        }
-
-    background_tasks.add_task(
-        _refresh_monitoring_guide_async,
-        year,
-        json.loads(json.dumps(control)),
-        json.loads(json.dumps(host)),
-        json.loads(json.dumps(updated_evidence)),
-        _normalize_text(guide.get("guide_id")) if isinstance(guide, dict) else "",
-    )
+    if evidence_id:
+        _remove_monitoring_guide_by_key(year, evidence_id)
 
     _sync_monitoring_improvement_status(year, doc)
 
@@ -3562,10 +3887,8 @@ def edit_monitoring_evidence(payload: EditEvidenceRequest, background_tasks: Bac
         "success": True,
         "message": (
             f"Evidence updated for host '{payload.hostname}'. "
-            "A draft monitoring guide was refreshed immediately, and the full guide is being refined in the background."
+            "Guide document will be regenerated from the Monitoring & Improvement report."
         ),
-        "guide_id": guide.get("guide_id") if isinstance(guide, dict) else "",
-        "guide_key": guide.get("guide_key") if isinstance(guide, dict) else "",
         "inventory": doc,
     }
 
@@ -3713,8 +4036,6 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
     skipped_count = 0
     failed_count = 0
     failed_items: list[str] = []
-    _load_monitoring_implementation_guides_doc_or_blank(year)
-
     for control_idx, control in enumerate(cves):
         if not isinstance(control, dict):
             continue
@@ -3827,25 +4148,6 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
             _save_json(_monitoring_improvement_file(year), doc)
             added_count += 1
 
-            try:
-                _replace_monitoring_guide_for_evidence(
-                    year,
-                    control,
-                    host,
-                    new_evidence,
-                    prefer_fallback=True,
-                )
-            except Exception:
-                host["evidence"] = []
-                hosts[host_idx] = host
-                control["hosts"] = hosts
-                cves[control_idx] = control
-                doc["cves"] = cves
-                _save_json(_monitoring_improvement_file(year), doc)
-                added_count -= 1
-                failed_count += 1
-                failed_items.append(f"{control_id} / {hostname}")
-
         control["hosts"] = hosts
         cves[control_idx] = control
 
@@ -3855,7 +4157,8 @@ def add_evidence_to_all_monitoring_hosts(payload: EvidenceAllRequest):
 
     message = (
         f"Evidence generation completed. Generated {recommended_created_count} recommended action(s), "
-        f"added {added_count} evidence item(s) and linked draft monitoring guide(s) for fast bulk creation, "
+        f"added {added_count} evidence item(s). "
+        "Guide documents will be generated from the Monitoring & Improvement report. "
         f"Skipped {skipped_count} host row(s) that already had evidence."
     )
     if failed_count > 0:

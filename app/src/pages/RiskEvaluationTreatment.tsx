@@ -1550,13 +1550,13 @@ export default function RiskEvaluationTreatment() {
                     window.location.hash = item.href;
                   }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                    active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                    active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                   }`}
                 >
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                       active
-                        ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                        ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                         : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                     }`}
                   >
@@ -1691,13 +1691,13 @@ export default function RiskEvaluationTreatment() {
                       window.location.hash = item.href;
                     }}
                     className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                      active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                      active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                     }`}
                   >
                     <span
                       className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                         active
-                          ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                          ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                           : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                       }`}
                     >

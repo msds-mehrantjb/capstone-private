@@ -62,7 +62,7 @@ def get_dashboard_path() -> Path:
     return p
 
 def get_system_status_path(year: int) -> Path:
-    return project_root() / "data" / "work" / str(year) / "systemstatus.json"
+    return project_root() / "data" / "work" / str(year) / "SystemStatus.json"
 
 def read_json(path: Path) -> Dict[str, Any]:
     with path.open("r", encoding="utf-8") as f:
@@ -88,7 +88,7 @@ def write_dashboard(data: Dict[str, Any]) -> None:
 def read_system_status(year: int) -> Dict[str, Any]:
     p = get_system_status_path(year)
     if not p.exists():
-        raise FileNotFoundError(f"systemstatus.json not found at {p}")
+        raise FileNotFoundError(f"SystemStatus.json not found at {p}")
     return read_json(p)
 
 def write_system_status(year: int, data: Dict[str, Any]) -> None:

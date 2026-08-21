@@ -2,19 +2,19 @@
   "guides": [
     {
       "guide_id": "AIG-2026-0001",
-      "evidence_id": "EVID-2026-0002",
-      "hostname": "SRV-03",
-      "role": "File Server",
-      "department": "Finance",
-      "os_version": "Windows Server 2016",
+      "evidence_id": "EVID-2026-0024",
+      "hostname": "SRV-02",
+      "role": "DNS Server",
+      "department": "IT",
+      "os_version": "Windows Server 2019",
       "control_id": "6.7",
       "control_name": "Remote working",
-      "cve_id": "CVE-2017-0144",
-      "vulnerability_name": "SMB Remote Code Execution",
+      "cve_id": "CVE-2020-1350",
+      "vulnerability_name": "Windows DNS Server Remote Code Execution",
       "severity": "",
-      "treatment_action": "Recommended treatment actions:  \n- Implement and enforce multi-factor authentication for all remote access to SRV-03 and SRV-04  \n- Apply the latest security patches to address CVE-2017-0144 and CVE-2021-31166 on affected hosts  \n- Configure firewall rules to restrict remote access to SRV-03 and SRV-04 to only necessary ports and IP ranges  \n- Conduct regular vulnerability scans and network security assessments to detect and mitigate exposure risks",
-      "evidence_name": "The implementation of firewall rules restricting remote access to SRV-03 to n...",
-      "evidence_description": "The implementation of firewall rules restricting remote access to SRV-03 to necessary ports and IP ranges provides evidence that host SRV-03 complies with control 6.7 by mitigating network-based exploitation risks through secure remote working configurations.",
+      "treatment_action": "Recommended treatment actions:  \n- Implement and enforce multi-factor authentication for all remote access to SRV-02, SRV-03, and SRV-04  \n- Apply the latest security patches to address CVE-2020-1350, CVE-2017-0144, and CVE-2021-31166 on affected hosts  \n- Configure network access control to restrict remote connections to only authorized IP ranges and ports  \n- Conduct regular vulnerability scans and penetration tests to identify and remediate unpatched systems",
+      "evidence_name": "Evidence for SRV-02 under control 6.7 demonstrates that multi-factor authenti...",
+      "evidence_description": "Evidence for SRV-02 under control 6.7 demonstrates that multi-factor authentication is enforced for remote access, ensuring secure remote working practices and mitigating risks from unpatched vulnerabilities like CVE-2020-1350.",
       "evidence_format": "PDF + Logs + Firewall Export",
       "references": [
         {
@@ -23,11 +23,11 @@
         },
         {
           "ref_id": "NVD-01",
-          "source": "NVD CVE-2017-0144 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2017-0144"
+          "source": "NVD CVE-2020-1350 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2020-1350"
         },
         {
           "ref_id": "MSRC-01",
-          "source": "Microsoft Security Response Center guidance for CVE-2017-0144"
+          "source": "Microsoft Security Response Center guidance for CVE-2020-1350"
         },
         {
           "ref_id": "MS-Baseline",
@@ -38,72 +38,105 @@
           "source": "CISA Known Exploited Vulnerabilities Catalog"
         }
       ],
+      "generation_quality": "fallback",
+      "generation_method": "deterministic_fallback",
       "implementation_steps": [
         {
           "step_no": 1,
-          "title": "Review Host Baseline And Exposure",
-          "description": "Review the current configuration, running services, and exposed ports on SRV-03 to confirm how SMB Remote Code Execution (CVE-2017-0144) affects the File Server role.",
+          "title": "Confirm DNS Service Exposure",
+          "description": "Confirm that SRV-02 is operating the Windows DNS Server role and identify DNS listener exposure before applying the treatment for Windows DNS Server Remote Code Execution (CVE-2020-1350).",
           "commands": [
-            "hostname",
-            "Get-Service | Where-Object {$_.Status -eq \"Running\"}",
-            "Get-NetTCPConnection | Select-Object LocalAddress,LocalPort,State,OwningProcess"
+            "Get-Service DNS",
+            "Get-NetTCPConnection -LocalPort 53 -ErrorAction SilentlyContinue",
+            "Get-NetUDPEndpoint -LocalPort 53 -ErrorAction SilentlyContinue",
+            "Get-DnsServerDiagnostics"
           ],
-          "expected_result": "A current technical baseline is captured for SRV-03, including active services and exposed network paths relevant to SMB Remote Code Execution.",
-          "output_type": "Command output / service status / port exposure list",
-          "evidence_capture": "Capture the command output showing active services and open ports on SRV-03 before treatment is applied."
+          "expected_result": "DNS service status, TCP/UDP 53 listeners, and DNS diagnostic configuration are captured for SRV-02.",
+          "output_type": "DNS service status / listener list / DNS diagnostics",
+          "evidence_capture": "Save the DNS service output, port 53 listener output, and DNS diagnostics from SRV-02."
         },
         {
           "step_no": 2,
-          "title": "Apply Treatment Action",
-          "description": "Implement the approved treatment for 6.7 (Remote working) on SRV-03. Follow this action: Recommended treatment actions:  \n- Implement and enforce multi-factor authentication for all remote access to SRV-03 and SRV-04  \n- Apply the latest security patches to address CVE-2017-0144 and CVE-2021-31166 on affected hosts  \n- Configure firewall rules to restrict remote access to SRV-03 and SRV-04 to only necessary ports and IP ranges  \n- Conduct regular vulnerability scans and network security assessments to detect and mitigate exposure risks",
-          "commands": [],
-          "expected_result": "The treatment action is applied on SRV-03 and the technical state reflects the intended hardening or remediation for SMB Remote Code Execution.",
-          "output_type": "Configuration change / patch result / admin record",
-          "evidence_capture": "Capture screenshots, exported settings, patch output, or administrator records that prove the treatment was applied on SRV-03."
+          "title": "Validate DNS Server Security Updates",
+          "description": "Check whether SRV-02 has the Windows security updates required to remediate Windows DNS Server Remote Code Execution (CVE-2020-1350); patch the server through the approved maintenance process if gaps remain.",
+          "commands": [
+            "Get-ComputerInfo | Select-Object OsName,OsVersion,WindowsVersion",
+            "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 20",
+            "Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue"
+          ],
+          "expected_result": "Patch state for SRV-02 is known and missing DNS Server security updates are identified or installed.",
+          "output_type": "Patch inventory / update scan output",
+          "evidence_capture": "Capture installed hotfix output and the update scan or change ticket showing DNS Server patch status."
         },
         {
           "step_no": 3,
-          "title": "Verify Control Effectiveness",
-          "description": "Run post-change validation on SRV-03 to confirm the implemented control reduces exposure to SMB Remote Code Execution (CVE-2017-0144) and that the host remains operational.",
+          "title": "Apply DNS-Specific Mitigation",
+          "description": "If the approved treatment requires interim mitigation for Windows DNS Server Remote Code Execution, apply the DNS Server packet-size mitigation and restart DNS during the approved change window.",
           "commands": [
-            "Get-HotFix",
-            "Get-NetFirewallRule | Select-Object DisplayName,Enabled,Direction,Action",
-            "Get-WinEvent -LogName Security -MaxEvents 20"
+            "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\" /v TcpReceivePacketSize /t REG_DWORD /d 65280 /f",
+            "Restart-Service DNS -Force",
+            "reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\" /v TcpReceivePacketSize"
           ],
-          "expected_result": "Post-change validation shows the host is operational and the applied control provides measurable reduction of exposure for SMB Remote Code Execution.",
-          "output_type": "Validation output / firewall rule list / event log excerpt",
-          "evidence_capture": "Capture post-change validation output, firewall or policy results, and relevant logs for SRV-03."
+          "expected_result": "The DNS mitigation value is present on SRV-02 and DNS service is restarted successfully.",
+          "output_type": "Registry value / service restart output",
+          "evidence_capture": "Capture the registry query result and DNS service restart output for SRV-02."
+        },
+        {
+          "step_no": 4,
+          "title": "Restrict DNS Network Access",
+          "description": "Restrict DNS traffic to approved resolver/client networks so SRV-02 is not broadly exposed while supporting required DNS operations.",
+          "commands": [
+            "Get-NetFirewallRule | Where-Object {$_.DisplayName -match \"DNS\"} | Select-Object DisplayName,Enabled,Direction,Action",
+            "Get-NetFirewallPortFilter | Where-Object {$_.LocalPort -eq \"53\"}",
+            "New-NetFirewallRule -DisplayName \"Allow DNS from approved subnets\" -Direction Inbound -Protocol UDP -LocalPort 53 -Action Allow"
+          ],
+          "expected_result": "DNS firewall rules are reviewed and restricted to the approved network path for SRV-02.",
+          "output_type": "Firewall rule list / firewall change record",
+          "evidence_capture": "Export firewall rule evidence showing allowed DNS paths for SRV-02."
+        },
+        {
+          "step_no": 5,
+          "title": "Verify DNS Resolution And Logs",
+          "description": "Validate that DNS service still resolves expected names after remediation and review DNS events for errors.",
+          "commands": [
+            "Resolve-DnsName SRV-02",
+            "Get-WinEvent -LogName 'DNS Server' -MaxEvents 30",
+            "Get-Service DNS"
+          ],
+          "expected_result": "DNS resolution works, DNS service remains running, and no new critical DNS errors are observed.",
+          "output_type": "DNS query output / DNS event log excerpt / service status",
+          "evidence_capture": "Capture DNS query results, DNS event log excerpts, and final DNS service status for SRV-02."
         }
       ]
     },
     {
       "guide_id": "AIG-2026-0002",
-      "evidence_id": "EVID-2026-0004",
-      "hostname": "SRV-04",
-      "role": "Application Server",
-      "department": "Marketing",
-      "os_version": "Windows Server 2016",
-      "control_id": "6.7",
-      "control_name": "Remote working",
-      "cve_id": "CVE-2021-31166",
-      "vulnerability_name": "WinRM Remote Command Execution Exposure",
+      "evidence_id": "EVID-2026-0025",
+      "hostname": "SRV-01",
+      "role": "Domain Controller (Active Directory)",
+      "department": "IT",
+      "os_version": "Windows Server 2019",
+      "control_id": "8.2",
+      "control_name": "Network security",
+      "cve_id": "CVE-2020-1472",
+      "vulnerability_name": "Netlogon Elevation of Privilege",
       "severity": "",
-      "treatment_action": "Recommended treatment actions:  \n- Implement and enforce multi-factor authentication for all remote access to SRV-03 and SRV-04  \n- Apply the latest security patches to address CVE-2017-0144 and CVE-2021-31166 on affected hosts  \n- Configure firewall rules to restrict remote access to SRV-03 and SRV-04 to only necessary ports and IP ranges  \n- Conduct regular vulnerability scans and network security assessments to detect and mitigate exposure risks",
-      "evidence_name": "Firewall rules on SRV-04 under control 6.7 restrict remote access to necessar...",
-      "evidence_description": "Firewall rules on SRV-04 under control 6.7 restrict remote access to necessary ports and IP ranges, proving that remote working is secured against network-based exploitation.",
+      "treatment_action": "Recommended treatment actions:  \n- Apply the latest security patches to address CVE-2020-1472 and CVE-2020-1350 on SRV-01  \n- Implement network segmentation to isolate SRV-01 from other network segments  \n- Configure firewall rules to restrict unnecessary inbound and outbound traffic to SRV-01  \n- Enable and enforce least privilege access controls for administrative accounts on SRV-01",
+      "evidence_name": "Evidence that network segmentation, firewall rule restrictions, and applied s...",
+      "evidence_description": "Evidence that network segmentation, firewall rule restrictions, and applied security patches have been implemented on SRV-01 to mitigate the Netlogon Elevation of Privilege vulnerability and secure network access under control 8.2.",
       "evidence_format": "PDF + Logs + Firewall Export",
       "references": [
         {
           "ref_id": "ISO-27002",
-          "source": "ISO/IEC 27002:2022 guidance for control 6.7"
+          "source": "ISO/IEC 27002:2022 guidance for control 8.2"
         },
         {
           "ref_id": "NVD-01",
-          "source": "NVD CVE-2021-31166 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2021-31166"
+          "source": "NVD CVE-2020-1472 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2020-1472"
         },
         {
           "ref_id": "MSRC-01",
-          "source": "Microsoft Security Response Center guidance for CVE-2021-31166"
+          "source": "Microsoft Security Response Center guidance for CVE-2020-1472"
         },
         {
           "ref_id": "MS-Baseline",
@@ -114,41 +147,290 @@
           "source": "CISA Known Exploited Vulnerabilities Catalog"
         }
       ],
+      "generation_quality": "fallback",
+      "generation_method": "deterministic_fallback",
       "implementation_steps": [
         {
           "step_no": 1,
-          "title": "Review Host Baseline And Exposure",
-          "description": "Review the current configuration, running services, and exposed ports on SRV-04 to confirm how WinRM Remote Command Execution Exposure (CVE-2021-31166) affects the Application Server role.",
+          "title": "Confirm Domain Controller Role And Secure Channel Scope",
+          "description": "Confirm SRV-01 is a domain controller and identify Netlogon secure channel exposure before applying treatment for Netlogon Elevation of Privilege (CVE-2020-1472).",
           "commands": [
-            "hostname",
-            "Get-Service | Where-Object {$_.Status -eq \"Running\"}",
-            "Get-NetTCPConnection | Select-Object LocalAddress,LocalPort,State,OwningProcess"
+            "Get-ADDomainController -Identity $env:COMPUTERNAME",
+            "nltest /dsgetdc:%USERDNSDOMAIN%",
+            "Get-Service Netlogon"
           ],
-          "expected_result": "A current technical baseline is captured for SRV-04, including active services and exposed network paths relevant to WinRM Remote Command Execution Exposure.",
-          "output_type": "Command output / service status / port exposure list",
-          "evidence_capture": "Capture the command output showing active services and open ports on SRV-04 before treatment is applied."
+          "expected_result": "Domain controller identity, Netlogon service status, and domain secure channel context are captured.",
+          "output_type": "Domain controller details / Netlogon service status",
+          "evidence_capture": "Save the domain controller query output and Netlogon service status from SRV-01."
         },
         {
           "step_no": 2,
-          "title": "Apply Treatment Action",
-          "description": "Implement the approved treatment for 6.7 (Remote working) on SRV-04. Follow this action: Recommended treatment actions:  \n- Implement and enforce multi-factor authentication for all remote access to SRV-03 and SRV-04  \n- Apply the latest security patches to address CVE-2017-0144 and CVE-2021-31166 on affected hosts  \n- Configure firewall rules to restrict remote access to SRV-03 and SRV-04 to only necessary ports and IP ranges  \n- Conduct regular vulnerability scans and network security assessments to detect and mitigate exposure risks",
-          "commands": [],
-          "expected_result": "The treatment action is applied on SRV-04 and the technical state reflects the intended hardening or remediation for WinRM Remote Command Execution Exposure.",
-          "output_type": "Configuration change / patch result / admin record",
-          "evidence_capture": "Capture screenshots, exported settings, patch output, or administrator records that prove the treatment was applied on SRV-04."
+          "title": "Validate Netlogon Remediation Patch State",
+          "description": "Verify that SRV-01 has the Windows Server security updates required for Netlogon Elevation of Privilege (CVE-2020-1472); remediate through the domain controller patch process if needed.",
+          "commands": [
+            "Get-ComputerInfo | Select-Object OsName,OsVersion,WindowsVersion",
+            "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 30",
+            "Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue"
+          ],
+          "expected_result": "Patch evidence confirms whether SRV-01 has the required Netlogon remediation updates.",
+          "output_type": "Patch inventory / update scan output",
+          "evidence_capture": "Capture hotfix inventory and update/change ticket evidence for the domain controller patch."
         },
         {
           "step_no": 3,
-          "title": "Verify Control Effectiveness",
-          "description": "Run post-change validation on SRV-04 to confirm the implemented control reduces exposure to WinRM Remote Command Execution Exposure (CVE-2021-31166) and that the host remains operational.",
+          "title": "Enforce Secure Netlogon Behavior",
+          "description": "Apply or verify secure Netlogon enforcement on SRV-01 so vulnerable secure channel behavior is blocked.",
           "commands": [
-            "Get-HotFix",
-            "Get-NetFirewallRule | Select-Object DisplayName,Enabled,Direction,Action",
-            "Get-WinEvent -LogName Security -MaxEvents 20"
+            "reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters\" /v FullSecureChannelProtection",
+            "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters\" /v FullSecureChannelProtection /t REG_DWORD /d 1 /f",
+            "Restart-Service Netlogon -Force"
           ],
-          "expected_result": "Post-change validation shows the host is operational and the applied control provides measurable reduction of exposure for WinRM Remote Command Execution Exposure.",
-          "output_type": "Validation output / firewall rule list / event log excerpt",
-          "evidence_capture": "Capture post-change validation output, firewall or policy results, and relevant logs for SRV-04."
+          "expected_result": "Secure Netlogon enforcement is configured and Netlogon restarts successfully on SRV-01.",
+          "output_type": "Registry value / Netlogon service restart output",
+          "evidence_capture": "Capture the Netlogon registry value and service restart output for SRV-01."
+        },
+        {
+          "step_no": 4,
+          "title": "Review Netlogon Enforcement Events",
+          "description": "Review Netlogon-related events on SRV-01 to identify denied or non-compliant secure channel activity.",
+          "commands": [
+            "Get-WinEvent -LogName System | Where-Object {$_.Id -in 5827,5828,5829,5830,5831} | Select-Object -First 50",
+            "Get-WinEvent -LogName Security -MaxEvents 50"
+          ],
+          "expected_result": "Netlogon enforcement events are reviewed and any non-compliant clients are identified for follow-up.",
+          "output_type": "System event log excerpt / security event log excerpt",
+          "evidence_capture": "Export Netlogon enforcement events and related security log excerpts from SRV-01."
+        },
+        {
+          "step_no": 5,
+          "title": "Validate Domain Authentication Health",
+          "description": "Confirm domain authentication and replication remain healthy after Netlogon hardening on SRV-01.",
+          "commands": [
+            "dcdiag /test:netlogons",
+            "dcdiag /test:replications",
+            "repadmin /replsummary",
+            "nltest /sc_verify:%USERDNSDOMAIN%"
+          ],
+          "expected_result": "Domain controller checks pass and secure channel validation succeeds after treatment.",
+          "output_type": "DCDIAG output / replication summary / secure channel validation",
+          "evidence_capture": "Capture DCDIAG, replication, and secure channel validation output for SRV-01."
+        }
+      ]
+    },
+    {
+      "guide_id": "AIG-2026-0003",
+      "evidence_id": "EVID-2026-0001",
+      "hostname": "SRV-02",
+      "role": "DNS Server",
+      "department": "IT",
+      "os_version": "Windows Server 2019",
+      "control_id": "6.7",
+      "control_name": "Remote working",
+      "cve_id": "CVE-2020-1350",
+      "vulnerability_name": "Windows DNS Server Remote Code Execution",
+      "severity": "High",
+      "treatment_action": "",
+      "evidence_name": "The host SRV-02, acting as a DNS Server, is not configured for remote access,...",
+      "evidence_description": "The host SRV-02, acting as a DNS Server, is not configured for remote access, ensuring that its role does not introduce risks associated with remote working under control 6.7, thereby proving that security measures are in place to prevent exploitation of the identified vulnerability.",
+      "evidence_format": "PDF + Logs + Firewall Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 guidance for control 6.7"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2020-1350 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2020-1350"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2020-1350"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Windows Security Baselines"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "generation_quality": "fallback",
+      "generation_method": "deterministic_fallback",
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Confirm DNS Service Exposure",
+          "description": "Confirm that SRV-02 is operating the Windows DNS Server role and identify DNS listener exposure before applying the treatment for Windows DNS Server Remote Code Execution (CVE-2020-1350).",
+          "commands": [
+            "Get-Service DNS",
+            "Get-NetTCPConnection -LocalPort 53 -ErrorAction SilentlyContinue",
+            "Get-NetUDPEndpoint -LocalPort 53 -ErrorAction SilentlyContinue",
+            "Get-DnsServerDiagnostics"
+          ],
+          "expected_result": "DNS service status, TCP/UDP 53 listeners, and DNS diagnostic configuration are captured for SRV-02.",
+          "output_type": "DNS service status / listener list / DNS diagnostics",
+          "evidence_capture": "Save the DNS service output, port 53 listener output, and DNS diagnostics from SRV-02."
+        },
+        {
+          "step_no": 2,
+          "title": "Validate DNS Server Security Updates",
+          "description": "Check whether SRV-02 has the Windows security updates required to remediate Windows DNS Server Remote Code Execution (CVE-2020-1350); patch the server through the approved maintenance process if gaps remain.",
+          "commands": [
+            "Get-ComputerInfo | Select-Object OsName,OsVersion,WindowsVersion",
+            "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 20",
+            "Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue"
+          ],
+          "expected_result": "Patch state for SRV-02 is known and missing DNS Server security updates are identified or installed.",
+          "output_type": "Patch inventory / update scan output",
+          "evidence_capture": "Capture installed hotfix output and the update scan or change ticket showing DNS Server patch status."
+        },
+        {
+          "step_no": 3,
+          "title": "Apply DNS-Specific Mitigation",
+          "description": "If the approved treatment requires interim mitigation for Windows DNS Server Remote Code Execution, apply the DNS Server packet-size mitigation and restart DNS during the approved change window.",
+          "commands": [
+            "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\" /v TcpReceivePacketSize /t REG_DWORD /d 65280 /f",
+            "Restart-Service DNS -Force",
+            "reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\" /v TcpReceivePacketSize"
+          ],
+          "expected_result": "The DNS mitigation value is present on SRV-02 and DNS service is restarted successfully.",
+          "output_type": "Registry value / service restart output",
+          "evidence_capture": "Capture the registry query result and DNS service restart output for SRV-02."
+        },
+        {
+          "step_no": 4,
+          "title": "Restrict DNS Network Access",
+          "description": "Restrict DNS traffic to approved resolver/client networks so SRV-02 is not broadly exposed while supporting required DNS operations.",
+          "commands": [
+            "Get-NetFirewallRule | Where-Object {$_.DisplayName -match \"DNS\"} | Select-Object DisplayName,Enabled,Direction,Action",
+            "Get-NetFirewallPortFilter | Where-Object {$_.LocalPort -eq \"53\"}",
+            "New-NetFirewallRule -DisplayName \"Allow DNS from approved subnets\" -Direction Inbound -Protocol UDP -LocalPort 53 -Action Allow"
+          ],
+          "expected_result": "DNS firewall rules are reviewed and restricted to the approved network path for SRV-02.",
+          "output_type": "Firewall rule list / firewall change record",
+          "evidence_capture": "Export firewall rule evidence showing allowed DNS paths for SRV-02."
+        },
+        {
+          "step_no": 5,
+          "title": "Verify DNS Resolution And Logs",
+          "description": "Validate that DNS service still resolves expected names after remediation and review DNS events for errors.",
+          "commands": [
+            "Resolve-DnsName SRV-02",
+            "Get-WinEvent -LogName 'DNS Server' -MaxEvents 30",
+            "Get-Service DNS"
+          ],
+          "expected_result": "DNS resolution works, DNS service remains running, and no new critical DNS errors are observed.",
+          "output_type": "DNS query output / DNS event log excerpt / service status",
+          "evidence_capture": "Capture DNS query results, DNS event log excerpts, and final DNS service status for SRV-02."
+        }
+      ]
+    },
+    {
+      "guide_id": "AIG-2026-0004",
+      "evidence_id": "EVID-2026-0002",
+      "hostname": "SRV-01",
+      "role": "Domain Controller (Active Directory)",
+      "department": "IT",
+      "os_version": "Windows Server 2019",
+      "control_id": "8.2",
+      "control_name": "Network security",
+      "cve_id": "CVE-2020-1472",
+      "vulnerability_name": "Netlogon Elevation of Privilege",
+      "severity": "Critical",
+      "treatment_action": "",
+      "evidence_name": "The host SRV-01, as a Domain Controller, has implemented network access contr...",
+      "evidence_description": "The host SRV-01, as a Domain Controller, has implemented network access controls under control 8.2 (Network security), ensuring restricted communication channels to mitigate the critical risk of the Netlogon Elevation of Privilege vulnerability (CVE-2020-1472).",
+      "evidence_format": "PDF + Logs + Firewall Export",
+      "references": [
+        {
+          "ref_id": "ISO-27002",
+          "source": "ISO/IEC 27002:2022 guidance for control 8.2"
+        },
+        {
+          "ref_id": "NVD-01",
+          "source": "NVD CVE-2020-1472 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2020-1472"
+        },
+        {
+          "ref_id": "MSRC-01",
+          "source": "Microsoft Security Response Center guidance for CVE-2020-1472"
+        },
+        {
+          "ref_id": "MS-Baseline",
+          "source": "Microsoft Security Compliance Toolkit / Windows Security Baselines"
+        },
+        {
+          "ref_id": "CISA-01",
+          "source": "CISA Known Exploited Vulnerabilities Catalog"
+        }
+      ],
+      "generation_quality": "fallback",
+      "generation_method": "deterministic_fallback",
+      "implementation_steps": [
+        {
+          "step_no": 1,
+          "title": "Confirm Domain Controller Role And Secure Channel Scope",
+          "description": "Confirm SRV-01 is a domain controller and identify Netlogon secure channel exposure before applying treatment for Netlogon Elevation of Privilege (CVE-2020-1472).",
+          "commands": [
+            "Get-ADDomainController -Identity $env:COMPUTERNAME",
+            "nltest /dsgetdc:%USERDNSDOMAIN%",
+            "Get-Service Netlogon"
+          ],
+          "expected_result": "Domain controller identity, Netlogon service status, and domain secure channel context are captured.",
+          "output_type": "Domain controller details / Netlogon service status",
+          "evidence_capture": "Save the domain controller query output and Netlogon service status from SRV-01."
+        },
+        {
+          "step_no": 2,
+          "title": "Validate Netlogon Remediation Patch State",
+          "description": "Verify that SRV-01 has the Windows Server security updates required for Netlogon Elevation of Privilege (CVE-2020-1472); remediate through the domain controller patch process if needed.",
+          "commands": [
+            "Get-ComputerInfo | Select-Object OsName,OsVersion,WindowsVersion",
+            "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 30",
+            "Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue"
+          ],
+          "expected_result": "Patch evidence confirms whether SRV-01 has the required Netlogon remediation updates.",
+          "output_type": "Patch inventory / update scan output",
+          "evidence_capture": "Capture hotfix inventory and update/change ticket evidence for the domain controller patch."
+        },
+        {
+          "step_no": 3,
+          "title": "Enforce Secure Netlogon Behavior",
+          "description": "Apply or verify secure Netlogon enforcement on SRV-01 so vulnerable secure channel behavior is blocked.",
+          "commands": [
+            "reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters\" /v FullSecureChannelProtection",
+            "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters\" /v FullSecureChannelProtection /t REG_DWORD /d 1 /f",
+            "Restart-Service Netlogon -Force"
+          ],
+          "expected_result": "Secure Netlogon enforcement is configured and Netlogon restarts successfully on SRV-01.",
+          "output_type": "Registry value / Netlogon service restart output",
+          "evidence_capture": "Capture the Netlogon registry value and service restart output for SRV-01."
+        },
+        {
+          "step_no": 4,
+          "title": "Review Netlogon Enforcement Events",
+          "description": "Review Netlogon-related events on SRV-01 to identify denied or non-compliant secure channel activity.",
+          "commands": [
+            "Get-WinEvent -LogName System | Where-Object {$_.Id -in 5827,5828,5829,5830,5831} | Select-Object -First 50",
+            "Get-WinEvent -LogName Security -MaxEvents 50"
+          ],
+          "expected_result": "Netlogon enforcement events are reviewed and any non-compliant clients are identified for follow-up.",
+          "output_type": "System event log excerpt / security event log excerpt",
+          "evidence_capture": "Export Netlogon enforcement events and related security log excerpts from SRV-01."
+        },
+        {
+          "step_no": 5,
+          "title": "Validate Domain Authentication Health",
+          "description": "Confirm domain authentication and replication remain healthy after Netlogon hardening on SRV-01.",
+          "commands": [
+            "dcdiag /test:netlogons",
+            "dcdiag /test:replications",
+            "repadmin /replsummary",
+            "nltest /sc_verify:%USERDNSDOMAIN%"
+          ],
+          "expected_result": "Domain controller checks pass and secure channel validation succeeds after treatment.",
+          "output_type": "DCDIAG output / replication summary / secure channel validation",
+          "evidence_capture": "Capture DCDIAG, replication, and secure channel validation output for SRV-01."
         }
       ]
     }

@@ -398,6 +398,15 @@ def _reset_working_files(year: int) -> None:
         _write_json(path, data)
 
 
+def _reset_scope_draft_file(year: int) -> None:
+    from app.api.routes_scope import _default_scope
+
+    _write_json(
+        BASE_DIR / "data" / "raw" / f"{year}-Scope-Draft-v0.json",
+        _default_scope(year),
+    )
+
+
 def _safe_list(value: Any) -> list:
     return value if isinstance(value, list) else []
 
@@ -774,6 +783,7 @@ def reset_audit(payload: ResetAuditRequest):
 
     _write_json(path, data)
     _reset_all_system_statuses(year)
+    _reset_scope_draft_file(year)
     _reset_working_files(year)
     _reset_aiml_files(year)
 

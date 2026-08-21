@@ -94,7 +94,7 @@ def _dashboard_path() -> Path:
 
 
 def _system_status_path(year: int) -> Path:
-    return _project_root() / "data" / "work" / str(year) / "systemstatus.json"
+    return _project_root() / "data" / "work" / str(year) / "SystemStatus.json"
 
 
 def _read_dashboard() -> dict:
@@ -108,20 +108,20 @@ def _read_dashboard() -> dict:
         raise HTTPException(status_code=500, detail=f"Failed to read dashboard.json: {e}")
 
 
-def _scope_status_prefers_working_draft(year: int) -> bool:
+def _scope_context_status(year: int) -> str:
     p = _system_status_path(year)
     if not p.exists():
-        return False
+        return ""
 
     try:
         status_doc = json.loads(p.read_text(encoding="utf-8"))
     except Exception:
-        return False
+        return ""
 
     status = (
         ((status_doc.get("sections") or {}).get("scope_context") or {}).get("status") or ""
     ).strip()
-    return status.lower() in {"not started", "in progress"}
+    return status
 
 
 _SCOPE_FILE_RE = re.compile(r"^\d{4}-Scope(?:-[A-Za-z0-9_]+)?-v\d+\.json$")
@@ -135,11 +135,51 @@ def _default_draft_filename(year: int) -> str:
 def _ensure_default_draft_exists(year: int) -> Path:
     p = _scope_data_dir() / _default_draft_filename(year)
     if not p.exists():
-        p.write_text(
-            json.dumps(_default_scope(year), indent=2, ensure_ascii=False),
-            encoding="utf-8",
-        )
+        _write_default_draft(year)
     return p
+
+
+def _write_default_draft(year: int) -> dict:
+    doc = _default_scope(year)
+    p = _scope_data_dir() / _default_draft_filename(year)
+    p.write_text(
+        json.dumps(doc, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return doc
+
+
+def _contains_placeholder(value: object) -> bool:
+    if isinstance(value, str):
+        return re.search(r"\[[^\]]+\]", value) is not None
+    if isinstance(value, list):
+        return any(_contains_placeholder(item) for item in value)
+    if isinstance(value, dict):
+        return any(_contains_placeholder(item) for item in value.values())
+    return False
+
+
+def _default_draft_needs_reset(year: int) -> bool:
+    p = _scope_data_dir() / _default_draft_filename(year)
+    if not p.exists():
+        return True
+
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return True
+
+    if not isinstance(doc, dict):
+        return True
+
+    meta = doc.get("meta")
+    if not isinstance(meta, dict):
+        return True
+
+    if str(meta.get("version") or "").strip().lower() != "v0":
+        return True
+
+    return not _contains_placeholder(doc.get("sections"))
 
 
 def _validate_scope_filename(year: int, filename: str) -> str:
@@ -215,7 +255,22 @@ def get_scope_context(year: int = 2026):
     default_filename = _default_draft_filename(year)
     _ensure_default_draft_exists(year)
 
-    if _scope_status_prefers_working_draft(year):
+    scope_status = _scope_context_status(year).lower()
+
+    if scope_status == "not started":
+        doc = (
+            _write_default_draft(year)
+            if _default_draft_needs_reset(year)
+            else _load_or_create(year, default_filename)
+        )
+        doc.setdefault("meta", {})
+        doc["meta"]["source_file"] = default_filename
+        doc["meta"]["fallback_used"] = False
+        doc["meta"]["missing_saved_file"] = None
+        doc["meta"]["popup_message"] = None
+        return doc
+
+    if scope_status == "in progress":
         doc = _load_or_create(year, default_filename)
         doc.setdefault("meta", {})
         doc["meta"]["fallback_used"] = False

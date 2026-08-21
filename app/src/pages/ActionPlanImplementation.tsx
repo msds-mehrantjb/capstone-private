@@ -84,6 +84,57 @@ function getMeaningfulEvidence(
     .filter(({ ev }) => hasMeaningfulEvidence(ev));
 }
 
+function getTodayDateInputValue(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatActionPlanControlLabel(control: ActionPlanControl): string {
+  const controlId = (control.control || control.control_id || "Unknown Control").trim();
+  const controlName = (control.control_name || "").trim();
+  return controlName ? `${controlId} (${controlName})` : controlId;
+}
+
+function previewMissingItems(items: string[], limit = 8): string {
+  const preview = items.slice(0, limit).join(", ");
+  const remaining = items.length - limit;
+  return remaining > 0 ? `${preview}, and ${remaining} more` : preview;
+}
+
+function getActionPlanSubmitBlockMessage(controls: ActionPlanControl[]): string | null {
+  if (!Array.isArray(controls) || controls.length === 0) {
+    return "The Action Plan / Implementation table is empty.";
+  }
+
+  const missingTreatment = controls
+    .filter((control) => !(control.treatment_action || "").trim())
+    .map(formatActionPlanControlLabel);
+
+  if (missingTreatment.length > 0) {
+    return (
+      "Please add a treatment action for every control before submitting the Action Plan / " +
+      `Implementation table. Missing treatment action: ${previewMissingItems(missingTreatment)}`
+    );
+  }
+
+  const missingEvidence = controls.flatMap((control) => {
+    const controlId = (control.control || control.control_id || "Unknown Control").trim();
+    if (!Array.isArray(control.hosts)) return [];
+
+    return control.hosts
+      .filter((host) => getMeaningfulEvidence(host.evidence).length === 0)
+      .map((host) => `${controlId} / ${(host.hostname || "Unknown Host").trim()}`);
+  });
+
+  if (missingEvidence.length > 0) {
+    return (
+      "Please add at least one evidence item for every host before submitting the Action Plan / " +
+      `Implementation table. Missing evidence: ${previewMissingItems(missingEvidence)}`
+    );
+  }
+
+  return null;
+}
+
 type SystemStatusDTO = {
   meta: { name: string; version: string };
   sections: Record<string, { status: StepStatus; scope_file_name?: string }>;
@@ -1574,6 +1625,8 @@ export default function ActionPlanImplentation() {
 
     try {
       setSending(true);
+      const editedUrl = editEvidenceForm.url.trim();
+      const editedDate = editEvidenceForm.date.trim() || (editedUrl ? getTodayDateInputValue() : "");
 
       const data = await apiEditEvidence(
         YEAR,
@@ -1584,8 +1637,8 @@ export default function ActionPlanImplentation() {
         {
           responsible: editEvidenceForm.responsible,
           resources: editEvidenceForm.resources,
-          date: editEvidenceForm.date,
-          url: editEvidenceForm.url,
+          date: editedDate,
+          url: editedUrl,
           desc: editEvidenceForm.desc,
         }
       );
@@ -1862,6 +1915,13 @@ export default function ActionPlanImplentation() {
   };
 
   const handleSubmitAnnex = async () => {
+    const blockMessage = getActionPlanSubmitBlockMessage(controls);
+    if (blockMessage) {
+      setMessages((prev) => [...prev, { role: "assistant", content: blockMessage }]);
+      scrollChatToBottom();
+      return;
+    }
+
     setSending(true);
 
     try {
@@ -2012,6 +2072,13 @@ export default function ActionPlanImplentation() {
     }
 
     if (trimmed === "/submit") {
+      const blockMessage = getActionPlanSubmitBlockMessage(controls);
+      if (blockMessage) {
+        setMessages((prev) => [...prev, { role: "assistant", content: blockMessage }]);
+        scrollChatToBottom();
+        return;
+      }
+
       setPendingAssistantAction("submit_annex");
       setMessages((prev) => [
         ...prev,
@@ -2412,13 +2479,13 @@ export default function ActionPlanImplentation() {
                     window.location.hash = item.href;
                   }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                    active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                    active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                   }`}
                 >
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                       active
-                        ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                        ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                         : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                     }`}
                   >
@@ -2537,13 +2604,13 @@ export default function ActionPlanImplentation() {
                       window.location.hash = item.href;
                     }}
                     className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                      active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                      active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                     }`}
                   >
                     <span
                       className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                         active
-                          ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                          ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                           : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                       }`}
                     >

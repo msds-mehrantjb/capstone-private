@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote
 
 
 def build_action_plan_implementation_markdown(
@@ -7,7 +8,6 @@ def build_action_plan_implementation_markdown(
 ) -> str:
     from app.api.routes_final_deliverables import (
         _action_plan_implementation_file,
-        _action_plan_implementation_guides_file,
         _load_dashboard_context,
         _read_json,
     )
@@ -70,11 +70,28 @@ def build_action_plan_implementation_markdown(
         vulnerability_name = _normalize_text(host.get("vulnerability_name"))
         evidence_id = _normalize_text(evidence.get("evidence_id"))
         evidence_desc = _normalize_text(evidence.get("desc"))
+
+        def _guide_matches_context(guide: dict) -> bool:
+            guide_control = _normalize_text(guide.get("control_id"))
+            guide_host = _normalize_text(guide.get("hostname"))
+            guide_vuln = _normalize_text(guide.get("vulnerability_name"))
+
+            if guide_control and control_id and guide_control != control_id:
+                return False
+            if guide_host and hostname and guide_host != hostname:
+                return False
+            if guide_vuln and vulnerability_name and guide_vuln != vulnerability_name:
+                return False
+
+            return True
     
         # Best match: evidence_id
         if evidence_id:
             for guide in guide_records:
-                if _normalize_text(guide.get("evidence_id")) == evidence_id:
+                if (
+                    _normalize_text(guide.get("evidence_id")) == evidence_id
+                    and _guide_matches_context(guide)
+                ):
                     return guide
     
         # Fallback match for older evidence rows if evidence_id is missing
@@ -99,24 +116,32 @@ def build_action_plan_implementation_markdown(
     
         return None
 
-    def _guide_icon_html(guide: dict | None) -> str:
-        if not guide:
+    def _has_meaningful_evidence(evidence: dict) -> bool:
+        for key in ["responsible", "resources", "date", "url", "desc"]:
+            if str(evidence.get(key, "")).strip():
+                return True
+        return False
+
+    def _guide_icon_html(evidence: dict) -> str:
+        if not _has_meaningful_evidence(evidence):
             return "-"
     
-        guide_id = str(guide.get("guide_id", "")).strip()
-        if not guide_id:
+        evidence_id = str(evidence.get("evidence_id", "")).strip()
+        if not evidence_id:
             return "-"
     
         pdf_url = (
             f"{_api_base_url()}"
-            f"/api/final-deliveries/action-plan-implementation/guide/{_esc(guide_id)}/pdf"
+            "/api/final-deliveries/action-plan-implementation/guide/"
+            f"evidence/{quote(evidence_id, safe='')}/pdf"
         )
     
         return (
             f'<a href="{pdf_url}" '
             f'target="_blank" rel="noopener noreferrer" '
-            f'style="text-decoration: none; font-size: 16px;" '
-            f'title="Download Guide PDF">📄</a>'
+            f'style="display: inline-block; color: #000; text-decoration: none; font-size: 16px; '
+            f'line-height: 1;" '
+            f'title="Create or download Guide PDF">📄</a>'
         )
     
     def _main_control_table(control_row: dict) -> str:
@@ -158,7 +183,7 @@ def build_action_plan_implementation_markdown(
             '</table>',
         ])
 
-    def _hosts_evidence_table(control_row: dict, guide_records: list[dict]) -> str:
+    def _hosts_evidence_table(control_row: dict) -> str:
         hosts = control_row.get("hosts", [])
         if not isinstance(hosts, list) or not hosts:
             return "_No host evidence available._"
@@ -242,14 +267,7 @@ def build_action_plan_implementation_markdown(
                 ]
 
                 if include_guide_column:
-                    matched_guide = _find_matching_guide(
-                        guide_records=guide_records,
-                        control_row=control_row,
-                        host=host,
-                        evidence=evidence,
-                        evidence_index=evidence_index,
-                    )
-                    guide_cell = _guide_icon_html(matched_guide)
+                    guide_cell = _guide_icon_html(evidence)
                     row_cells.append(
                         f'      <td style="padding: 4px 6px; border: 1px solid #999; vertical-align: middle; text-align: center; width: 1%; white-space: nowrap;">{guide_cell}</td>'
                     )
@@ -268,8 +286,6 @@ def build_action_plan_implementation_markdown(
 
     ctx = _load_dashboard_context(year)
     doc = _read_json(_action_plan_implementation_file(year), {})
-    guides_doc = _read_json(_action_plan_implementation_guides_file(year), {})
-    guide_records = _extract_guide_records(guides_doc)
     rows = doc.get("controls", [])
 
     lines = [
@@ -364,7 +380,7 @@ This process ensures that all treatment actions are relevant, practical, and ali
         lines.extend([
             _main_control_table(row),
             "",
-            _hosts_evidence_table(row, guide_records),
+            _hosts_evidence_table(row),
             "",
         ])
 

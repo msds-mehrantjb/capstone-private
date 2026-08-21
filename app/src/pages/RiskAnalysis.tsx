@@ -201,7 +201,7 @@ async function apiPostJSONBody<T>(path: string, body: unknown): Promise<T> {
   }
 
   if (!res.ok) {
-    throw new Error(data?.message || `HTTP ${res.status}`);
+    throw new Error(data?.detail || data?.message || `HTTP ${res.status}`);
   }
 
   return data as T;
@@ -781,6 +781,32 @@ export default function RiskAnalysis() {
   const isSubmittedScopeFile = (scopeFileName?: string | null) => {
     const value = (scopeFileName ?? "").trim().toLowerCase();
     return value.length > 0 && !/-v0\.json$/.test(value);
+  };
+
+  const getRiskSubmitBlockMessage = async () => {
+    const latestStatus = await apiGetSystemStatus();
+    setSystemStatus(latestStatus);
+    setScopeErr(null);
+
+    const requiredSteps: Array<{ key: string; label: string }> = [
+      { key: "scope_context", label: "Scope & Context" },
+      { key: "assets_cia", label: "Asset Inventory & CIA" },
+      { key: "threats_vulns", label: "Threats & Vulnerabilities" },
+      { key: "existing_controls_postures", label: "Existing Controls & Postures" },
+    ];
+
+    for (const step of requiredSteps) {
+      const status = latestStatus.sections?.[step.key]?.status ?? "Not Started";
+
+      if (status !== "Completed") {
+        return (
+          "Cannot process /submit for Risk Analysis until " +
+          `${step.label} is Completed. Current status: ${status}.`
+        );
+      }
+    }
+
+    return null;
   };
 
   const selectedFindingContext = useMemo(() => {
@@ -1498,6 +1524,19 @@ export default function RiskAnalysis() {
       }
 
       if (text.toLowerCase() === "/submit") {
+        const blockMessage = await getRiskSubmitBlockMessage();
+
+        if (blockMessage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: blockMessage,
+            },
+          ]);
+          return;
+        }
+
         if (rows.length === 0) {
           setMessages((prev) => [
             ...prev,
@@ -2074,13 +2113,13 @@ export default function RiskAnalysis() {
                     window.location.hash = item.href;
                   }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                    active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                    active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                   }`}
                 >
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                       active
-                        ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                        ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                         : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                     }`}
                   >
@@ -2213,13 +2252,13 @@ export default function RiskAnalysis() {
                       window.location.hash = item.href;
                     }}
                     className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                      active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                      active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                     }`}
                   >
                     <span
                       className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                         active
-                          ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                          ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                           : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                       }`}
                     >

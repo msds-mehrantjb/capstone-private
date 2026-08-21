@@ -656,12 +656,199 @@ def _find_action_implementation_guide(year: int, guide_id: str) -> dict | None:
     return None
 
 
+def _normalize_lookup(value: Any) -> str:
+    return str(value if value is not None else "").strip().lower()
+
+
+def _find_action_implementation_guide_by_evidence_id(
+    year: int,
+    evidence_id: str,
+) -> dict | None:
+    evidence_key = _normalize_lookup(evidence_id)
+    if not evidence_key:
+        return None
+
+    doc = _read_json(_action_plan_implementation_guides_file(year), {})
+    guides = doc.get("guides", [])
+    if not isinstance(guides, list):
+        return None
+
+    for guide in guides:
+        if (
+            isinstance(guide, dict)
+            and _normalize_lookup(guide.get("evidence_id")) == evidence_key
+        ):
+            return guide
+
+    return None
+
+
+def _find_action_implementation_evidence_context(
+    year: int,
+    evidence_id: str,
+) -> tuple[dict, dict, dict] | None:
+    evidence_key = _normalize_lookup(evidence_id)
+    if not evidence_key:
+        return None
+
+    doc = _read_json(_action_plan_implementation_file(year), {})
+    controls = doc.get("controls", [])
+    if not isinstance(controls, list):
+        return None
+
+    for control in controls:
+        if not isinstance(control, dict):
+            continue
+        hosts = control.get("hosts", [])
+        if not isinstance(hosts, list):
+            continue
+        for host in hosts:
+            if not isinstance(host, dict):
+                continue
+            evidence_rows = host.get("evidence", [])
+            if not isinstance(evidence_rows, list):
+                continue
+            for evidence in evidence_rows:
+                if (
+                    isinstance(evidence, dict)
+                    and _normalize_lookup(evidence.get("evidence_id")) == evidence_key
+                ):
+                    return control, host, evidence
+
+    return None
+
+
+def _ensure_action_implementation_guide_for_evidence(
+    year: int,
+    evidence_id: str,
+) -> dict | None:
+    existing = _find_action_implementation_guide_by_evidence_id(year, evidence_id)
+    if existing is not None:
+        return existing
+
+    context = _find_action_implementation_evidence_context(year, evidence_id)
+    if context is None:
+        return None
+
+    control, host, evidence = context
+    from app.api.routes_action_plan_implementation import _replace_guide_for_evidence
+
+    return _replace_guide_for_evidence(
+        year=year,
+        control=control,
+        host=host,
+        evidence=evidence,
+        prefer_fallback=True,
+    )
+
+
 def _find_monitoring_implementation_guide(year: int, guide_id: str) -> dict | None:
     from app.api.routes_monitoring_improvement import (
         ensure_monitoring_implementation_guide_ready,
     )
 
     return ensure_monitoring_implementation_guide_ready(year, guide_id)
+
+
+def _find_monitoring_implementation_guide_by_evidence_id(
+    year: int,
+    evidence_id: str,
+) -> dict | None:
+    evidence_key = _normalize_lookup(evidence_id)
+    if not evidence_key:
+        return None
+
+    doc = _read_json(_monitoring_implementation_guides_file(year), {})
+    guides = doc.get("guides", [])
+    if not isinstance(guides, list):
+        return None
+
+    for guide in guides:
+        if (
+            isinstance(guide, dict)
+            and _normalize_lookup(guide.get("evidence_id")) == evidence_key
+        ):
+            return guide
+
+    return None
+
+
+def _monitoring_rows(doc: Any) -> list[dict]:
+    if isinstance(doc, list):
+        return [row for row in doc if isinstance(row, dict)]
+    if not isinstance(doc, dict):
+        return []
+    for key in ["cves", "items", "records", "monitoring_items"]:
+        rows = doc.get(key)
+        if isinstance(rows, list):
+            return [row for row in rows if isinstance(row, dict)]
+    return []
+
+
+def _find_monitoring_implementation_evidence_context(
+    year: int,
+    evidence_id: str,
+) -> tuple[dict, dict, dict] | None:
+    evidence_key = _normalize_lookup(evidence_id)
+    if not evidence_key:
+        return None
+
+    doc = _read_json(_monitoring_improvement_file(year), {})
+    for control in _monitoring_rows(doc):
+        hosts = control.get("hosts", [])
+        if (
+            (not isinstance(hosts, list) or not hosts)
+            and any(control.get(key) for key in ("hostname", "ip_address", "role", "evidence"))
+        ):
+            hosts = [control]
+        if not isinstance(hosts, list):
+            continue
+
+        for host in hosts:
+            if not isinstance(host, dict):
+                continue
+            evidence_rows = host.get("evidence", [])
+            if not isinstance(evidence_rows, list):
+                continue
+            for evidence in evidence_rows:
+                if (
+                    isinstance(evidence, dict)
+                    and _normalize_lookup(evidence.get("evidence_id")) == evidence_key
+                ):
+                    return control, host, evidence
+
+    return None
+
+
+def _ensure_monitoring_implementation_guide_for_evidence(
+    year: int,
+    evidence_id: str,
+) -> dict | None:
+    existing = _find_monitoring_implementation_guide_by_evidence_id(year, evidence_id)
+    existing_quality = _normalize_lookup(existing.get("generation_quality")) if isinstance(existing, dict) else ""
+    if existing is not None and existing_quality != "draft":
+        return existing
+
+    context = _find_monitoring_implementation_evidence_context(year, evidence_id)
+    if context is None:
+        return existing
+
+    control, host, evidence = context
+    from app.api.routes_monitoring_improvement import _replace_monitoring_guide_for_evidence
+
+    return _replace_monitoring_guide_for_evidence(
+        year=year,
+        control=control,
+        host=host,
+        evidence=evidence,
+        prefer_fallback=True,
+        guide_id_override=(
+            str(existing.get("guide_id", "")).strip()
+            if isinstance(existing, dict)
+            else None
+        ),
+    )
+
 
 def _html_escape(value: Any) -> str:
     text = "" if value is None else str(value)
@@ -810,6 +997,40 @@ def _guide_to_printable_html(guide_doc: dict) -> str:
     </html>
     """
 
+
+@router.get("/action-plan-implementation/guide/evidence/{evidence_id}")
+def get_action_implementation_guide_for_evidence(
+    evidence_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _ensure_action_implementation_guide_for_evidence(resolved_year, evidence_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Evidence row not found.")
+
+    return {
+        "success": True,
+        "year": resolved_year,
+        "guide": guide,
+    }
+
+
+@router.get("/action-plan-implementation/guide/evidence/{evidence_id}/document")
+def get_action_implementation_guide_document_for_evidence(
+    evidence_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _ensure_action_implementation_guide_for_evidence(resolved_year, evidence_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Evidence row not found.")
+
+    html = _guide_to_printable_html(guide)
+    return Response(content=html, media_type="text/html")
+
+
 @router.get("/action-plan-implementation/guide/{guide_id}")
 def get_action_implementation_guide(
     guide_id: str,
@@ -846,6 +1067,24 @@ def get_monitoring_implementation_guide(
     }
 
 
+@router.get("/monitoring-improvement/guide/evidence/{evidence_id}")
+def get_monitoring_implementation_guide_for_evidence(
+    evidence_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _ensure_monitoring_implementation_guide_for_evidence(resolved_year, evidence_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Evidence row not found.")
+
+    return {
+        "success": True,
+        "year": resolved_year,
+        "guide": guide,
+    }
+
+
 @router.get("/action-plan-implementation/guide/{guide_id}/document")
 def get_action_implementation_guide_document(
     guide_id: str,
@@ -856,6 +1095,21 @@ def get_action_implementation_guide_document(
 
     if guide is None:
         raise HTTPException(status_code=404, detail="Guide not found.")
+
+    html = _guide_to_printable_html(guide)
+    return Response(content=html, media_type="text/html")
+
+
+@router.get("/monitoring-improvement/guide/evidence/{evidence_id}/document")
+def get_monitoring_implementation_guide_document_for_evidence(
+    evidence_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+    guide = _ensure_monitoring_implementation_guide_for_evidence(resolved_year, evidence_id)
+
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Evidence row not found.")
 
     html = _guide_to_printable_html(guide)
     return Response(content=html, media_type="text/html")
@@ -1159,6 +1413,43 @@ def download_action_implementation_guide_pdf(
 
 
 @router.get(
+    "/action-plan-implementation/guide/evidence/{evidence_id}/pdf",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "PDF file"
+        }
+    }
+)
+def download_action_implementation_guide_pdf_for_evidence(
+    evidence_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+
+    guide = _ensure_action_implementation_guide_for_evidence(resolved_year, evidence_id)
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Evidence row not found.")
+
+    guide_id = str(guide.get("guide_id") or evidence_id).strip() or evidence_id
+    html = _guide_to_printable_html(guide)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = Path(tmpdir) / f"{guide_id}.pdf"
+        _render_html_to_pdf(html, pdf_path)
+        pdf_bytes = pdf_path.read_bytes()
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{guide_id}.pdf"'
+        },
+    )
+
+
+@router.get(
     "/monitoring-improvement/guide/{guide_id}/pdf",
     response_class=Response,
     responses={
@@ -1178,6 +1469,43 @@ def download_monitoring_implementation_guide_pdf(
     if guide is None:
         raise HTTPException(status_code=404, detail="Guide not found.")
 
+    html = _guide_to_printable_html(guide)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = Path(tmpdir) / f"{guide_id}.pdf"
+        _render_html_to_pdf(html, pdf_path)
+        pdf_bytes = pdf_path.read_bytes()
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{guide_id}.pdf"'
+        },
+    )
+
+
+@router.get(
+    "/monitoring-improvement/guide/evidence/{evidence_id}/pdf",
+    response_class=Response,
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "PDF file"
+        }
+    }
+)
+def download_monitoring_implementation_guide_pdf_for_evidence(
+    evidence_id: str,
+    year: int | None = Query(None),
+):
+    resolved_year = year if year is not None else get_system_year()
+
+    guide = _ensure_monitoring_implementation_guide_for_evidence(resolved_year, evidence_id)
+    if guide is None:
+        raise HTTPException(status_code=404, detail="Evidence row not found.")
+
+    guide_id = str(guide.get("guide_id") or evidence_id).strip() or evidence_id
     html = _guide_to_printable_html(guide)
 
     with tempfile.TemporaryDirectory() as tmpdir:

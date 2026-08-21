@@ -1,4 +1,5 @@
 import os
+from urllib.parse import quote
 
 
 def build_monitoring_improvement_markdown(
@@ -8,7 +9,6 @@ def build_monitoring_improvement_markdown(
     from app.api.routes_final_deliverables import (
         _load_dashboard_context,
         _monitoring_improvement_file,
-        _monitoring_implementation_guides_file,
         _read_json,
     )
 
@@ -68,9 +68,26 @@ def build_monitoring_improvement_markdown(
         evidence_id = _normalize_text(evidence.get("evidence_id"))
         evidence_desc = _normalize_text(evidence.get("desc"))
 
+        def _guide_matches_context(guide: dict) -> bool:
+            guide_control = _normalize_text(guide.get("control_id") or guide.get("cve_id"))
+            guide_host = _normalize_text(guide.get("hostname"))
+            guide_vuln = _normalize_text(guide.get("vulnerability_name") or guide.get("control_name"))
+
+            if guide_control and control_id and guide_control != control_id:
+                return False
+            if guide_host and hostname and guide_host != hostname:
+                return False
+            if guide_vuln and vulnerability_name and guide_vuln != vulnerability_name:
+                return False
+
+            return True
+
         if evidence_id:
             for guide in guide_records:
-                if _normalize_text(guide.get("evidence_id")) == evidence_id:
+                if (
+                    _normalize_text(guide.get("evidence_id")) == evidence_id
+                    and _guide_matches_context(guide)
+                ):
                     return guide
 
         for guide in guide_records:
@@ -94,17 +111,24 @@ def build_monitoring_improvement_markdown(
 
         return None
 
-    def _guide_icon_html(guide: dict | None) -> str:
-        if not guide:
+    def _has_meaningful_evidence(evidence: dict) -> bool:
+        for key in ["responsible", "resources", "date", "url", "desc"]:
+            if str(evidence.get(key, "")).strip():
+                return True
+        return False
+
+    def _guide_icon_html(evidence: dict) -> str:
+        if not _has_meaningful_evidence(evidence):
             return "-"
 
-        guide_id = str(guide.get("guide_id", "")).strip()
-        if not guide_id:
+        evidence_id = str(evidence.get("evidence_id", "")).strip()
+        if not evidence_id:
             return "-"
 
         pdf_url = (
             f"{_api_base_url()}"
-            f"/api/final-deliveries/monitoring-improvement/guide/{_esc(guide_id)}/pdf"
+            "/api/final-deliveries/monitoring-improvement/guide/"
+            f"evidence/{quote(evidence_id, safe='')}/pdf"
         )
 
         return (
@@ -153,7 +177,7 @@ def build_monitoring_improvement_markdown(
             '</table>',
         ])
 
-    def _hosts_evidence_table(item_row: dict, guide_records: list[dict]) -> str:
+    def _hosts_evidence_table(item_row: dict) -> str:
         hosts = item_row.get("hosts", [])
 
         if (
@@ -243,13 +267,7 @@ def build_monitoring_improvement_markdown(
                 ]
 
                 if include_guide_column:
-                    matched_guide = _find_matching_guide(
-                        guide_records=guide_records,
-                        item_row=item_row,
-                        host=host,
-                        evidence=evidence,
-                    )
-                    guide_cell = _guide_icon_html(matched_guide)
+                    guide_cell = _guide_icon_html(evidence)
                     row_cells.append(
                         f'      <td style="padding: 4px 6px; border: 1px solid #999; vertical-align: middle; text-align: center; width: 1%; white-space: nowrap;">{guide_cell}</td>'
                     )
@@ -268,8 +286,6 @@ def build_monitoring_improvement_markdown(
 
     ctx = _load_dashboard_context(year)
     doc = _read_json(_monitoring_improvement_file(year), {})
-    guides_doc = _read_json(_monitoring_implementation_guides_file(year), {})
-    guide_records = _extract_guide_records(guides_doc)
     if isinstance(doc, list):
         rows = [row for row in doc if isinstance(row, dict)]
     elif isinstance(doc, dict):
@@ -389,7 +405,7 @@ The Recommended Action process combines AI reasoning, RAG, and ISO-aligned knowl
         lines.extend([
             _main_monitoring_table(row),
             "",
-            _hosts_evidence_table(row, guide_records),
+            _hosts_evidence_table(row),
             "",
         ])
 

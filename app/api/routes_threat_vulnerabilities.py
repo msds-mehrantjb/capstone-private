@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.api.aiml_kpi_telemetry import ollama_total_tokens, safe_increment_llm_counter
+from app.api.workflow_gate import ensure_previous_steps_completed
 
 LLM_MODEL = "qwen3:14b"
 ENABLE_LLM_MITIGATIONS = os.getenv("ENABLE_LLM_MITIGATIONS", "").strip().lower() in {
@@ -63,7 +64,7 @@ def _asset_inventory_file(year: int) -> Path:
 
 
 def _system_status_file(year: int) -> Path:
-    return _work_dir(year) / "systemstatus.json"
+    return _work_dir(year) / "SystemStatus.json"
 
 
 def _dashboard_file() -> Path:
@@ -1644,6 +1645,7 @@ def reset_threat_assessment(req: ResetThreatAssessmentRequest):
 
 @router.post("/submit")
 def submit_threat_assessment(req: SubmitThreatAssessmentRequest):
+    ensure_previous_steps_completed(req.year, "threats_vulns")
     threat_path = _tv_file(req.year)
 
     if not threat_path.exists():

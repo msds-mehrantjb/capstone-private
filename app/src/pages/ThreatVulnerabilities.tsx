@@ -175,6 +175,10 @@ async function apiGetThreatVulns(year: number): Promise<ThreatVulnsDTO> {
   );
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function apiCreateThreatAssessment(
   year: number,
   forceReset: boolean = false
@@ -734,11 +738,35 @@ export default function ThreatVulnerabilities() {
     });
   }, [expandedHostname]);
 
-  const refreshThreatSection = async () => {
-    const [sys, dash, tv] = await Promise.all([
+  const getThreatVulnsSnapshot = async (requireHosts = false) => {
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        const data = await apiGetThreatVulns(YEAR);
+        const hostCount = data.hosts?.length ?? 0;
+
+        if (!requireHosts || hostCount > 0) {
+          return data;
+        }
+      } catch (e) {
+        lastError = e;
+      }
+
+      await wait(attempt * 300);
+    }
+
+    if (lastError instanceof Error) {
+      throw lastError;
+    }
+
+    throw new Error("Threat assessment completed, but no table rows were returned yet.");
+  };
+
+  const refreshThreatSection = async (options?: { requireHosts?: boolean }) => {
+    const [sys, dash] = await Promise.all([
       apiGetSystemStatus().catch(() => null),
       apiGetDashboard("Production", { cacheBust: true }).catch(() => null),
-      apiGetThreatVulns(YEAR).catch(() => null),
     ]);
 
     if (sys) {
@@ -750,9 +778,12 @@ export default function ThreatVulnerabilities() {
       setDashboard(dash);
     }
 
-    if (tv) {
+    try {
+      const tv = await getThreatVulnsSnapshot(options?.requireHosts ?? false);
       setTvData(tv);
       setTvErr(null);
+    } catch (e) {
+      setTvErr(e instanceof Error ? e.message : String(e));
     }
   };
 
@@ -771,6 +802,30 @@ export default function ThreatVulnerabilities() {
   const hasSubmittedScopeDocument = async () => {
     const latestDashboard = await refreshDashboard();
     return isSubmittedScopeFile(latestDashboard?.scope_file_name);
+  };
+
+  const getThreatSubmitBlockMessage = async () => {
+    const latestStatus = await apiGetSystemStatus();
+    setSystemStatus(latestStatus);
+    setScopeErr(null);
+
+    const requiredSteps: Array<{ key: string; label: string }> = [
+      { key: "scope_context", label: "Scope & Context" },
+      { key: "assets_cia", label: "Asset Inventory & CIA" },
+    ];
+
+    for (const step of requiredSteps) {
+      const status = latestStatus.sections?.[step.key]?.status ?? "Not Started";
+
+      if (status !== "Completed") {
+        return (
+          "Cannot process /submit for Threats & Vulnerabilities until " +
+          `${step.label} is Completed. Current status: ${status}.`
+        );
+      }
+    }
+
+    return null;
   };
 
   const removePendingResetConfirmation = () => {
@@ -796,7 +851,7 @@ export default function ThreatVulnerabilities() {
       if (closeResetPopup) {
         setShowResetPopup(false);
       }
-      await refreshThreatSection();
+      await refreshThreatSection({ requireHosts: true });
 
       const progressText =
         Array.isArray((result as any).progress_messages) &&
@@ -1069,6 +1124,19 @@ export default function ThreatVulnerabilities() {
       }
     
       if (text === "/submit") {
+        const blockMessage = await getThreatSubmitBlockMessage();
+
+        if (blockMessage) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: "assistant",
+              content: blockMessage,
+            },
+          ]);
+          return;
+        }
+
         const result = await apiSubmitThreatAssessment(YEAR);
         await refreshThreatSection();
         setSystemStatus((prev) =>
@@ -1165,13 +1233,13 @@ export default function ThreatVulnerabilities() {
                     window.location.hash = item.href;
                   }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                    active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                    active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                   }`}
                 >
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                       active
-                        ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                        ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                         : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                     }`}
                   >
@@ -1496,13 +1564,13 @@ export default function ThreatVulnerabilities() {
                       window.location.hash = item.href;
                     }}
                     className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                      active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                      active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                     }`}
                   >
                     <span
                       className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                         active
-                          ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                          ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                           : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                       }`}
                     >

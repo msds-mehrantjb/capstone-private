@@ -655,6 +655,34 @@ export default function AnnexASoA() {
     }
   };
 
+  const getAnnexCreateBlockMessage = async () => {
+    const latestStatus = await apiGetSystemStatus();
+    setSystemStatus(latestStatus);
+    setScopeErr(null);
+
+    const requiredSteps: Array<{ key: string; label: string }> = [
+      { key: "scope_context", label: "Scope & Context" },
+      { key: "assets_cia", label: "Asset Inventory & CIA" },
+      { key: "threats_vulns", label: "Threats & Vulnerabilities" },
+      { key: "existing_controls_postures", label: "Existing Controls & Postures" },
+      { key: "risk_analysis", label: "Risk Analysis" },
+      { key: "risk_evaluation_treatment", label: "Risk Evaluation & Treatment" },
+    ];
+
+    for (const step of requiredSteps) {
+      const status = latestStatus.sections?.[step.key]?.status ?? "Not Started";
+
+      if (status !== "Completed") {
+        return (
+          "Cannot process /create for Annex A & SoA until " +
+          `${step.label} is Completed. Current status: ${status}.`
+        );
+      }
+    }
+
+    return null;
+  };
+
   const createAnnexTableConfirmed  = async () => {
     setSending(true);
 
@@ -709,6 +737,13 @@ export default function AnnexASoA() {
   };
 
   const handleCreateAnnexTable = async () => {
+    const blockMessage = await getAnnexCreateBlockMessage();
+
+    if (blockMessage) {
+      showPopup(blockMessage);
+      return;
+    }
+
     if (controls.length > 0) {
       setConfirmRecreateOpen(true);   // 👉 modal only
       return;
@@ -1076,6 +1111,20 @@ export default function AnnexASoA() {
     setInput("");
 
     if (text.toLowerCase() === "/create") {
+      const blockMessage = await getAnnexCreateBlockMessage();
+
+      if (blockMessage) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: blockMessage,
+          },
+        ]);
+        scrollChatToBottom();
+        return;
+      }
+
       if (controls.length > 0) {
         setPendingAssistantAction("recreate_annex");
     
@@ -1544,13 +1593,13 @@ export default function AnnexASoA() {
                     window.location.hash = item.href;
                   }}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                    active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                    active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                   }`}
                 >
                   <span
                     className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                       active
-                        ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                        ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                         : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                     }`}
                   >
@@ -1678,13 +1727,13 @@ export default function AnnexASoA() {
                       window.location.hash = item.href;
                     }}
                     className={`mb-1 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm ${
-                      active ? "bg-white/5 ring-1 ring-white/10" : "hover:bg-white/5"
+                      active ? "bg-indigo-600/15 ring-1 ring-indigo-400/45" : "hover:bg-white/5"
                     }`}
                   >
                     <span
                       className={`grid h-7 w-7 place-items-center rounded-lg text-xs ${
                         active
-                          ? "bg-sky-500/15 text-sky-200 ring-1 ring-sky-500/25"
+                          ? "bg-indigo-600 text-white ring-1 ring-indigo-400/50"
                           : "bg-white/5 text-slate-300 ring-1 ring-white/10"
                       }`}
                     >

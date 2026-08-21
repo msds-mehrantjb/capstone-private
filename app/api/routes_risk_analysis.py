@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from app.api.routes_system_status import _load_status, _atomic_write_json
+from app.api.workflow_gate import ensure_previous_steps_completed
 import joblib
 import pandas as pd
 
@@ -1656,6 +1657,7 @@ def collect_user_activity_behavior(payload: AnalysisRequest):
 @router.post("/submit")
 def submit_risk_analysis(payload: SubmitRequest):
     year = int(payload.year or 2026)
+    ensure_previous_steps_completed(year, "risk_analysis")
 
     inventory = _load_risk_inventory_or_blank(year)
 

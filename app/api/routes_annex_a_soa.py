@@ -16,6 +16,7 @@ from app.api.aiml_kpi_telemetry import (
     safe_increment_llm_counter,
     safe_increment_rag_counter,
 )
+from app.api.workflow_gate import ensure_previous_steps_completed
 
 
 router = APIRouter(prefix="/api/annex-a-soa", tags=["annex-a-soa"])
@@ -2398,6 +2399,7 @@ def get_annex_inventory(year: int = Query(2026)):
 @router.post("/create")
 def create_annex_a_soa(payload: CreateRequest):
     year = int(payload.year or 2026)
+    ensure_previous_steps_completed(year, "annex_a_soa", action_name="/create")
     current = _load_annex_doc_or_blank(year)
 
     if _annex_section_is_read_only(year):
@@ -2556,6 +2558,7 @@ def reset_annex_a_soa(payload: ResetRequest):
 @router.post("/submit")
 def submit_annex_a_soa(payload: SubmitRequest):
     year = int(payload.year or 2026)
+    ensure_previous_steps_completed(year, "annex_a_soa")
     doc = _load_annex_doc_or_blank(year)
 
     if _annex_section_is_read_only(year):
