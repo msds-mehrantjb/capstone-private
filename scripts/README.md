@@ -80,6 +80,21 @@ This ensures the frontend points to the correct live backend port.
 
   Use this when you want a simple readiness check without starting the app.
 
+- `list-docker-lab-ips.bat`
+  Lists the optional Docker lab containers with their Docker networks and IP addresses.
+
+  Run:
+
+  ```powershell
+  scripts\list-docker-lab-ips.bat
+  ```
+
+  To also show expected lab containers that are missing or stopped before creation, run:
+
+  ```powershell
+  scripts\list-docker-lab-ips.bat -IncludeMissing
+  ```
+
 - `setup-project.bat`
   Manual first-time setup helper.
   It:
