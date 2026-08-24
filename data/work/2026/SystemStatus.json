@@ -3,12 +3,12 @@
     "name": "SystemStatus",
     "version": "1.0"
   },
-  "updated_at": "2026-08-22T15:21:15.417561Z",
+  "updated_at": "2026-08-24T15:44:39.366732Z",
   "year": 2026,
   "sections": {
     "scope_context": {
       "status": "Completed",
-      "scope_file_name": "2026-Scope-v16.json"
+      "scope_file_name": "2026-Scope-v17.json"
     },
     "assets_cia": {
       "status": "Completed"

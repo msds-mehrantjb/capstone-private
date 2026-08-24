@@ -1,11 +1,11 @@
 {
   "meta": {
     "year": 2026,
-    "version": "v16",
+    "version": "v17",
     "title": "2026 ISO 27001 Scope Statement - Healthcare Provider",
     "industry": "Healthcare",
     "created_at": "2026-02-24T00:00:00Z",
-    "source_file": "2026-Scope-Draft-v0.json",
+    "source_file": "2026-Scope-v17.json",
     "fallback_used": false,
     "missing_saved_file": null,
     "popup_message": null

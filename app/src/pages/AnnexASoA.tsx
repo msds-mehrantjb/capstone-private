@@ -1111,37 +1111,7 @@ export default function AnnexASoA() {
     setInput("");
 
     if (text.toLowerCase() === "/create") {
-      const blockMessage = await getAnnexCreateBlockMessage();
-
-      if (blockMessage) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: blockMessage,
-          },
-        ]);
-        scrollChatToBottom();
-        return;
-      }
-
-      if (controls.length > 0) {
-        setPendingAssistantAction("recreate_annex");
-    
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "The table will be recreated, are you sure?",
-            confirmAction: "recreate_annex",
-          },
-        ]);
-    
-        scrollChatToBottom();
-        return;
-      }
-    
-      await createAnnexTableConfirmed();
+      await handleCreateAnnexTable();
       return;
     }
 

@@ -400,6 +400,9 @@ def _normalize_llm_controls_payload(
     normalized = {
         "risk": "",
         "controls": [],
+        "used_fallback": False,
+        "fallback_reason": "",
+        "fallback_controls": [],
     }
 
     # allow raw payload itself to be list/string and not only dict
@@ -505,6 +508,10 @@ def _normalize_llm_controls_payload(
 
     # fallback only from retrieved/allowed controls, never from malformed arbitrary data
     if len(normalized["controls"]) == 0:
+        normalized["used_fallback"] = True
+        normalized["fallback_reason"] = (
+            "LLM returned no valid controls; used top retrieved ISO control matches."
+        )
         for item in allowed_controls[:3]:
             if not isinstance(item, dict):
                 continue
@@ -530,6 +537,7 @@ def _normalize_llm_controls_payload(
                     traits=fallback_traits,
                 ),
             })
+            normalized["fallback_controls"].append(fallback_id)
 
     return normalized
 
@@ -1748,6 +1756,8 @@ Output Requirements:
             "domain": domain or "ISO 27001:2022 Control",
             "concern": purpose or f"Security concern addressed by control {control_id}.",
             "justification": recommendation_justification or annex_justification or f"Control {control_id} is relevant to the current risk context.",
+            "used_fallback": True,
+            "fallback_reason": "LLM did not return valid JSON for control information.",
         }
         
     justification_raw = _normalize_text(parsed.get("justification"))
@@ -1760,6 +1770,8 @@ Output Requirements:
         "domain": _normalize_text(parsed.get("domain")) or domain or "ISO 27001:2022 Control",
         "concern": _normalize_text(parsed.get("concern")) or purpose or f"Security concern addressed by control {control_id}.",
         "justification": justification_clean,
+        "used_fallback": False,
+        "fallback_reason": "",
     }
 
 def _apply_create_like_context_to_control(year: int, control: dict) -> dict:
@@ -1784,6 +1796,8 @@ def _apply_create_like_context_to_control(year: int, control: dict) -> dict:
         # Safe fallback: preserve existing values, but ensure domain exists
         control["domain"] = _normalize_text(control.get("domain")) or _infer_domain_from_control_id(control_id)
         control["justification"] = _normalize_text(control.get("justification"))
+        control["justification_source"] = "contextual_fallback"
+        control["generation_note"] = "No recommendation/control catalog context was available for LLM reasoning."
         return control
 
     try:
@@ -1803,6 +1817,16 @@ def _apply_create_like_context_to_control(year: int, control: dict) -> dict:
         or _normalize_text(info_context.get("annex_justification"))
         or _normalize_text(info_context.get("recommendation_justification"))
     )
+    control["justification_source"] = (
+        "llm_reasoning"
+        if llm_info and not llm_info.get("used_fallback")
+        else "contextual_fallback"
+    )
+    control["generation_note"] = (
+        _normalize_text((llm_info or {}).get("fallback_reason"))
+        if control["justification_source"] == "contextual_fallback"
+        else ""
+    )
 
     # Optional but useful: keep control name aligned with the richer context
     control["control_name"] = (
@@ -1816,6 +1840,358 @@ def _remove_cve_references(text: str) -> str:
     if not text:
         return ""
     return re.sub(r"CVE-\d{4}-\d{4,7}", "", text, flags=re.IGNORECASE)
+
+
+def _is_weak_annex_justification(value: Any) -> bool:
+    text = _normalize_text(value)
+    if text == "":
+        return True
+
+    lowered = text.lower()
+    weak_phrases = {
+        "selected by llm from allowed controls.",
+        "fallback from retrieval because llm returned no valid controls.",
+    }
+    if lowered in weak_phrases:
+        return True
+
+    return False
+
+
+def _is_incomplete_annex_justification(value: Any) -> bool:
+    text = _normalize_text(value)
+    if text == "":
+        return True
+
+    words = re.findall(r"\w+", text)
+    if len(words) < 22:
+        return True
+
+    lowered = text.rstrip(" .;,").lower()
+    dangling_endings = (
+        "and",
+        "or",
+        "including",
+        "such as",
+        "with",
+        "for",
+        "to",
+        "from",
+        "against",
+    )
+    return lowered.endswith(dangling_endings)
+
+
+def _first_nonempty_llm_text(value: Any) -> str:
+    if isinstance(value, str):
+        return _normalize_text(value)
+
+    if isinstance(value, dict):
+        preferred_keys = (
+            "justification",
+            "reason",
+            "rationale",
+            "soa_justification",
+            "statement_of_applicability_justification",
+            "text",
+            "response",
+        )
+        for key in preferred_keys:
+            text = _first_nonempty_llm_text(value.get(key))
+            if text:
+                return text
+        for item in value.values():
+            text = _first_nonempty_llm_text(item)
+            if text:
+                return text
+
+    if isinstance(value, list):
+        for item in value:
+            text = _first_nonempty_llm_text(item)
+            if text:
+                return text
+
+    return ""
+
+
+def _extract_json_object_from_text(value: str) -> dict | None:
+    text = _normalize_text(value)
+    if not text:
+        return None
+
+    parsed = _safe_json_loads(text)
+    if isinstance(parsed, dict):
+        return parsed
+
+    match = re.search(r"\{.*\}", text, flags=re.DOTALL)
+    if not match:
+        return None
+
+    parsed = _safe_json_loads(match.group(0))
+    return parsed if isinstance(parsed, dict) else None
+
+
+def _clean_llm_plain_text(value: Any) -> str:
+    text = str(value or "")
+    text = text.replace("包括", "including")
+    text = text.replace("\u2018", "'").replace("\u2019", "'")
+    text = text.replace("\u201c", '"').replace("\u201d", '"')
+    text = text.replace("\u2013", "-").replace("\u2014", "-")
+    text = text.replace("\ufffd", "")
+    text = re.sub(r"<think>.*?</think>", "", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE)
+    text = text.replace("```", "")
+    text = text.encode("ascii", errors="ignore").decode("ascii")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _generate_annex_row_justification_with_llm(year: int, control: dict) -> str:
+    control_id = _normalize_text(control.get("control_id") or control.get("control"))
+    control_name = _normalize_text(control.get("control_name"))
+    domain = _normalize_text(control.get("domain"))
+    risk_ids = control.get("risk_ids", [])
+    source_records = control.get("source_records", [])
+
+    iso_record = _get_iso_record_by_control_id(year, control_id) or {}
+    purpose = _normalize_text(iso_record.get("Purpose"))
+    section = _normalize_text(iso_record.get("Section"))
+
+    prompt_records = []
+    if isinstance(source_records, list):
+        for record in source_records[:12]:
+            if not isinstance(record, dict):
+                continue
+            prompt_records.append({
+                "hostname": _normalize_text(record.get("hostname")),
+                "role": _normalize_text(record.get("role")),
+                "risk_id": _normalize_text(record.get("riskid")),
+                "risk_level": _normalize_text(record.get("risk")),
+                "vulnerability": _normalize_text(record.get("vulnerability_name")),
+            })
+
+    prompt = f"""
+/no_think
+
+You are an ISO 27001:2022 and ISO 27002:2022 expert.
+
+Write the final Statement of Applicability justification for exactly one Annex A control.
+
+Return ONLY valid JSON with this exact schema:
+{{
+  "justification": "string"
+}}
+
+Control Context:
+Control ID: {control_id}
+Control Name: {control_name}
+Domain: {domain}
+ISO Section: {section}
+ISO Purpose: {purpose}
+
+Risk IDs:
+{json.dumps(risk_ids, ensure_ascii=False)}
+
+Source Records:
+{json.dumps(prompt_records, ensure_ascii=False, indent=2)}
+
+Rules for "justification":
+- Use LLM reasoning based on the source records, risks, vulnerabilities, and ISO purpose.
+- Write one concise paragraph between 35 and 80 words.
+- Make it specific to this control and this audit context.
+- Explain why this control is applicable for the organization.
+- Do NOT use a generic template sentence.
+- Do NOT start with "Control {control_id} is recommended because".
+- Do NOT mention CVE IDs or CVE numbers.
+- Refer to vulnerability types instead, such as privilege escalation, remote code execution, weak configuration, exposed services, malware execution, or technical vulnerability management.
+- Do NOT return markdown.
+""".strip()
+
+    request_payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "format": "json",
+        "keep_alive": "10m",
+        "options": {
+            "temperature": 0.25,
+            "top_p": 0.9,
+            "num_predict": 600,
+        },
+    }
+
+    response = SESSION.post(
+        OLLAMA_GEN_URL,
+        json=request_payload,
+        timeout=180,
+    )
+    response.raise_for_status()
+
+    response_data = response.json()
+    safe_increment_llm_counter(year, ollama_total_tokens(response_data))
+    raw_response = response_data.get("response", "")
+    parsed = _extract_json_object_from_text(raw_response)
+    if not isinstance(parsed, dict):
+        parsed = {}
+
+    justification = _remove_cve_references(_first_nonempty_llm_text(parsed))
+    justification = re.sub(r"\s+", " ", justification).strip()
+
+    if _is_weak_annex_justification(justification) or _is_incomplete_annex_justification(justification):
+        retry_prompt = f"""
+/no_think
+
+{prompt}
+
+The previous JSON response was empty. Now return ONLY the final justification paragraph as plain text.
+Do not return JSON. Do not return markdown. Do not mention CVE IDs or vulnerability identifiers.
+Use vulnerability type names only.
+""".strip()
+        retry_payload = {
+            "model": LLM_MODEL,
+            "prompt": retry_prompt,
+            "stream": False,
+            "keep_alive": "10m",
+            "options": {
+                "temperature": 0.3,
+                "top_p": 0.9,
+                "num_predict": 600,
+            },
+        }
+        retry_response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json=retry_payload,
+            timeout=180,
+        )
+        retry_response.raise_for_status()
+        retry_data = retry_response.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(retry_data))
+        raw_response = retry_data.get("response", "")
+
+        retry_json = _extract_json_object_from_text(raw_response)
+        if isinstance(retry_json, dict):
+            justification = _first_nonempty_llm_text(retry_json)
+        else:
+            justification = _clean_llm_plain_text(raw_response)
+
+        justification = _remove_cve_references(justification)
+        justification = re.sub(r"\s+", " ", justification).strip()
+
+    if _is_weak_annex_justification(justification) or _is_incomplete_annex_justification(justification):
+        repair_prompt = f"""
+/no_think
+
+You are an ISO 27001:2022 and ISO 27002:2022 expert.
+
+Write a complete final Statement of Applicability justification paragraph for this control.
+
+Control ID: {control_id}
+Control Name: {control_name}
+Domain: {domain}
+ISO Section: {section}
+ISO Purpose: {purpose}
+Risk IDs: {json.dumps(risk_ids, ensure_ascii=False)}
+Source Records: {json.dumps(prompt_records, ensure_ascii=False)}
+
+The previous answer was incomplete after removing vulnerability identifiers:
+{justification or "NA"}
+
+Requirements:
+- Return plain text only.
+- Write 40 to 80 words.
+- Do not mention CVE IDs, CVE numbers, or vulnerability identifiers.
+- Use vulnerability type names only, such as remote code execution, privilege escalation, exposed services, malware execution, weak configuration, and technical vulnerability management.
+- Explain why the control is applicable in this audit context.
+""".strip()
+        repair_response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json={
+                "model": LLM_MODEL,
+                "prompt": repair_prompt,
+                "stream": False,
+                "keep_alive": "10m",
+                "options": {
+                    "temperature": 0.25,
+                    "top_p": 0.9,
+                    "num_predict": 600,
+                },
+            },
+            timeout=180,
+        )
+        repair_response.raise_for_status()
+        repair_data = repair_response.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(repair_data))
+        raw_response = repair_data.get("response", "")
+        repair_json = _extract_json_object_from_text(raw_response)
+        if isinstance(repair_json, dict):
+            justification = _first_nonempty_llm_text(repair_json)
+        else:
+            justification = _clean_llm_plain_text(raw_response)
+        justification = _remove_cve_references(justification)
+        justification = re.sub(r"\s+", " ", justification).strip()
+
+    if _is_weak_annex_justification(justification) or _is_incomplete_annex_justification(justification):
+        vulnerability_summary = "; ".join(
+            " - ".join(
+                part for part in [
+                    _normalize_text(item.get("role")),
+                    _normalize_text(item.get("risk_level")),
+                    _normalize_text(item.get("vulnerability")),
+                ]
+                if part
+            )
+            for item in prompt_records[:8]
+            if isinstance(item, dict)
+        )
+        simple_prompt = (
+            "/no_think\n\n"
+            f"Write one Statement of Applicability justification paragraph for ISO control "
+            f"{control_id} {control_name}. ISO purpose: {purpose}. Audit context: "
+            f"{vulnerability_summary}. Explain why this control applies. Do not mention CVE IDs "
+            "or vulnerability identifiers. Return only the paragraph."
+        )
+        simple_response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json={
+                "model": LLM_MODEL,
+                "prompt": simple_prompt,
+                "stream": False,
+                "keep_alive": "10m",
+                "options": {
+                    "temperature": 0.2,
+                    "top_p": 0.9,
+                    "num_predict": 600,
+                },
+            },
+            timeout=180,
+        )
+        simple_response.raise_for_status()
+        simple_data = simple_response.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(simple_data))
+        raw_response = simple_data.get("response", "")
+        simple_json = _extract_json_object_from_text(raw_response)
+        if isinstance(simple_json, dict):
+            justification = _first_nonempty_llm_text(simple_json)
+        else:
+            justification = _clean_llm_plain_text(raw_response)
+        justification = _remove_cve_references(justification)
+        justification = re.sub(r"\s+", " ", justification).strip()
+
+    justification = _clean_llm_plain_text(justification)
+
+    if (
+        _normalize_key(justification) == _normalize_key(control_id)
+        or _normalize_key(justification) == _normalize_key(control_name)
+        or re.fullmatch(r"(?:A\.)?\d+\.\d+", justification, flags=re.IGNORECASE)
+    ):
+        justification = ""
+    if _is_weak_annex_justification(justification) or _is_incomplete_annex_justification(justification):
+        raw_preview = _normalize_text(raw_response)[:220]
+        raise ValueError(
+            f"LLM returned an empty or weak justification for control {control_id}. "
+            f"Raw response preview: {raw_preview}"
+        )
+
+    return justification
 
     
 def ask_llama3_for_controls(risk_id: str, query_text: str, traits, retrieved_controls, year: int = 2026):
@@ -1940,6 +2316,9 @@ def map_record_to_controls(record: dict, embedded_records: list[dict], year: int
         "query_text": query_text,
         "traits": traits,
         "retrieved": retrieved,
+        "used_fallback": bool(llm_answer.get("used_fallback")),
+        "fallback_reason": _normalize_text(llm_answer.get("fallback_reason")),
+        "fallback_controls": llm_answer.get("fallback_controls", []),
         "llm_answer": {
             "risk": risk_id,
             "controls": controls,
@@ -1960,12 +2339,29 @@ def _build_annex_from_risk_eval(year: int) -> dict:
     embedded_records = build_or_load_embeddings(year, force_rebuild=True)
 
     matched_controls: dict[str, dict] = {}
+    generation_metadata = {
+        "llm_model": LLM_MODEL,
+        "justification_mode": "llm_reasoning_required",
+        "justification_fallback_used": False,
+        "fallback_used": False,
+        "fallback_details": [],
+    }
 
     for record in applicable_records:
         try:
             result = map_record_to_controls(record, embedded_records, year=year)
             risk_id = result["risk_id"]
             cve_id = result["cve"]
+
+            if result.get("used_fallback"):
+                generation_metadata["fallback_used"] = True
+                generation_metadata["fallback_details"].append({
+                    "risk_id": risk_id,
+                    "cve": cve_id,
+                    "reason": result.get("fallback_reason")
+                    or "LLM did not return valid controls, so retrieved ISO matches were used.",
+                    "controls": result.get("fallback_controls", []),
+                })
 
             controls = result.get("llm_answer", {}).get("controls", [])
             if not isinstance(controls, list):
@@ -1978,8 +2374,20 @@ def _build_annex_from_risk_eval(year: int) -> dict:
                 control_id = _normalize_text(control.get("control_id"))
                 control_name = _normalize_text(control.get("control_name"))
                 reason = _normalize_text(control.get("reason"))
+                justification_source = "llm_reasoning"
 
                 if _is_generic_retrieval_fallback_reason(reason):
+                    justification_source = "contextual_fallback"
+                    generation_metadata["fallback_used"] = True
+                    generation_metadata["fallback_details"].append({
+                        "risk_id": risk_id,
+                        "cve": cve_id,
+                        "reason": (
+                            "LLM returned a generic fallback reason; built a contextual "
+                            "justification from the risk record."
+                        ),
+                        "controls": [control_id] if control_id else [],
+                    })
                     reason = _build_contextual_control_justification(
                         control_id=control_id,
                         control_name=control_name,
@@ -1998,6 +2406,7 @@ def _build_annex_from_risk_eval(year: int) -> dict:
                         "applicable": True,
                         "implementation_status": "",
                         "justification": reason,
+                        "justification_source": justification_source,
                         "related_risks": [],
                         "risk_ids": [],
                         "source_records": [],
@@ -2017,6 +2426,7 @@ def _build_annex_from_risk_eval(year: int) -> dict:
                     "vulnerability_name": _normalize_text(record.get("vulnerability_name")),
                     "cve": cve_id,
                     "reason": reason,
+                    "justification_source": justification_source,
                 })
 
         except Exception as e:
@@ -2029,7 +2439,31 @@ def _build_annex_from_risk_eval(year: int) -> dict:
         key=lambda x: x.get("control_id", "")
     )
 
-    return {"controls": controls}
+    justification_errors = []
+    for control in controls:
+        control_id = _normalize_text(control.get("control_id") or control.get("control"))
+        try:
+            control["justification"] = _generate_annex_row_justification_with_llm(year, control)
+            control["justification_source"] = "llm_reasoning"
+            control["generation_note"] = "Final SoA justification generated by dedicated LLM reasoning prompt."
+            for source_record in control.get("source_records", []):
+                if isinstance(source_record, dict):
+                    source_record["justification_source"] = "llm_reasoning"
+        except Exception as e:
+            justification_errors.append(f"{control_id or 'unknown control'}: {str(e)}")
+
+    if justification_errors:
+        generation_metadata["justification_fallback_used"] = True
+        raise ValueError(
+            "LLM reasoning justification failed for one or more Annex A & SoA controls. "
+            "No fallback justifications were saved. "
+            f"Failures: {'; '.join(justification_errors)}"
+        )
+
+    return {
+        "controls": controls,
+        "generation_metadata": generation_metadata,
+    }
 
 def _recommend_controls_from_annex(year: int) -> list[dict]:
     doc = _load_annex_doc_or_blank(year)
@@ -2435,10 +2869,31 @@ def create_annex_a_soa(payload: CreateRequest):
     _save_json(_annex_a_soa_file(year), new_doc)
     _set_section_status(year, "annex_a_soa", "In Progress")
 
+    generation_meta = new_doc.get("generation_metadata", {})
+    fallback_details = (
+        generation_meta.get("fallback_details", [])
+        if isinstance(generation_meta, dict)
+        else []
+    )
+    fallback_count = len(fallback_details) if isinstance(fallback_details, list) else 0
+    if fallback_count:
+        message = (
+            "Annex A & SoA table initialized with LLM-generated justifications for every row. "
+            f"Note: fallback was used for {fallback_count} risk/control mapping(s), "
+            "but the final row justifications were still generated by LLM reasoning. "
+            "Details are stored in generation_metadata.fallback_details."
+        )
+    else:
+        message = (
+            "Annex A & SoA table initialized successfully. "
+            "Every row justification was generated by LLM reasoning; no fallback justification was used."
+        )
+
     return {
         "success": True,
-        "message": "Annex A & SoA table initialized successfully using Llama3 + RAG.",
+        "message": message,
         "inventory": new_doc,
+        "generation_metadata": generation_meta,
     }
 
 
@@ -2815,13 +3270,23 @@ def add_control_to_annex(payload: AddRequest):
                 "inventory": doc,
             }
     
-        # apply the same contextual behavior used by create/info
+        # Build the row context, then use the same final SoA justification
+        # generation path used by /create.
         new_control = _apply_create_like_context_to_control(year, new_control)
+        new_control["justification"] = _generate_annex_row_justification_with_llm(year, new_control)
+        new_control["justification_source"] = "llm_reasoning"
+        new_control["generation_note"] = "Final SoA justification generated by the shared Annex A create/add LLM reasoning prompt."
+        for source_record in new_control.get("source_records", []):
+            if isinstance(source_record, dict):
+                source_record["justification_source"] = "llm_reasoning"
     
     except Exception as e:
         return {
             "success": False,
-            "message": f"Control generation failed: {str(e)}",
+            "message": (
+                f"Control generation failed: {str(e)}. "
+                "No fallback justification was saved for the added control."
+            ),
             "inventory": doc,
         }
     # Add to table
@@ -2833,9 +3298,14 @@ def add_control_to_annex(payload: AddRequest):
     _save_json(_annex_a_soa_file(year), doc)
     _sync_annex_status(year, doc)
 
+    message = (
+        f"Control {control_id} added successfully using the shared Annex A "
+        "LLM reasoning justification path."
+    )
+
     return {
         "success": True,
-        "message": f"Control {control_id} added successfully using Llama3 reasoning.",
+        "message": message,
         "inventory": doc,
     }
 
@@ -2882,9 +3352,17 @@ def get_recommended_control_info(payload: InfoRequest):
             "control": None,
         }
 
+    if llm_info.get("used_fallback"):
+        message = (
+            f"Control information generated for {control_id}, but fallback text was used. "
+            f"Reason: {_normalize_text(llm_info.get('fallback_reason')) or 'LLM output was incomplete.'}"
+        )
+    else:
+        message = f"Control information generated for {control_id} using LLM reasoning."
+
     return {
         "success": True,
-        "message": f"Control information generated for {control_id}.",
+        "message": message,
         "control": {
             "control_id": info_context["control_id"],
             "control_name": info_context["control_name"],

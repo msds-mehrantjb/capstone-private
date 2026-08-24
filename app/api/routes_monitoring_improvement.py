@@ -2839,6 +2839,41 @@ def _fallback_evidence_recommendations(
     return unique_items[:6]
 
 
+def _monitoring_action_needs_repair(value: Any) -> bool:
+    text = _normalize_text(value)
+    if not text.startswith("Recommended monitoring actions:"):
+        return True
+
+    bullets = [
+        line.strip()
+        for line in text.splitlines()[1:]
+        if line.strip().startswith("-")
+    ]
+    if len(bullets) < 3:
+        return True
+
+    generic_starts = (
+        "- Review security logs and alerts related to",
+        "- Track patch, configuration, and exposure status until",
+        "- Collect monitoring evidence such as scan results",
+        "- Escalate repeated suspicious activity or failed remediation",
+    )
+    generic_hits = 0
+    for bullet in bullets:
+        bullet_l = bullet.lower()
+        if any(bullet_l.startswith(item.lower()) for item in generic_starts):
+            generic_hits += 1
+
+    if generic_hits >= 2:
+        return True
+
+    unique_normalized = {
+        re.sub(r"\b(cve-\d{4}-\d{4,7}|ub-ws-\d+)\b", "<id>", bullet.lower())
+        for bullet in bullets
+    }
+    return len(unique_normalized) < max(2, len(bullets) - 1)
+
+
 def _generate_monitoring_action_with_llama3(
     year: int,
     control_id: str,
@@ -2846,7 +2881,9 @@ def _generate_monitoring_action_with_llama3(
     justification: str,
     host_lines: list[str],
     retrieved_controls: list[dict],
+    nvd_record: dict | None = None,
 ) -> str:
+    nvd_record = nvd_record if isinstance(nvd_record, dict) else {}
     retrieved_text = "\n\n".join(
         [
             (
@@ -2861,25 +2898,37 @@ def _generate_monitoring_action_with_llama3(
     )
 
     prompt = f"""
+/no_think
+
 You are an ISO 27001:2022 and ISO 27002:2022 expert.
 
-Generate recommended monitoring actions for the given vulnerability.
+Generate recommended monitoring actions for the given vulnerability using LLM reasoning and the retrieved ISO guidance.
 
 FORMAT REQUIREMENTS (STRICT):
 - First line MUST be exactly:
   Recommended monitoring actions:
 - Then provide bullet points using "-" (dash)
-- Each action must be practical and monitoring-oriented
+- Provide 4 to 6 bullet points
+- Each action must be practical, monitoring-oriented, and specific to this vulnerability
 - Focus on detection, alerting, log review, exposure tracking, validation, escalation, and follow-up
+- Every bullet must mention at least one concrete signal, telemetry source, exposure condition, affected technology, host role, or vulnerability behavior from the context
+- Avoid generic repeated actions such as "review security logs", "track patch status", or "collect monitoring evidence" unless the bullet explains exactly which logs, exposure, service, or detection condition applies
 - No explanations
 - No paragraphs
 - No numbering
 - No markdown symbols like *
+- Do not mention RAG or LLM
 
 Target CVE / record:
 CVE: {control_id}
 Vulnerability / Context: {control_name}
 Justification: {justification or "NA"}
+
+Vulnerability intelligence:
+Description: {_normalize_text(nvd_record.get("description")) or "NA"}
+Severity: {_normalize_text(nvd_record.get("severity")) or "NA"}
+Weaknesses: {", ".join(nvd_record.get("cwes", [])) if isinstance(nvd_record.get("cwes"), list) else "NA"}
+Affected platforms: {", ".join(nvd_record.get("cpes", [])[:8]) if isinstance(nvd_record.get("cpes"), list) else "NA"}
 
 Affected hosts:
 {_safe_join_lines(host_lines) or "NA"}
@@ -2892,10 +2941,11 @@ ISO guidance:
         "model": OLLAMA_MODEL,
         "prompt": prompt,
         "stream": False,
+        "think": False,
         "options": {
-            "temperature": 0.2,
+            "temperature": 0.25,
             "top_p": 0.9,
-            "num_predict": 300
+            "num_predict": 600
         }
     }
     res = requests.post(OLLAMA_URL, json=payload, timeout=180)
@@ -2931,23 +2981,63 @@ ISO guidance:
     
         response_text = "Recommended monitoring actions:\n" + "\n".join(final_bullets)
     
-    # NEW SAFETY CHECK
-    lines_after_header = [
-        x.strip() for x in response_text.splitlines()[1:]
-        if x.strip()
-    ]
-    
-    has_real_bullet = any(x.startswith("-") for x in lines_after_header)
-    
-    if not has_real_bullet:
-        fallback_actions = [
-            f"- Continuously monitor RDP-related logs and authentication events for hosts affected by {control_id}.",
-            f"- Configure alerts for unusual remote desktop access attempts, repeated failures, and suspicious session patterns.",
-            f"- Review exposed RDP services regularly to verify patch effectiveness and confirm reduced attack exposure.",
-            f"- Correlate endpoint, firewall, and Windows event logs to detect exploitation attempts or abnormal lateral movement.",
-            f"- Escalate confirmed suspicious activity for incident review and document follow-up actions for auditor traceability.",
-        ]
-        response_text = "Recommended monitoring actions:\n" + "\n".join(fallback_actions)
+    if _monitoring_action_needs_repair(response_text):
+        repair_prompt = f"""
+/no_think
+
+Rewrite the monitoring action output so it is specific to this vulnerability and audit context.
+
+Return only this format:
+Recommended monitoring actions:
+- ...
+- ...
+- ...
+- ...
+
+Rules:
+- 4 to 6 bullets only.
+- No generic repeated bullets.
+- Each bullet must reference a concrete technology, service, signal, log source, host role, exposure condition, or vulnerability behavior from the context.
+- Do not mention CVE IDs except the target record identifier if necessary.
+
+Target: {control_id} / {control_name}
+NVD description: {_normalize_text(nvd_record.get("description")) or "NA"}
+Severity: {_normalize_text(nvd_record.get("severity")) or "NA"}
+Hosts: {_safe_join_lines(host_lines) or "NA"}
+Justification: {justification or "NA"}
+ISO guidance: {retrieved_text or "NA"}
+
+Previous output:
+{response_text or "NA"}
+""".strip()
+        repair_payload = {
+            "model": OLLAMA_MODEL,
+            "prompt": repair_prompt,
+            "stream": False,
+            "think": False,
+            "options": {
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "num_predict": 600,
+            },
+        }
+        repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=180)
+        repair_res.raise_for_status()
+        repair_data = repair_res.json()
+        safe_increment_llm_counter(year, ollama_total_tokens(repair_data))
+        repaired_text = _normalize_text(repair_data.get("response"))
+        if not repaired_text.startswith("Recommended monitoring actions:"):
+            repaired_lines = [line.strip() for line in repaired_text.splitlines() if line.strip()]
+            repaired_bullets = []
+            for line in repaired_lines:
+                cleaned = re.sub(r"^[\-\*\d\.\)\(]+\s*", "", line)
+                if cleaned:
+                    repaired_bullets.append(f"- {cleaned}")
+            repaired_text = "Recommended monitoring actions:\n" + "\n".join(repaired_bullets[:6])
+        response_text = repaired_text
+
+    if _monitoring_action_needs_repair(response_text):
+        raise ValueError("LLM returned generic or unusable recommended monitoring actions.")
     
     return response_text
 
@@ -3477,7 +3567,9 @@ def _generate_recommended_action_for_control(year: int, control: dict) -> str:
                 f"Host={_normalize_text(host.get('hostname'))}, "
                 f"Role={_normalize_text(host.get('role'))}, "
                 f"CIA={_normalize_text(host.get('CIA rating'))}, "
-                f"CVE={control_id}"
+                f"CVE={control_id}, "
+                f"Vulnerability={_normalize_text(host.get('vulnerability_name') or control_name)}, "
+                f"Risk={_normalize_text(host.get('risk'))}"
             )
 
     retrieved_controls = _retrieve_relevant_iso_controls(
@@ -3499,6 +3591,11 @@ def _generate_recommended_action_for_control(year: int, control: dict) -> str:
             retrieved_controls=retrieved_controls,
         )
 
+    try:
+        nvd_record = _get_nvd_cve_details(control_id) if control_id.startswith("CVE-") else {}
+    except Exception:
+        nvd_record = {}
+
     return _generate_monitoring_action_with_llama3(
         year=year,
         control_id=control_id,
@@ -3506,6 +3603,7 @@ def _generate_recommended_action_for_control(year: int, control: dict) -> str:
         justification=justification,
         host_lines=host_lines,
         retrieved_controls=retrieved_controls,
+        nvd_record=nvd_record,
     )
 
 
