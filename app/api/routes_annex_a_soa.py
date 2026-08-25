@@ -146,7 +146,7 @@ OLLAMA_GEN_URL = "http://localhost:11434/api/generate"
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 
 EMBED_MODEL = "nomic-embed-text"
-LLM_MODEL = "qwen3:14b"
+LLM_MODEL = "qwen3.8:27b"
 TOP_K = 6
 EMBED_BATCH_SIZE = 32
 

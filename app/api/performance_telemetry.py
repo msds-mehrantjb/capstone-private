@@ -22,6 +22,7 @@ PerformanceOutcome = Literal["Success", "Failed"]
 
 PERFORMANCE_DEFAULT_YEAR = 2026
 PERFORMANCE_EXECUTION_POINT_TOTAL = 36
+CONFIGURED_LLM_MODEL = "qwen3.8:27b"
 
 ENV_ENABLED = "PERFORMANCE_TELEMETRY_ENABLED"
 ENV_MAX_EVENTS = "PERFORMANCE_TELEMETRY_MAX_EVENTS"
@@ -324,8 +325,10 @@ def _model_identity(model: str | None, provider: str | None = "Ollama") -> dict[
     model_tag = normalized.split(":", 1)[1].strip() if ":" in normalized else None
     family_lower = family_source.lower()
 
-    if family_lower.startswith("qwen3"):
+    if family_lower == "qwen3":
         model_family = "Qwen3"
+    elif family_lower.startswith("qwen") and family_lower[4:].replace(".", "", 1).isdigit():
+        model_family = f"Qwen{family_lower[4:]}"
     elif family_lower == "nomic-embed-text":
         model_family = "Nomic Embed Text"
     else:
@@ -717,6 +720,15 @@ def shutdown_performance_writer() -> None:
     flush_performance_telemetry(timeout_seconds=2.0)
 
 
+def reset_performance_telemetry(year: int) -> Path:
+    resolved_year = resolve_telemetry_year(year)
+    flush_performance_telemetry(timeout_seconds=1.0)
+    with _file_lock:
+        path = _telemetry_file(resolved_year)
+        _atomic_write_json(path, _blank_telemetry_data(resolved_year))
+    return path
+
+
 def _events_for_dashboard(year: int) -> list[dict[str, Any]]:
     flush_performance_telemetry(timeout_seconds=1.0)
     with _file_lock:
@@ -893,6 +905,7 @@ def _section_summaries(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _model_summaries(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[str, dict[str, Any]] = {}
     catalog_order = {operation.id: index for index, operation in enumerate(EXECUTION_POINTS)}
+    configured_identity = _model_identity(CONFIGURED_LLM_MODEL)
 
     for event in events:
         if not event.get("model"):
@@ -912,6 +925,7 @@ def _model_summaries(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "modelFamily": identity["model_family"],
                 "modelTag": identity["model_tag"],
                 "parameterSize": identity["parameter_size"],
+                "configured": False,
                 "durations": [],
                 "totalTokens": 0,
                 "operationIds": set(),
@@ -940,20 +954,32 @@ def _model_summaries(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
         summaries,
         key=lambda item: (-int(item["callCount"]), str(item.get("model") or "")),
     )
-    if not any((item.get("modelFamily") or "").lower().startswith("qwen") for item in summaries):
-        qwen_identity = _model_identity("qwen3:14b")
+    configured_index = next(
+        (
+            index
+            for index, item in enumerate(summaries)
+            if item.get("model") == configured_identity["model"]
+        ),
+        None,
+    )
+    if configured_index is None:
         summaries.insert(0, {
-            "provider": qwen_identity["provider"],
-            "model": qwen_identity["model"],
-            "modelFamily": qwen_identity["model_family"],
-            "modelTag": qwen_identity["model_tag"],
-            "parameterSize": qwen_identity["parameter_size"],
+            "provider": configured_identity["provider"],
+            "model": configured_identity["model"],
+            "modelFamily": configured_identity["model_family"],
+            "modelTag": configured_identity["model_tag"],
+            "parameterSize": configured_identity["parameter_size"],
+            "configured": True,
             "callCount": 0,
             "averageDurationMs": None,
             "p95DurationMs": None,
             "totalTokens": 0,
             "operationIds": [],
         })
+    else:
+        configured_summary = summaries.pop(configured_index)
+        configured_summary["configured"] = True
+        summaries.insert(0, configured_summary)
     return summaries
 
 

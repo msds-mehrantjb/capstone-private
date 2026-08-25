@@ -25,6 +25,7 @@ export interface PerformanceModelSummary {
   modelFamily: string | null;
   modelTag: string | null;
   parameterSize: string | null;
+  configured?: boolean;
   callCount: number;
   averageDurationMs: number | null;
   p95DurationMs: number | null;

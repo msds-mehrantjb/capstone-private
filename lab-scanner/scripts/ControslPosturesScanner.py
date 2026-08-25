@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -7,7 +8,36 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 # FIXED PATH (correct folder name: lab-scanner)
 TARGET_FILE = BASE_DIR / "lab-scanner" / "config" / "targets.json"
 
-OUTPUT_FILE = BASE_DIR / "data" / "work" / "2026" / "VMControlsPostures.json"
+YEAR = os.getenv("CAPSTONE_CONTROLS_YEAR", "2026")
+OUTPUT_FILE = Path(
+    os.getenv(
+        "CAPSTONE_CONTROLS_OUTPUT_FILE",
+        str(BASE_DIR / "data" / "work" / YEAR / "VMControlsPostures.json"),
+    )
+)
+PROGRESS_FILE = Path(
+    os.getenv(
+        "CAPSTONE_CONTROLS_PROGRESS_FILE",
+        str(BASE_DIR / "data" / "work" / YEAR / "VMControlsPosturesProgress.json"),
+    )
+)
+
+
+def write_progress(status: str, total: int, completed: int, current_host: str = "", message: str = ""):
+    PROGRESS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "year": int(YEAR),
+                "status": status,
+                "total": total,
+                "completed": completed,
+                "current_host": current_host,
+                "message": message,
+            },
+            f,
+            indent=2,
+        )
 
 def run_powershell_remote(ip: str, username: str, password: str, ps_script: str):
     command = f"""
@@ -320,9 +350,33 @@ def main():
 
     hosts = target_data.get("hosts", [])
     output_hosts = []
+    total_hosts = len(hosts)
 
-    for host in hosts:
+    write_progress(
+        "Running",
+        total_hosts,
+        0,
+        "",
+        f"Running VM controls scanner: 0 of {total_hosts} hosts completed.",
+    )
+
+    for index, host in enumerate(hosts, start=1):
+        hostname = str(host.get("hostname", "")).strip()
+        write_progress(
+            "Running",
+            total_hosts,
+            index - 1,
+            hostname,
+            f"Scanning {hostname or 'host'} ({index} of {total_hosts}).",
+        )
         output_hosts.append(build_host_entry(host))
+        write_progress(
+            "Running",
+            total_hosts,
+            index,
+            hostname,
+            f"Running VM controls scanner: {index} of {total_hosts} hosts completed.",
+        )
 
     output_data = {
         "hosts": output_hosts
@@ -332,6 +386,13 @@ def main():
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(output_data, f, indent=2)
 
+    write_progress(
+        "Completed",
+        total_hosts,
+        total_hosts,
+        "",
+        f"VM controls scanner completed: {total_hosts} of {total_hosts} hosts completed.",
+    )
     print(f"Saved: {OUTPUT_FILE}")
 
 

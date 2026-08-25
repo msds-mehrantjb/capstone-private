@@ -66,11 +66,11 @@ EXPECTED_KINDS = {"LLM Reasoning", "RAG Retrieval", "Embedding", "Retry/Repair"}
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_QWEN_MODEL_DECLARATIONS = [
-    ("app/api/routes_threat_vulnerabilities.py", 'LLM_MODEL = "qwen3:14b"'),
-    ("app/api/routes_risk_evaluation_treatment.py", 'LLM_MODEL = "qwen3:14b"'),
-    ("app/api/routes_annex_a_soa.py", 'LLM_MODEL = "qwen3:14b"'),
-    ("app/api/routes_action_plan_implementation.py", 'OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")'),
-    ("app/api/routes_monitoring_improvement.py", 'OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")'),
+    ("app/api/routes_threat_vulnerabilities.py", 'LLM_MODEL = "qwen3.8:27b"'),
+    ("app/api/routes_risk_evaluation_treatment.py", 'LLM_MODEL = "qwen3.8:27b"'),
+    ("app/api/routes_annex_a_soa.py", 'LLM_MODEL = "qwen3.8:27b"'),
+    ("app/api/routes_action_plan_implementation.py", 'OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.8:27b")'),
+    ("app/api/routes_monitoring_improvement.py", 'OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.8:27b")'),
 ]
 
 EXPECTED_GENERATION_PARAMETER_INVENTORY = {
@@ -113,7 +113,7 @@ class PerformanceTelemetryTests(unittest.TestCase):
                 dashboard = telemetry.get_performance_dashboard(2026)
                 self.assertEqual(dashboard["catalogCoverage"], {"represented": 36, "total": 36})
                 self.assertEqual(len(dashboard["records"]), 36)
-                self.assertEqual(dashboard["modelSummaries"][0]["model"], "qwen3:14b")
+                self.assertEqual(dashboard["modelSummaries"][0]["model"], "qwen3.8:27b")
                 self.assertEqual(dashboard["modelSummaries"][0]["callCount"], 0)
                 self.assertEqual({record["status"] for record in dashboard["records"]}, {"Not Run"})
                 self.assertEqual(dashboard["summary"]["totalExecutionPoints"], 36)
@@ -324,6 +324,70 @@ class PerformanceTelemetryTests(unittest.TestCase):
             ["/api/performance-dashboard"],
         )
 
+    def test_reset_performance_telemetry_clears_dashboard_events(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            data_dir = Path(temp_dir)
+            with patch.object(telemetry, "DATA_WORK_DIR", data_dir):
+                telemetry._write_event_batch([
+                    {
+                        "event_id": "before-reset",
+                        "operation_id": "threats.cve_format",
+                        "started_at": "2026-08-25T12:34:50.123Z",
+                        "duration_ms": 100,
+                        "outcome": "Success",
+                        "error_type": None,
+                        "_year": 2026,
+                    },
+                ])
+                before = next(
+                    item
+                    for item in telemetry.get_performance_dashboard(2026)["records"]
+                    if item["id"] == "threats.cve_format"
+                )
+                self.assertEqual(before["callCount"], 1)
+
+                reset_path = telemetry.reset_performance_telemetry(2026)
+                stored = json.loads(reset_path.read_text(encoding="utf-8"))
+                self.assertEqual(stored["events"], [])
+
+                dashboard = telemetry.get_performance_dashboard(2026)
+                self.assertEqual({record["status"] for record in dashboard["records"]}, {"Not Run"})
+                self.assertEqual(dashboard["summary"]["totalObservedDurationMs"], 0)
+                self.assertEqual(dashboard["modelSummaries"][0]["model"], "qwen3.8:27b")
+                self.assertTrue(dashboard["modelSummaries"][0]["configured"])
+
+    def test_start_new_audit_resets_performance_telemetry(self) -> None:
+        from app.api import routes_dashboard
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            base_dir = Path(temp_dir)
+            data_work_dir = base_dir / "data" / "work"
+            with (
+                patch.object(routes_dashboard, "BASE_DIR", base_dir),
+                patch.object(telemetry, "DATA_WORK_DIR", data_work_dir),
+            ):
+                telemetry._write_event_batch([
+                    {
+                        "event_id": "before-start-new-audit",
+                        "operation_id": "action_plan.treatment_primary",
+                        "started_at": "2026-08-25T12:34:50.123Z",
+                        "duration_ms": 250,
+                        "outcome": "Success",
+                        "error_type": None,
+                        "_year": 2026,
+                    },
+                ])
+
+                routes_dashboard.reset_audit(routes_dashboard.ResetAuditRequest(year=2026))
+
+                stored = json.loads(
+                    (data_work_dir / "2026" / "PerformanceTelemetry.json").read_text(encoding="utf-8")
+                )
+                self.assertEqual(stored["events"], [])
+                dashboard = telemetry.get_performance_dashboard(2026)
+                self.assertEqual(dashboard["summary"]["totalObservedDurationMs"], 0)
+                self.assertEqual({record["callCount"] for record in dashboard["records"]}, {0})
+
     def test_no_sensitive_content_is_persisted(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             data_dir = Path(temp_dir)
@@ -344,9 +408,9 @@ class PerformanceTelemetryTests(unittest.TestCase):
 
     def test_safe_llm_configuration_whitelists_parameters_only(self) -> None:
         config = telemetry.safe_llm_configuration(
-            model="qwen3:14b",
+            model="qwen3.8:27b",
             payload={
-                "model": "qwen3:14b",
+                "model": "qwen3.8:27b",
                 "prompt": "do not persist",
                 "stream": False,
                 "format": "json",
@@ -361,10 +425,10 @@ class PerformanceTelemetryTests(unittest.TestCase):
         )
 
         self.assertEqual(config["provider"], "Ollama")
-        self.assertEqual(config["model"], "qwen3:14b")
-        self.assertEqual(config["model_family"], "Qwen3")
-        self.assertEqual(config["model_tag"], "14b")
-        self.assertEqual(config["parameter_size"], "14B")
+        self.assertEqual(config["model"], "qwen3.8:27b")
+        self.assertEqual(config["model_family"], "Qwen3.8")
+        self.assertEqual(config["model_tag"], "27b")
+        self.assertEqual(config["parameter_size"], "27B")
         self.assertEqual(
             config["generation_parameters"],
             {
@@ -383,7 +447,7 @@ class PerformanceTelemetryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             data_dir = Path(temp_dir)
             payload = {
-                "model": "qwen3:14b",
+                "model": "qwen3.8:27b",
                 "prompt": "do not persist",
                 "stream": False,
                 "options": {"temperature": 0.1},
@@ -393,12 +457,12 @@ class PerformanceTelemetryTests(unittest.TestCase):
                     year=2026,
                     operation_id="action_plan.treatment_primary",
                     llm_configuration=telemetry.safe_llm_configuration(
-                        model="qwen3:14b",
+                        model="qwen3.8:27b",
                         payload=payload,
                     ),
                 ) as span:
                     span.set_ollama_metrics({
-                        "model": "qwen3:14b",
+                        "model": "qwen3.8:27b",
                         "prompt_eval_count": 10,
                         "eval_count": 20,
                         "total_duration": 123_000_000,
@@ -412,7 +476,7 @@ class PerformanceTelemetryTests(unittest.TestCase):
 
                 stored = json.loads((data_dir / "2026" / "PerformanceTelemetry.json").read_text(encoding="utf-8"))
                 event = stored["events"][0]
-                self.assertEqual(event["model"], "qwen3:14b")
+                self.assertEqual(event["model"], "qwen3.8:27b")
                 self.assertEqual(event["prompt_tokens"], 10)
                 self.assertEqual(event["completion_tokens"], 20)
                 self.assertEqual(event["total_tokens"], 30)
@@ -435,10 +499,10 @@ class PerformanceTelemetryTests(unittest.TestCase):
                     "outcome": "Success",
                     "error_type": None,
                     "provider": "Ollama",
-                    "model": "qwen3:14b",
-                    "model_family": "Qwen3",
-                    "model_tag": "14b",
-                    "parameter_size": "14B",
+                    "model": "qwen3.8:27b",
+                    "model_family": "Qwen3.8",
+                    "model_tag": "27b",
+                    "parameter_size": "27B",
                     "generation_parameters": {
                         "temperature": 0.05,
                         "top_p": 0.9,
@@ -458,10 +522,10 @@ class PerformanceTelemetryTests(unittest.TestCase):
                     "outcome": "Success",
                     "error_type": None,
                     "provider": "Ollama",
-                    "model": "qwen3:14b",
-                    "model_family": "Qwen3",
-                    "model_tag": "14b",
-                    "parameter_size": "14B",
+                    "model": "qwen3.8:27b",
+                    "model_family": "Qwen3.8",
+                    "model_tag": "27b",
+                    "parameter_size": "27B",
                     "generation_parameters": {
                         "temperature": 0.07,
                         "top_p": 0.9,
@@ -482,10 +546,10 @@ class PerformanceTelemetryTests(unittest.TestCase):
                     if item["id"] == "action_plan.treatment_repair"
                 )
 
-                self.assertEqual(record["model"], "qwen3:14b")
-                self.assertEqual(record["modelFamily"], "Qwen3")
-                self.assertEqual(record["modelTag"], "14b")
-                self.assertEqual(record["parameterSize"], "14B")
+                self.assertEqual(record["model"], "qwen3.8:27b")
+                self.assertEqual(record["modelFamily"], "Qwen3.8")
+                self.assertEqual(record["modelTag"], "27b")
+                self.assertEqual(record["parameterSize"], "27B")
                 self.assertEqual(record["generationParameters"]["temperature"], 0.07)
                 self.assertEqual(record["generationParameters"]["topP"], 0.9)
                 self.assertEqual(record["generationParameters"]["numPredict"], 240)
@@ -500,17 +564,17 @@ class PerformanceTelemetryTests(unittest.TestCase):
             data_dir = Path(temp_dir)
             events = [
                 {
-                    "event_id": "qwen14",
+                    "event_id": "qwen27",
                     "operation_id": "action_plan.treatment_primary",
                     "started_at": "2026-08-25T12:34:50.123Z",
                     "duration_ms": 100,
                     "outcome": "Success",
                     "error_type": None,
                     "provider": "Ollama",
-                    "model": "qwen3:14b",
-                    "model_family": "Qwen3",
-                    "model_tag": "14b",
-                    "parameter_size": "14B",
+                    "model": "qwen3.8:27b",
+                    "model_family": "Qwen3.8",
+                    "model_tag": "27b",
+                    "parameter_size": "27B",
                     "generation_parameters": {"temperature": 0.1},
                     "total_tokens": 10,
                     "_year": 2026,
@@ -536,20 +600,20 @@ class PerformanceTelemetryTests(unittest.TestCase):
                 telemetry._write_event_batch(events)
                 summaries = telemetry.get_performance_dashboard(2026)["modelSummaries"]
 
-                self.assertEqual({item["model"] for item in summaries}, {"qwen3:14b", "qwen3:32b"})
-                qwen14 = next(item for item in summaries if item["model"] == "qwen3:14b")
+                self.assertEqual({item["model"] for item in summaries}, {"qwen3.8:27b", "qwen3:32b"})
+                qwen27 = next(item for item in summaries if item["model"] == "qwen3.8:27b")
                 qwen32 = next(item for item in summaries if item["model"] == "qwen3:32b")
-                self.assertEqual(qwen14["parameterSize"], "14B")
+                self.assertEqual(qwen27["parameterSize"], "27B")
                 self.assertEqual(qwen32["parameterSize"], "32B")
-                self.assertEqual(qwen14["totalTokens"], 10)
+                self.assertEqual(qwen27["totalTokens"], 10)
                 self.assertEqual(qwen32["operationIds"], ["monitoring.action_primary"])
 
     def test_dynamic_num_predict_records_resolved_value(self) -> None:
         resolved_num_predict = max(220, 4 * 80)
         config = telemetry.safe_llm_configuration(
-            model="qwen3:14b",
+            model="qwen3.8:27b",
             payload={
-                "model": "qwen3:14b",
+                "model": "qwen3.8:27b",
                 "prompt": "do not persist",
                 "stream": False,
                 "options": {
@@ -563,9 +627,9 @@ class PerformanceTelemetryTests(unittest.TestCase):
 
     def test_missing_options_remain_missing(self) -> None:
         config = telemetry.safe_llm_configuration(
-            model="qwen3:14b",
+            model="qwen3.8:27b",
             payload={
-                "model": "qwen3:14b",
+                "model": "qwen3.8:27b",
                 "prompt": "do not persist",
                 "stream": False,
                 "format": "json",
@@ -589,9 +653,9 @@ class PerformanceTelemetryTests(unittest.TestCase):
             with patch.object(telemetry, "DATA_WORK_DIR", Path(temp_dir)):
                 with patch("requests.post") as post:
                     config = telemetry.safe_llm_configuration(
-                        model="qwen3:14b",
+                        model="qwen3.8:27b",
                         payload={
-                            "model": "qwen3:14b",
+                            "model": "qwen3.8:27b",
                             "prompt": "do not persist",
                             "stream": False,
                             "options": {"temperature": 0.1},
@@ -610,7 +674,7 @@ class PerformanceTelemetryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             data_dir = Path(temp_dir)
             payload = {
-                "model": "qwen3:14b",
+                "model": "qwen3.8:27b",
                 "prompt": "secret prompt embedding vector retrieved content host asset CVE-2026-9999",
                 "stream": False,
                 "options": {"temperature": 0.1},
@@ -620,7 +684,7 @@ class PerformanceTelemetryTests(unittest.TestCase):
                     year=2026,
                     operation_id="action_plan.treatment_primary",
                     llm_configuration=telemetry.safe_llm_configuration(
-                        model="qwen3:14b",
+                        model="qwen3.8:27b",
                         payload=payload,
                     ),
                 ) as span:

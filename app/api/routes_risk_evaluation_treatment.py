@@ -57,7 +57,7 @@ BASE_DIR = find_project_root()
 
 NVD_API_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 OLLAMA_GEN_URL = "http://localhost:11434/api/generate"
-LLM_MODEL = "qwen3:14b"
+LLM_MODEL = "qwen3.8:27b"
 
 SESSION = requests.Session()
 

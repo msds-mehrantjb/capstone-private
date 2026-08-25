@@ -15,7 +15,7 @@ It performs the current full startup flow in this order:
 5. Runs `npm install` in `app\` to synchronize frontend dependencies
 6. Verifies Ollama is installed and running
 7. Verifies the required Ollama models are available:
-   - `qwen3:14b`
+   - `qwen3.8:27b`
    - `nomic-embed-text`
 8. Verifies Docker Desktop / Docker Engine is installed and running
 9. Stops existing listeners on the Capstone dev ports

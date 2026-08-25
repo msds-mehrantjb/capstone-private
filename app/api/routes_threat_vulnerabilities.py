@@ -12,7 +12,7 @@ from app.api.aiml_kpi_telemetry import ollama_total_tokens, safe_increment_llm_c
 from app.api.performance_telemetry import performance_span, safe_llm_configuration
 from app.api.workflow_gate import ensure_previous_steps_completed
 
-LLM_MODEL = "qwen3:14b"
+LLM_MODEL = "qwen3.8:27b"
 ENABLE_LLM_MITIGATIONS = os.getenv("ENABLE_LLM_MITIGATIONS", "").strip().lower() in {
     "1",
     "true",

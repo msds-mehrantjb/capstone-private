@@ -1065,7 +1065,7 @@ export default function MonitoringImprovement() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen 3 reasoning to prepare evidence fields for the selected host.",
+          "Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen3.8 27B reasoning to prepare evidence fields for the selected host.",
       },
     ]);
     scrollChatToBottom();
@@ -1370,7 +1370,7 @@ export default function MonitoringImprovement() {
       {
         role: "assistant",
         content:
-        `Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen 3 reasoning to generate recommended action for selected row ${selectedControl.CVE}.`,
+        `Please wait, while system is using RAG over ISO 27001:2022 controls and Qwen3.8 27B reasoning to generate recommended action for selected row ${selectedControl.CVE}.`,
       },
     ]);
 

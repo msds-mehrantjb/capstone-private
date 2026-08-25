@@ -5,8 +5,12 @@ from typing import Any
 from datetime import datetime
 from copy import deepcopy
 import json
+import logging
+
+from app.api.performance_telemetry import reset_performance_telemetry
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
+logger = logging.getLogger(__name__)
 
 
 class ResetAuditRequest(BaseModel):
@@ -297,9 +301,9 @@ def _reset_aiml_files(year: int) -> None:
                 "text_embedding_model": "nomic-embed-text:latest",
             },
             "llm": {
-                "model": "Qwen 33",
-                "version": "Qwen 33",
-                "parameters": "14B",
+                "model": "Qwen3.8 27B",
+                "version": "Qwen3.8 27B",
+                "parameters": "27B",
                 "deployment_style": "Local LLM - Llama",
             },
         }
@@ -786,5 +790,9 @@ def reset_audit(payload: ResetAuditRequest):
     _reset_scope_draft_file(year)
     _reset_working_files(year)
     _reset_aiml_files(year)
+    try:
+        reset_performance_telemetry(year)
+    except Exception as exc:
+        logger.warning("[Performance telemetry] Failed to reset for new audit: %s", exc)
 
     return _normalize_dashboard_payload(data, "Production", year)

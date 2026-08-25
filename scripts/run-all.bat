@@ -5,7 +5,7 @@ set "ROOT_DIR=%~dp0.."
 for %%I in ("%ROOT_DIR%") do set "ROOT_DIR=%%~fI"
 
 set "VENV_PYTHON=%ROOT_DIR%\venv\Scripts\python.exe"
-set "OLLAMA_MODEL=qwen3:14b"
+set "OLLAMA_MODEL=qwen3.8:27b"
 set "OLLAMA_EMBED_MODEL=nomic-embed-text"
 set "API_HOST=127.0.0.1"
 set "PREFERRED_API_PORT=8003"

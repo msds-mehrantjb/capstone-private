@@ -78,6 +78,16 @@ type ResetControlPostureAssessmentResponse = {
   message?: string;
 };
 
+type ControlPostureAssessProgressDTO = {
+  success?: boolean;
+  year?: number;
+  status?: string;
+  total?: number;
+  completed?: number;
+  current_host?: string;
+  message?: string;
+};
+
 type Kpi = {
   title: string;
   value: string;
@@ -191,6 +201,16 @@ async function apiAssessControlPostures(
   }
 
   return data;
+}
+
+async function apiGetControlPostureAssessProgress(
+  year: number
+): Promise<ControlPostureAssessProgressDTO> {
+  return apiGetJSON<ControlPostureAssessProgressDTO>(
+    `/api/controls-postures/assess-progress?year=${encodeURIComponent(
+      String(year)
+    )}&_ts=${Date.now()}`
+  );
 }
 
 async function apiSubmitControlPostures(
@@ -312,11 +332,13 @@ function CiaPill({ value }: { value: string }) {
 function AssistantMessages({
   messages,
   sending,
+  progressMessage,
   onResetConfirm,
   chatBottomRef,
 }: {
   messages: ChatMessage[];
   sending: boolean;
+  progressMessage?: string | null;
   onResetConfirm: (confirmed: boolean) => void;
   chatBottomRef: React.RefObject<HTMLDivElement | null>;
 }) {
@@ -387,7 +409,7 @@ function AssistantMessages({
       {sending ? (
         <div className="flex justify-start">
           <div className="w-full rounded-2xl bg-white/5 px-4 py-3 text-sm text-slate-200 ring-1 ring-white/10">
-            …
+            {progressMessage || "…"}
           </div>
         </div>
       ) : null}
@@ -454,6 +476,7 @@ export default function ControlsPostures() {
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [assessProgressMessage, setAssessProgressMessage] = useState<string | null>(null);
   const chatBottomRef = useRef<HTMLDivElement | null>(null);
 
   const hosts = useMemo(() => {
@@ -880,6 +903,21 @@ export default function ControlsPostures() {
     }
   };
     
+  const formatAssessProgress = (progress: ControlPostureAssessProgressDTO): string => {
+    const total = Number(progress.total ?? 0);
+    const completed = Number(progress.completed ?? 0);
+    const safeTotal = Number.isFinite(total) && total > 0 ? total : 0;
+    const safeCompleted = Number.isFinite(completed) && completed >= 0 ? completed : 0;
+    const status = progress.status || "Running";
+    const host = progress.current_host ? ` Current host: ${progress.current_host}.` : "";
+
+    if (safeTotal > 0) {
+      return `${status}: ${Math.min(safeCompleted, safeTotal)} of ${safeTotal} hosts completed.${host}`;
+    }
+
+    return progress.message || `${status}: preparing assessment progress.`;
+  };
+
   const onSend = async () => {
     const text = input.trim();
     if (!text || sending) return;
@@ -938,9 +976,20 @@ export default function ControlsPostures() {
         }
 
         let createdForAssess = false;
+        let progressTimer: number | null = null;
+
+        const refreshAssessProgress = async () => {
+          try {
+            const progress = await apiGetControlPostureAssessProgress(YEAR);
+            setAssessProgressMessage(formatAssessProgress(progress));
+          } catch {
+            setAssessProgressMessage("Assessment is still running. Waiting for progress update...");
+          }
+        };
 
         try {
           let initializationMessage = "";
+          setAssessProgressMessage("Starting Existing Controls & Postures assessment...");
 
           if (!controlPostureAssessmentHasRecords) {
             createdForAssess = true;
@@ -951,6 +1000,11 @@ export default function ControlsPostures() {
               createResult.message ||
               "Existing Controls and Postures Assessment started.";
           }
+
+          await refreshAssessProgress();
+          progressTimer = window.setInterval(() => {
+            void refreshAssessProgress();
+          }, 2000);
 
           const result = await apiAssessControlPostures(YEAR);
           setExpandedHostname(null);
@@ -980,6 +1034,10 @@ export default function ControlsPostures() {
             },
           ]);
         } finally {
+          if (progressTimer !== null) {
+            window.clearInterval(progressTimer);
+          }
+          setAssessProgressMessage(null);
           if (createdForAssess) {
             setCreatingAssessment(false);
           }
@@ -1363,6 +1421,7 @@ export default function ControlsPostures() {
                   <AssistantMessages
                     messages={messages}
                     sending={sending || resettingAssessment}
+                    progressMessage={assessProgressMessage}
                     onResetConfirm={handleResetConfirm}
                     chatBottomRef={chatBottomRef}
                   />
@@ -1716,6 +1775,7 @@ export default function ControlsPostures() {
                 <AssistantMessages
                   messages={messages}
                   sending={sending || resettingAssessment}
+                  progressMessage={assessProgressMessage}
                   onResetConfirm={handleResetConfirm}
                   chatBottomRef={chatBottomRef}
                 />

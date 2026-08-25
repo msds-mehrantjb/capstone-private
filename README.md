@@ -168,11 +168,11 @@ Additional lab/scanning workflows may require:
 9. Verifies Ollama is installed and starts `ollama serve` when Ollama is not responding.
 10. Verifies the required Ollama models and downloads missing models automatically.
 11. Verifies Docker CLI/Engine and starts Docker Desktop when the engine is not responding.
-12. Stops existing development servers listening on ports `8002` and `5174`.
+12. Stops existing development servers listening on ports `8003`, `8002`, and `5174`.
 13. Performs a backend import preflight.
-14. Starts FastAPI on port `8002`.
+14. Starts FastAPI on port `8003`, with `8002` as a fallback.
 15. Waits for `/health` to succeed.
-16. Starts Vite on port `5174` with `VITE_API_BASE_URL=http://127.0.0.1:8002`.
+16. Starts Vite on port `5174` with `VITE_API_BASE_URL` pointing to the live backend.
 
 The script **does not install Python, Ollama, or Docker Desktop automatically**. It reports what is missing and stops. Node.js is the exception: when `winget` is available, the launcher can offer to install Node.js LTS.
 
@@ -181,7 +181,7 @@ The script **does not install Python, Ollama, or Docker Desktop automatically**.
 The application currently expects these local models:
 
 ```text
-qwen3:14b
+qwen3.8:27b
 nomic-embed-text
 ```
 
@@ -190,7 +190,7 @@ The startup script checks both models and automatically runs `ollama pull` if ei
 You can also install or verify them manually:
 
 ```powershell
-ollama pull qwen3:14b
+ollama pull qwen3.8:27b
 ollama pull nomic-embed-text
 ollama list
 ```
@@ -207,10 +207,10 @@ The launcher creates `app\.env` if it does not already exist. Its local defaults
 
 ```env
 OLLAMA_URL=http://127.0.0.1:11434/api/generate
-OLLAMA_MODEL=qwen3:14b
+OLLAMA_MODEL=qwen3.8:27b
 OLLAMA_EMBED_URL=http://127.0.0.1:11434/api/embeddings
 OLLAMA_EMBED_MODEL=nomic-embed-text
-VITE_API_BASE_URL=http://127.0.0.1:8002
+VITE_API_BASE_URL=http://127.0.0.1:8003
 ```
 
 If `app\.env` already exists but does not contain `VITE_API_BASE_URL`, the launcher appends the backend URL automatically.
@@ -234,9 +234,9 @@ The first run can take several minutes because Python packages, npm packages, or
 After startup succeeds:
 
 - **Frontend:** `http://localhost:5174`
-- **Backend:** `http://127.0.0.1:8002`
-- **FastAPI Docs:** `http://127.0.0.1:8002/docs`
-- **Backend Health:** `http://127.0.0.1:8002/health`
+- **Backend:** `http://127.0.0.1:8003`
+- **FastAPI Docs:** `http://127.0.0.1:8003/docs`
+- **Backend Health:** `http://127.0.0.1:8003/health`
 - **Ollama:** `http://127.0.0.1:11434`
 
 The launcher opens separate **Capstone Backend** and **Capstone Frontend** terminal windows and waits for the backend health check before starting the frontend.
@@ -260,7 +260,7 @@ Frontend:
 When starting the frontend separately, make sure `app\.env` already contains:
 
 ```env
-VITE_API_BASE_URL=http://127.0.0.1:8002
+VITE_API_BASE_URL=http://127.0.0.1:8003
 ```
 
 Also start the backend first if the frontend workflow needs API access. The standalone frontend helper does not perform the full dependency, Ollama, Docker, or backend-health preflight performed by `run-all.bat`.
@@ -401,7 +401,7 @@ Check the **Capstone Backend** terminal window. You can also run the import pref
 Then verify:
 
 ```text
-http://127.0.0.1:8002/health
+http://127.0.0.1:8003/health
 ```
 
 ## Verification Checklist
@@ -409,10 +409,10 @@ http://127.0.0.1:8002/health
 After startup, verify:
 
 1. Ollama responds at `127.0.0.1:11434`.
-2. `qwen3:14b` and `nomic-embed-text` are installed.
+2. `qwen3.8:27b` and `nomic-embed-text` are installed.
 3. Docker Engine is running.
-4. FastAPI health succeeds at `http://127.0.0.1:8002/health`.
-5. FastAPI documentation opens at `http://127.0.0.1:8002/docs`.
+4. FastAPI health succeeds at `http://127.0.0.1:8003/health`.
+5. FastAPI documentation opens at `http://127.0.0.1:8003/docs`.
 6. The Vite frontend loads at `http://localhost:5174`.
 7. Required `data/` directories are available.
 8. Runtime Chroma storage is created when RAG workflows require it.

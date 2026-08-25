@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any
 import json
+import os
 import re
 import socket
 import subprocess
@@ -16,6 +17,7 @@ router = APIRouter(
 )
 
 VALID_STEP_STATUSES = {"Blocked", "Not Started", "In Progress", "Completed"}
+VM_CONTROLS_SCANNER_TIMEOUT_SECONDS = 1500
 
 class CreateControlsPosturesRequest(BaseModel):
     year: int = 2026
@@ -100,6 +102,10 @@ def _vm_controls_output_file(year: int) -> Path:
     return BASE_DIR / "data" / "work" / str(year) / "VMControlsPostures.json"
 
 
+def _vm_controls_progress_file(year: int) -> Path:
+    return BASE_DIR / "data" / "work" / str(year) / "VMControlsPosturesProgress.json"
+
+
 def _lab_scanner_script() -> Path:
     return BASE_DIR / "lab-scanner" / "scripts" / "ControslPosturesScanner.py"
 
@@ -118,6 +124,28 @@ def _write_json(path: Path, data: Any):
     path.write_text(
         json.dumps(data, indent=2, ensure_ascii=False),
         encoding="utf-8",
+    )
+
+
+def _write_controls_progress(
+    year: int,
+    *,
+    status: str,
+    total: int = 0,
+    completed: int = 0,
+    current_host: str = "",
+    message: str = "",
+) -> None:
+    _write_json(
+        _vm_controls_progress_file(year),
+        {
+            "year": year,
+            "status": status,
+            "total": max(0, int(total)),
+            "completed": max(0, int(completed)),
+            "current_host": current_host,
+            "message": message,
+        },
     )
 
 
@@ -500,16 +528,30 @@ def _load_vm_targets_map() -> dict[str, dict]:
 def _run_vm_controls_scanner(year: int) -> dict[str, dict]:
     script_path = _lab_scanner_script()
     output_path = _vm_controls_output_file(year)
+    progress_path = _vm_controls_progress_file(year)
 
     if not script_path.exists():
         raise FileNotFoundError(f"Scanner script not found: {script_path}")
 
-    result = subprocess.run(
-        [sys.executable, str(script_path)],
-        cwd=str(BASE_DIR),
-        capture_output=True,
-        text=True,
-    )
+    scanner_env = os.environ.copy()
+    scanner_env["CAPSTONE_CONTROLS_YEAR"] = str(year)
+    scanner_env["CAPSTONE_CONTROLS_OUTPUT_FILE"] = str(output_path)
+    scanner_env["CAPSTONE_CONTROLS_PROGRESS_FILE"] = str(progress_path)
+
+    try:
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd=str(BASE_DIR),
+            capture_output=True,
+            text=True,
+            timeout=VM_CONTROLS_SCANNER_TIMEOUT_SECONDS,
+            env=scanner_env,
+        )
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(
+            "VM controls scanner timed out after "
+            f"{VM_CONTROLS_SCANNER_TIMEOUT_SECONDS} seconds."
+        ) from e
 
     if result.returncode != 0:
         raise RuntimeError(
@@ -589,6 +631,36 @@ def create_new_controls_postures(req: CreateControlsPosturesRequest):
     }
 
 
+@router.get("/assess-progress")
+def get_controls_postures_assess_progress(year: int = Query(2026)):
+    progress = _read_json(_vm_controls_progress_file(year), {})
+    if not isinstance(progress, dict):
+        progress = {}
+
+    total = progress.get("total", 0)
+    completed = progress.get("completed", 0)
+
+    try:
+        total = max(0, int(total))
+    except (TypeError, ValueError):
+        total = 0
+
+    try:
+        completed = max(0, int(completed))
+    except (TypeError, ValueError):
+        completed = 0
+
+    return {
+        "success": True,
+        "year": year,
+        "status": str(progress.get("status") or "Not Started"),
+        "total": total,
+        "completed": min(completed, total) if total else completed,
+        "current_host": str(progress.get("current_host") or ""),
+        "message": str(progress.get("message") or ""),
+    }
+
+
 @router.post("/assess")
 def assess_controls_postures(req: AssessControlsPosturesRequest):
     if not _has_submitted_scope_document():
@@ -620,12 +692,35 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
     assetdetails_map = _load_assetdetails_host_map(req.year)
     inventory_host_map = _load_asset_inventory_host_map(req.year)
 
+    _write_controls_progress(
+        req.year,
+        status="Running",
+        total=len(targets_map),
+        completed=0,
+        message=(
+            f"Running VM controls scanner: 0 of {len(targets_map)} hosts completed."
+            if targets_map
+            else "No VM scanner targets found. Using available inventory data."
+        ),
+    )
+
     vm_results_map: dict[str, dict] = {}
+    scanner_warning = ""
     if targets_map:
         try:
             vm_results_map = _run_vm_controls_scanner(req.year)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"VM scanning failed: {e}") from e
+            scanner_warning = (
+                "Live VM controls scanner did not complete, so the assessment used "
+                f"available inventory fallback data instead. Scanner details: {e}"
+            )
+            _write_controls_progress(
+                req.year,
+                status="Scanner fallback",
+                total=len(targets_map),
+                completed=0,
+                message=scanner_warning,
+            )
 
     other_hosts: list[str] = []
 
@@ -669,6 +764,13 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
     raw["hosts"] = hosts
     raw["status"] = "In Progress"
     _write_json(controls_path, raw)
+    _write_controls_progress(
+        req.year,
+        status="Completed",
+        total=len(hosts),
+        completed=len(hosts),
+        message=f"Existing Controls & Postures assessment completed: {len(hosts)} of {len(hosts)} hosts completed.",
+    )
 
     try:
         _update_system_status(req.year, "In Progress")
@@ -682,6 +784,9 @@ def assess_controls_postures(req: AssessControlsPosturesRequest):
         "Existing Controls & Postures assessment completed succesfully.",
         "Live VM machines detected:",
     ]
+
+    if scanner_warning:
+        lines.extend(["", scanner_warning, ""])
 
     if live_vm_hosts:
         lines.extend([f"- {name}" for name in live_vm_hosts])

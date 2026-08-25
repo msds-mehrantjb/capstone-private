@@ -42,18 +42,18 @@ The application registers these routers from `app/main.py`.
   - Performance is surfaced in the `AI/ML Dashboard`, mainly in `ML-based UABV`, where behavior model accuracy, high-risk user percentage, score difference between ML and rule scoring, and top contributing feature distribution are kept.
 
 - `Annex A & SoA`
-  - Uses RAG plus local `Qwen 3` reasoning to retrieve the most relevant ISO control context and generate recommended control information.
+  - Uses RAG plus local `Qwen3.8 27B` reasoning to retrieve the most relevant ISO control context and generate recommended control information.
   - Uses retrieval over embedded ISO control knowledge and then applies reasoning to map risk records to suitable controls, explain why they fit, and support adding recommended controls into the table.
   - RAG and reasoning activity for this page contributes to the `AI/ML Dashboard` sections `RAG Performance`, `LLM Performance`, and `Datasets / RAG / LLM`, where retrieval count, retrieval success rate, reasoning calls, token usage, embedding model, vector database, and local LLM details are kept.
 
 - `Action Plan / Implementation`
-  - Uses RAG plus local `Qwen 3` reasoning to generate treatment actions, refine control-aligned implementation guidance, generate evidence-row content, and prepare supporting guidance content.
+  - Uses RAG plus local `Qwen3.8 27B` reasoning to generate treatment actions, refine control-aligned implementation guidance, generate evidence-row content, and prepare supporting guidance content.
   - The reasoning flow is used when treatment actions are generated for selected controls, when implementation and evidence text is prepared for host-level action rows, and when the page generates the downloadable guide document.
   - The downloadable guide document in this page is generated through the same RAG-and-reasoning workflow and gives step-by-step implementation and evidence-creation guidance for the selected action items.
   - RAG and reasoning activity for this page contributes to the `AI/ML Dashboard` sections `RAG Performance`, `LLM Performance`, and `Datasets / RAG / LLM`.
 
 - `Monitoring & Improvement`
-  - Uses RAG plus local `Qwen 3` reasoning to generate monitoring recommendations, prepare monitoring evidence rows, prepare evidence fields, and support ongoing monitoring / improvement records for each tracked item.
+  - Uses RAG plus local `Qwen3.8 27B` reasoning to generate monitoring recommendations, prepare monitoring evidence rows, prepare evidence fields, and support ongoing monitoring / improvement records for each tracked item.
   - The reasoning flow is used when the monitoring table is created, when recommended monitoring actions are generated for selected rows, when evidence descriptions and monitoring evidence rows are prepared, and when the page generates the downloadable guide document.
   - The downloadable guide document in this page is generated through the same RAG-and-reasoning workflow and gives step-by-step monitoring and evidence-collection guidance for the selected improvement items.
   - RAG and reasoning activity for this page contributes to the `AI/ML Dashboard` sections `RAG Performance`, `LLM Performance`, and `Datasets / RAG / LLM`.

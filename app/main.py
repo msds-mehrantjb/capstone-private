@@ -1,3 +1,6 @@
+import os
+import subprocess
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,6 +27,46 @@ from app.api.performance_telemetry import (
     shutdown_performance_writer,
     start_performance_writer,
 )
+
+REQUIRE_DOCKER_STARTUP = os.getenv("CAPSTONE_REQUIRE_DOCKER_STARTUP", "true").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
+
+
+def _assert_docker_ready_for_startup() -> None:
+    if not REQUIRE_DOCKER_STARTUP:
+        print("Docker startup check skipped by CAPSTONE_REQUIRE_DOCKER_STARTUP")
+        return
+
+    try:
+        result = subprocess.run(
+            ["docker", "info"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+    except FileNotFoundError as exc:
+        raise RuntimeError(
+            "Docker startup check failed: Docker CLI was not found. "
+            "Install Docker Desktop, then start the backend again."
+        ) from exc
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            "Docker startup check failed: Docker Engine did not respond within 30 seconds. "
+            "Open Docker Desktop, wait until the engine is running, then start the backend again."
+        ) from exc
+
+    if result.returncode != 0:
+        details = (result.stderr or result.stdout or "docker info failed").strip()
+        raise RuntimeError(
+            "Docker startup check failed, so the backend was not started. "
+            "Open Docker Desktop, wait until Docker Engine is running, then start the backend again. "
+            f"Docker details: {details}"
+        )
 
 
 def create_app() -> FastAPI:
@@ -76,6 +119,7 @@ app = create_app()
 
 @app.on_event("startup")
 async def startup_event():
+    _assert_docker_ready_for_startup()
     start_performance_writer()
     print("Backend started successfully")
 

@@ -320,6 +320,8 @@ export default function PerformanceDashboard() {
   }, [records]);
 
   const qwenSummaries = useMemo(() => {
+    const configuredSummaries = modelSummaries.filter((summary) => summary.configured);
+    if (configuredSummaries.length > 0) return configuredSummaries;
     return modelSummaries.filter((summary) =>
       (summary.modelFamily ?? "").toLowerCase().startsWith("qwen")
     );
@@ -448,7 +450,9 @@ function DashboardContent({
                       </div>
                     </div>
                     <span className="mt-2 inline-flex w-max rounded-full bg-indigo-500/10 px-2.5 py-1 text-xs font-semibold text-indigo-100 ring-1 ring-indigo-400/25 sm:mt-0">
-                      {summary.callCount > 0
+                      {summary.configured
+                        ? "Configured model"
+                        : summary.callCount > 0
                         ? `${summary.callCount} reasoning calls`
                         : "Configured model"}
                     </span>
