@@ -19,6 +19,11 @@ from app.api.routes_action_plan_implementation import router as action_plan_impl
 from app.api.routes_monitoring_improvement import router as monitoring_improvement_router
 from app.api.routes_final_deliverables import router as final_deliverables_router
 from app.api.routes_aiml_dashboard import router as aiml_dashboard_router
+from app.api.routes_performance_dashboard import router as performance_dashboard_router
+from app.api.performance_telemetry import (
+    shutdown_performance_writer,
+    start_performance_writer,
+)
 
 
 def create_app() -> FastAPI:
@@ -61,6 +66,7 @@ def create_app() -> FastAPI:
     app.include_router(monitoring_improvement_router)
     app.include_router(final_deliverables_router)
     app.include_router(aiml_dashboard_router)
+    app.include_router(performance_dashboard_router)
 
     return app
 
@@ -70,9 +76,11 @@ app = create_app()
 
 @app.on_event("startup")
 async def startup_event():
+    start_performance_writer()
     print("Backend started successfully")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    shutdown_performance_writer()
     print("Backend shutdown complete")

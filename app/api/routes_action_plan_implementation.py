@@ -18,6 +18,11 @@ from app.api.aiml_kpi_telemetry import (
     safe_increment_llm_counter,
     safe_increment_rag_counter,
 )
+from app.api.performance_telemetry import (
+    performance_span,
+    safe_embedding_configuration,
+    safe_llm_configuration,
+)
 from app.api.workflow_gate import ensure_previous_steps_completed
 
 print("LOADED routes_action_plan_implementation.py")
@@ -994,6 +999,29 @@ def _retrieve_relevant_iso_controls(
     host_lines: list[str],
     top_k: int = 5,
 ) -> list[dict]:
+    with performance_span(
+        year=year,
+        operation_id="action_plan.retrieve_controls",
+        model_configuration=safe_embedding_configuration(model=OLLAMA_EMBED_MODEL),
+    ):
+        return _retrieve_relevant_iso_controls_impl(
+            year=year,
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification,
+            host_lines=host_lines,
+            top_k=top_k,
+        )
+
+
+def _retrieve_relevant_iso_controls_impl(
+    year: int,
+    control_id: str,
+    control_name: str,
+    justification: str,
+    host_lines: list[str],
+    top_k: int = 5,
+) -> list[dict]:
     records = _load_iso_controls_csv(year)
     cache = _load_embedding_cache(year)
 
@@ -1223,9 +1251,15 @@ ISO guidance:
         },
     }
 
-    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-    res.raise_for_status()
-    data = res.json()
+    with performance_span(
+        year=year,
+        operation_id="action_plan.treatment_primary",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+    ) as span:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        span.set_ollama_metrics(data)
     safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     response_text = _normalize_text(data.get("response"))
@@ -1303,9 +1337,15 @@ ISO guidance:
         },
     }
 
-    repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=180)
-    repair_res.raise_for_status()
-    repair_data = repair_res.json()
+    with performance_span(
+        year=year,
+        operation_id="action_plan.treatment_repair",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=repair_payload),
+    ) as span:
+        repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=180)
+        repair_res.raise_for_status()
+        repair_data = repair_res.json()
+        span.set_ollama_metrics(repair_data)
     safe_increment_llm_counter(year, ollama_total_tokens(repair_data))
     repaired_text = _normalize_text(repair_data.get("response"))
 
@@ -1498,9 +1538,15 @@ Relevant ISO Guidance:
         },
     }
 
-    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-    res.raise_for_status()
-    data = res.json()
+    with performance_span(
+        year=year,
+        operation_id="action_plan.evidence_recommendations",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+    ) as span:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        span.set_ollama_metrics(data)
     safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     raw_text = _normalize_text(data.get("response"))
@@ -1707,9 +1753,15 @@ Relevant ISO Guidance:
         "stream": False,
     }
 
-    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-    res.raise_for_status()
-    data = res.json()
+    with performance_span(
+        year=year,
+        operation_id="action_plan.evidence_description",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+    ) as span:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        span.set_ollama_metrics(data)
     safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     desc = _normalize_text(data.get("response"))
@@ -2311,9 +2363,15 @@ Generate only the JSON array.
             },
         }
         
-        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-        res.raise_for_status()
-        data = res.json()
+        with performance_span(
+            year=year,
+            operation_id="action_plan.implementation_steps",
+            llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+        ) as span:
+            res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+            res.raise_for_status()
+            data = res.json()
+            span.set_ollama_metrics(data)
         safe_increment_llm_counter(year, ollama_total_tokens(data))
         
         response = _normalize_text(data.get("response"))

@@ -12,6 +12,7 @@ from app.rag.ingest import ingest_documents
 from app.rag.query import rag_query
 
 from app.api.aiml_kpi_telemetry import safe_increment_rag_counter
+from app.api.performance_telemetry import performance_span, safe_embedding_configuration
 
 
 # IMPORTANT: this name must be `router`
@@ -80,11 +81,19 @@ async def ingest(req: IngestRequest):
 @router.post("/query")
 async def query(req: QueryRequest):
     try:
-        result = rag_query(
-            query_text=req.query,
-            n_results=req.top_k,
-            where=req.where,
-        )
+        with performance_span(
+            year=req.year,
+            operation_id="rag.api_query",
+            model_configuration=safe_embedding_configuration(
+                model="all-MiniLM-L6-v2",
+                provider="SentenceTransformers",
+            ),
+        ):
+            result = rag_query(
+                query_text=req.query,
+                n_results=req.top_k,
+                where=req.where,
+            )
     except Exception:
         safe_increment_rag_counter(req.year, success=False)
         raise

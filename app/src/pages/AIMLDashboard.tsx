@@ -1188,6 +1188,12 @@ export default function AIML() {
 
           <div className="px-4 pb-4 space-y-2">
             <button
+              onClick={() => (window.location.hash = "#/performance")}
+              className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+            >
+              Performance Dashboard
+            </button>
+            <button
               onClick={() => (window.location.hash = "#/ai-ml")}
               className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
             >
@@ -1270,6 +1276,12 @@ export default function AIML() {
             </nav>
 
             <div className="p-4 space-y-2">
+              <button
+                onClick={() => (window.location.hash = "#/performance")}
+                className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"
+              >
+                Performance Dashboard
+              </button>
               <button
                 onClick={() => (window.location.hash = "#/ai-ml")}
                 className="w-full rounded-xl bg-indigo-600/90 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-600"

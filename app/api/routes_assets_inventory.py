@@ -29,6 +29,11 @@ from app.api.aiml_kpi_telemetry import (
     safe_increment_manual_correction_counter,
     safe_increment_role_prediction_quality_counters,
 )
+from app.api.performance_telemetry import (
+    performance_span,
+    resolve_telemetry_year,
+    safe_embedding_configuration,
+)
 from datetime import datetime
 
 router = APIRouter(prefix="/api/assets", tags=["assets"])
@@ -1500,68 +1505,76 @@ def _find_target_column(df: pd.DataFrame) -> str:
     )
 
 def _rag_detect_role_from_chroma(asset: dict) -> tuple[str, float]:
-    try:
-        import chromadb
-    except Exception:
-        return "", 0.0
+    with performance_span(
+        year=resolve_telemetry_year(),
+        operation_id="assets.role_chroma",
+        model_configuration=safe_embedding_configuration(
+            model="app/chroma_db",
+            provider="Chroma",
+        ),
+    ):
+        try:
+            import chromadb
+        except Exception:
+            return "", 0.0
 
-    chroma_path = _chroma_db_path()
-    if not chroma_path.exists():
-        return "", 0.0
+        chroma_path = _chroma_db_path()
+        if not chroma_path.exists():
+            return "", 0.0
 
-    try:
-        client = chromadb.PersistentClient(path=str(chroma_path))
-        collection = client.get_collection("iso27001")
-    except Exception:
-        return "", 0.0
+        try:
+            client = chromadb.PersistentClient(path=str(chroma_path))
+            collection = client.get_collection("iso27001")
+        except Exception:
+            return "", 0.0
 
-    query_text = _build_rag_query_text(asset)
+        query_text = _build_rag_query_text(asset)
 
-    try:
-        result = collection.query(
-            query_texts=[query_text],
-            n_results=5,
-        )
-    except Exception:
-        return "", 0.0
+        try:
+            result = collection.query(
+                query_texts=[query_text],
+                n_results=5,
+            )
+        except Exception:
+            return "", 0.0
 
-    metadatas = result.get("metadatas", [[]])
-    distances = result.get("distances", [[]])
+        metadatas = result.get("metadatas", [[]])
+        distances = result.get("distances", [[]])
 
-    if not metadatas or not metadatas[0]:
-        return "", 0.0
+        if not metadatas or not metadatas[0]:
+            return "", 0.0
 
-    best_role = ""
-    best_score = 0.0
+        best_role = ""
+        best_score = 0.0
 
-    for idx, meta in enumerate(metadatas[0]):
-        if not isinstance(meta, dict):
-            continue
+        for idx, meta in enumerate(metadatas[0]):
+            if not isinstance(meta, dict):
+                continue
 
-        candidate_role = str(
-            meta.get("role")
-            or meta.get("workstation_role")
-            or meta.get("server_role")
-            or meta.get("category")
-            or ""
-        ).strip()
+            candidate_role = str(
+                meta.get("role")
+                or meta.get("workstation_role")
+                or meta.get("server_role")
+                or meta.get("category")
+                or ""
+            ).strip()
 
-        if not candidate_role:
-            continue
+            if not candidate_role:
+                continue
 
-        distance = None
-        if distances and distances[0] and idx < len(distances[0]):
-            distance = distances[0][idx]
+            distance = None
+            if distances and distances[0] and idx < len(distances[0]):
+                distance = distances[0][idx]
 
-        score = 0.70
-        if isinstance(distance, (int, float)):
-            score = max(0.0, min(1.0, 1.0 - float(distance)))
+            score = 0.70
+            if isinstance(distance, (int, float)):
+                score = max(0.0, min(1.0, 1.0 - float(distance)))
 
-        if score > best_score:
-            best_role = candidate_role
-            best_score = score
+            if score > best_score:
+                best_role = candidate_role
+                best_score = score
 
-    return best_role, best_score
+        return best_role, best_score
 
 def _join_text_list(values: list[Any]) -> str:
     return ", ".join(str(v).strip() for v in values if str(v).strip())

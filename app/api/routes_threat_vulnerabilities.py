@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from app.api.aiml_kpi_telemetry import ollama_total_tokens, safe_increment_llm_counter
+from app.api.performance_telemetry import performance_span, safe_llm_configuration
 from app.api.workflow_gate import ensure_previous_steps_completed
 
 LLM_MODEL = "qwen3:14b"
@@ -470,23 +471,29 @@ CVE DATA:
 {json.dumps(cve_data, indent=2, ensure_ascii=False)}
 """
 
-    response = requests.post(
-        "http://127.0.0.1:11434/api/generate",
-        json={
-            "model": LLM_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "options": {
-                "temperature": 0.2,
-                "top_p": 0.9,
-                "num_predict": 300
-            }
-        },
-        timeout=60,
-    )
-    response.raise_for_status()
-
-    raw = response.json()
+    payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "num_predict": 300
+        }
+    }
+    with performance_span(
+        year=year,
+        operation_id="threats.cve_format",
+        llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=payload),
+    ) as span:
+        response = requests.post(
+            "http://127.0.0.1:11434/api/generate",
+            json=payload,
+            timeout=60,
+        )
+        response.raise_for_status()
+        raw = response.json()
+        span.set_ollama_metrics(raw)
     safe_increment_llm_counter(year, ollama_total_tokens(raw))
     text = str(raw.get("response", "")).strip()
 
@@ -1371,22 +1378,29 @@ Output example:
         )
 
     try:
-        response = requests.post(
-            "http://127.0.0.1:11434/api/generate",
-            json={
-                "model": LLM_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.1,
-                    "top_p": 0.9,
-                    "num_predict": 200
-                },
+        payload = {
+            "model": LLM_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "top_p": 0.9,
+                "num_predict": 200
             },
-            timeout=60,
-        )
-        response.raise_for_status()
-        raw = response.json()
+        }
+        with performance_span(
+            year=year,
+            operation_id="threats.mitigation_generate",
+            llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=payload),
+        ) as span:
+            response = requests.post(
+                "http://127.0.0.1:11434/api/generate",
+                json=payload,
+                timeout=60,
+            )
+            response.raise_for_status()
+            raw = response.json()
+            span.set_ollama_metrics(raw)
         safe_increment_llm_counter(year, ollama_total_tokens(raw))
         text = str(raw.get("response", "")).strip()
 

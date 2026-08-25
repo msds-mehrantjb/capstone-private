@@ -11,6 +11,7 @@ const AnnexASoA = lazy(() => import("./pages/AnnexASoA"));
 const ActionPlanImplementation = lazy(() => import("./pages/ActionPlanImplementation"));
 const MonitoringImprovement = lazy(() => import("./pages/MonitoringImprovement"));
 const FinalDeliverables = lazy(() => import("./pages/FinalDeliverables"));
+const PerformanceDashboard = lazy(() => import("./pages/PerformanceDashboard"));
 const AIMLDashboard = lazy(() => import("./pages/AIMLDashboard"));
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8003";
 
@@ -26,6 +27,7 @@ type RouteKey =
   | "action-plan-implementation"
   | "monitoring-improvement"
   | "final-deliveries"
+  | "performance"
   | "ai-ml"; // <-- add ai-ml route key
 
 function getRouteFromHash(): RouteKey {
@@ -42,6 +44,7 @@ function getRouteFromHash(): RouteKey {
   if (h.startsWith("#/monitoring-improvement")) return "monitoring-improvement";
   if (h.startsWith("#/final-deliveries")) return "final-deliveries";
   if (h.startsWith("#/final-deliverables")) return "final-deliveries";
+  if (h.startsWith("#/performance")) return "performance";
   if (h.startsWith("#/ai-ml")) return "ai-ml";
 
   return "dashboard";
@@ -126,6 +129,9 @@ export default function App() {
       break;
     case "final-deliveries":
       page = <FinalDeliverables />;
+      break;
+    case "performance":
+      page = <PerformanceDashboard />;
       break;
     case "ai-ml":
       page = <AIMLDashboard />;

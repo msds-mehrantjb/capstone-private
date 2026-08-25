@@ -17,6 +17,12 @@ from app.api.aiml_kpi_telemetry import (
     safe_increment_llm_counter,
     safe_increment_rag_counter,
 )
+from app.api.performance_telemetry import (
+    performance_span,
+    resolve_telemetry_year,
+    safe_embedding_configuration,
+    safe_llm_configuration,
+)
 from app.api.workflow_gate import ensure_previous_steps_completed
 
 
@@ -829,9 +835,15 @@ Relevant ISO 27001 / ISO 27002 References:
         },
     }
 
-    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-    res.raise_for_status()
-    data = res.json()
+    with performance_span(
+        year=resolve_telemetry_year(),
+        operation_id="monitoring.user_behavior_action",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+    ) as span:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        span.set_ollama_metrics(data)
     safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     response_text = _normalize_text(data.get("response"))
@@ -1203,9 +1215,15 @@ Generate only the JSON array.
             },
         }
 
-        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-        res.raise_for_status()
-        data = res.json()
+        with performance_span(
+            year=year,
+            operation_id="monitoring.real_steps",
+            llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+        ) as span:
+            res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+            res.raise_for_status()
+            data = res.json()
+            span.set_ollama_metrics(data)
         safe_increment_llm_counter(year, ollama_total_tokens(data))
 
         response = _normalize_text(data.get("response"))
@@ -1957,9 +1975,15 @@ Relevant ISO References:
     }
 
     try:
-        res = requests.post(OLLAMA_URL, json=payload, timeout=45)
-        res.raise_for_status()
-        data = res.json()
+        with performance_span(
+            year=year,
+            operation_id="monitoring.evidence_description",
+            llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+        ) as span:
+            res = requests.post(OLLAMA_URL, json=payload, timeout=45)
+            res.raise_for_status()
+            data = res.json()
+            span.set_ollama_metrics(data)
         safe_increment_llm_counter(year, ollama_total_tokens(data))
         text = _normalize_text(data.get("response"))
         if text:
@@ -2088,9 +2112,15 @@ Relevant ISO References:
     }
 
     try:
-        res = requests.post(OLLAMA_URL, json=payload, timeout=60)
-        res.raise_for_status()
-        data = res.json()
+        with performance_span(
+            year=year,
+            operation_id="monitoring.bulk_evidence_descriptions",
+            llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+        ) as span:
+            res = requests.post(OLLAMA_URL, json=payload, timeout=60)
+            res.raise_for_status()
+            data = res.json()
+            span.set_ollama_metrics(data)
         safe_increment_llm_counter(year, ollama_total_tokens(data))
         raw_text = _normalize_text(data.get("response"))
         parsed = json.loads(raw_text)
@@ -2562,9 +2592,15 @@ Affected Hosts:
             "num_predict": 300
         }
     }
-    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-    res.raise_for_status()
-    data = res.json()
+    with performance_span(
+        year=year,
+        operation_id="monitoring.justification",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+    ) as span:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        span.set_ollama_metrics(data)
     safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     return _normalize_text(data.get("response"))
@@ -2676,6 +2712,29 @@ def _retrieve_relevant_iso_controls(
     host_lines: list[str],
     top_k: int = 5,
 ) -> list[dict]:
+    with performance_span(
+        year=year,
+        operation_id="monitoring.retrieve_controls",
+        model_configuration=safe_embedding_configuration(model=OLLAMA_EMBED_MODEL),
+    ):
+        return _retrieve_relevant_iso_controls_impl(
+            year=year,
+            control_id=control_id,
+            control_name=control_name,
+            justification=justification,
+            host_lines=host_lines,
+            top_k=top_k,
+        )
+
+
+def _retrieve_relevant_iso_controls_impl(
+    year: int,
+    control_id: str,
+    control_name: str,
+    justification: str,
+    host_lines: list[str],
+    top_k: int = 5,
+) -> list[dict]:
     records = _load_iso_controls_csv(year)
     cache = _load_embedding_cache(year)
 
@@ -2694,7 +2753,12 @@ def _retrieve_relevant_iso_controls(
     )
 
     try:
-        query_embedding = _get_embedding(query)
+        with performance_span(
+            year=year,
+            operation_id="monitoring.query_embedding",
+            model_configuration=safe_embedding_configuration(model=OLLAMA_EMBED_MODEL),
+        ):
+            query_embedding = _get_embedding(query)
         use_semantic = True
     except Exception:
         query_embedding = []
@@ -2711,7 +2775,12 @@ def _retrieve_relevant_iso_controls(
         if use_semantic:
             try:
                 if rec_key not in cache:
-                    cache[rec_key] = _get_embedding(rec_text)
+                    with performance_span(
+                        year=year,
+                        operation_id="monitoring.record_embedding",
+                        model_configuration=safe_embedding_configuration(model=OLLAMA_EMBED_MODEL),
+                    ):
+                        cache[rec_key] = _get_embedding(rec_text)
                     cache_changed = True
                 semantic = _cosine_similarity(query_embedding, cache[rec_key])
             except Exception:
@@ -2948,9 +3017,15 @@ ISO guidance:
             "num_predict": 600
         }
     }
-    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-    res.raise_for_status()
-    data = res.json()
+    with performance_span(
+        year=year,
+        operation_id="monitoring.action_primary",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+    ) as span:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        span.set_ollama_metrics(data)
     safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     response_text = _normalize_text(data.get("response"))
@@ -3021,9 +3096,15 @@ Previous output:
                 "num_predict": 600,
             },
         }
-        repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=180)
-        repair_res.raise_for_status()
-        repair_data = repair_res.json()
+        with performance_span(
+            year=year,
+            operation_id="monitoring.action_repair",
+            llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=repair_payload),
+        ) as span:
+            repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=180)
+            repair_res.raise_for_status()
+            repair_data = repair_res.json()
+            span.set_ollama_metrics(repair_data)
         safe_increment_llm_counter(year, ollama_total_tokens(repair_data))
         repaired_text = _normalize_text(repair_data.get("response"))
         if not repaired_text.startswith("Recommended monitoring actions:"):
@@ -3159,9 +3240,15 @@ Relevant ISO Guidance:
         }
     }
 
-    res = requests.post(OLLAMA_URL, json=payload, timeout=180)
-    res.raise_for_status()
-    data = res.json()
+    with performance_span(
+        year=year,
+        operation_id="monitoring.evidence_recommendations",
+        llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
+    ) as span:
+        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res.raise_for_status()
+        data = res.json()
+        span.set_ollama_metrics(data)
     safe_increment_llm_counter(year, ollama_total_tokens(data))
 
     raw_text = _normalize_text(data.get("response"))

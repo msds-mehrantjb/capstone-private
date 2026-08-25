@@ -4,6 +4,11 @@ import hashlib
 import pandas as pd
 import chromadb
 from sentence_transformers import SentenceTransformer
+from app.api.performance_telemetry import (
+    performance_span,
+    resolve_telemetry_year,
+    safe_embedding_configuration,
+)
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 DOCS_DIR = BASE_DIR / "data" / "knowledge_base"
@@ -205,38 +210,46 @@ def build_knowledge_base():
 
 
 def rebuild_if_needed():
-    saved_hashes = load_saved_hashes()
-    current_hashes = compute_current_hashes()
+    with performance_span(
+        year=resolve_telemetry_year(),
+        operation_id="rag.kb_rebuild",
+        model_configuration=safe_embedding_configuration(
+            model=EMBED_MODEL,
+            provider="SentenceTransformers",
+        ),
+    ):
+        saved_hashes = load_saved_hashes()
+        current_hashes = compute_current_hashes()
 
-    first_build = any(not saved_hashes.get(name) for name in DATASET_FILES)
-    changed = saved_hashes != current_hashes
+        first_build = any(not saved_hashes.get(name) for name in DATASET_FILES)
+        changed = saved_hashes != current_hashes
 
-    if first_build:
-        total_rows = build_knowledge_base()
-        save_hashes(current_hashes)
+        if first_build:
+            total_rows = build_knowledge_base()
+            save_hashes(current_hashes)
+            return {
+                "success": True,
+                "kb_status": "created",
+                "rows_embedded": total_rows,
+                "message": "Knowledge base was not initialized. ChromaDB knowledge base has been created and dataset_hashes.json has been updated.",
+            }
+
+        if changed:
+            total_rows = build_knowledge_base()
+            save_hashes(current_hashes)
+            return {
+                "success": True,
+                "kb_status": "updated",
+                "rows_embedded": total_rows,
+                "message": "Dataset changes detected. ChromaDB knowledge base has been rebuilt and dataset_hashes.json has been updated.",
+            }
+
         return {
             "success": True,
-            "kb_status": "created",
-            "rows_embedded": total_rows,
-            "message": "Knowledge base was not initialized. ChromaDB knowledge base has been created and dataset_hashes.json has been updated.",
+            "kb_status": "up_to_date",
+            "rows_embedded": 0,
+            "message": "Knowledge base is already up to date. No rebuild was needed.",
         }
-
-    if changed:
-        total_rows = build_knowledge_base()
-        save_hashes(current_hashes)
-        return {
-            "success": True,
-            "kb_status": "updated",
-            "rows_embedded": total_rows,
-            "message": "Dataset changes detected. ChromaDB knowledge base has been rebuilt and dataset_hashes.json has been updated.",
-        }
-
-    return {
-        "success": True,
-        "kb_status": "up_to_date",
-        "rows_embedded": 0,
-        "message": "Knowledge base is already up to date. No rebuild was needed.",
-    }
 
 
 def main():

@@ -16,6 +16,11 @@ from app.api.aiml_kpi_telemetry import (
     safe_increment_llm_counter,
     safe_increment_rag_counter,
 )
+from app.api.performance_telemetry import (
+    performance_span,
+    safe_embedding_configuration,
+    safe_llm_configuration,
+)
 from app.api.workflow_gate import ensure_previous_steps_completed
 
 
@@ -826,7 +831,12 @@ def _rank_cves_for_control(control_profile: dict, candidate_cves: list[dict], to
     )
 
     try:
-        query_embedding = get_embedding(query_text)
+        with performance_span(
+            year=2026,
+            operation_id="annex.rank_control_query_embed",
+            model_configuration=safe_embedding_configuration(model=EMBED_MODEL),
+        ):
+            query_embedding = get_embedding(query_text)
     except Exception:
         query_embedding = []
 
@@ -839,7 +849,12 @@ def _rank_cves_for_control(control_profile: dict, candidate_cves: list[dict], to
         cve_text = _cve_document_text(cve)
 
         try:
-            cve_embedding = get_embedding(cve_text)
+            with performance_span(
+                year=2026,
+                operation_id="annex.rank_cve_candidate_embed",
+                model_configuration=safe_embedding_configuration(model=EMBED_MODEL),
+            ):
+                cve_embedding = get_embedding(cve_text)
         except Exception:
             cve_embedding = []
 
@@ -931,7 +946,12 @@ def _infer_controls_from_cves(year: int, ranked_cves: list[dict], exclude_contro
         query_terms = _tokenize_for_match(cve_desc)
 
         try:
-            query_embedding = get_embedding(cve_desc)
+            with performance_span(
+                year=year,
+                operation_id="annex.infer_controls_embed",
+                model_configuration=safe_embedding_configuration(model=EMBED_MODEL),
+            ):
+                query_embedding = get_embedding(cve_desc)
             use_semantic = True
         except Exception:
             query_embedding = []
@@ -1507,7 +1527,12 @@ def build_or_load_embeddings(year: int, force_rebuild: bool = False):
         batch = records[start:end]
         texts = [record["text"] for record in batch]
 
-        embeddings = get_embeddings_batch(texts)
+        with performance_span(
+            year=year,
+            operation_id="annex.catalog_batch_embed",
+            model_configuration=safe_embedding_configuration(model=EMBED_MODEL),
+        ):
+            embeddings = get_embeddings_batch(texts)
 
         for record, embedding in zip(batch, embeddings):
             item = dict(record)
@@ -1612,57 +1637,62 @@ def build_query_from_record(record: dict) -> str:
 
 
 def retrieve_controls(query_text, traits, embedded_records, top_k=TOP_K, year: int = 2026):
-    query_embedding = get_embedding(query_text)
-    query_tokens = tokenize(query_text)
+    with performance_span(
+        year=year,
+        operation_id="annex.retrieve_controls",
+        model_configuration=safe_embedding_configuration(model=EMBED_MODEL),
+    ):
+        query_embedding = get_embedding(query_text)
+        query_tokens = tokenize(query_text)
 
-    scored = []
+        scored = []
 
-    for record in embedded_records:
-        # 🔥 FIX: skip invalid records
-        if not isinstance(record, dict):
-            print("SKIPPED invalid embedded record:", repr(record))
-            continue
+        for record in embedded_records:
+            # 🔥 FIX: skip invalid records
+            if not isinstance(record, dict):
+                print("SKIPPED invalid embedded record:", repr(record))
+                continue
 
-        if "embedding" not in record:
-            print("SKIPPED missing embedding:", record)
-            continue
+            if "embedding" not in record:
+                print("SKIPPED missing embedding:", record)
+                continue
 
-        if "text" not in record:
-            print("SKIPPED missing text:", record)
-            continue
+            if "text" not in record:
+                print("SKIPPED missing text:", record)
+                continue
 
-        try:
-            semantic = cosine_similarity(query_embedding, record["embedding"])
-        except Exception as e:
-            print("SKIPPED bad embedding:", str(e))
-            continue
+            try:
+                semantic = cosine_similarity(query_embedding, record["embedding"])
+            except Exception as e:
+                print("SKIPPED bad embedding:", str(e))
+                continue
 
-        record_tokens = tokenize(record["text"])
-        keyword = len(query_tokens & record_tokens) / max(1, len(query_tokens))
+            record_tokens = tokenize(record["text"])
+            keyword = len(query_tokens & record_tokens) / max(1, len(query_tokens))
 
-        boost = 0.0
-        if "privilege escalation" in traits and record.get("Control") == "8.2":
-            boost += 0.2
-        if "authentication weakness" in traits and record.get("Control") == "8.5":
-            boost += 0.2
-        if "technical vulnerability" in traits and record.get("Control") == "8.8":
-            boost += 0.2
-        if "configuration weakness" in traits and record.get("Control") == "8.9":
-            boost += 0.2
-        if "network-based exploitation" in traits and record.get("Control") in {"8.20", "8.21"}:
-            boost += 0.2
+            boost = 0.0
+            if "privilege escalation" in traits and record.get("Control") == "8.2":
+                boost += 0.2
+            if "authentication weakness" in traits and record.get("Control") == "8.5":
+                boost += 0.2
+            if "technical vulnerability" in traits and record.get("Control") == "8.8":
+                boost += 0.2
+            if "configuration weakness" in traits and record.get("Control") == "8.9":
+                boost += 0.2
+            if "network-based exploitation" in traits and record.get("Control") in {"8.20", "8.21"}:
+                boost += 0.2
 
-        final_score = (semantic * 0.65) + (keyword * 0.25) + boost
+            final_score = (semantic * 0.65) + (keyword * 0.25) + boost
 
-        scored.append({
-            "final_score": final_score,
-            "record": record
-        })
+            scored.append({
+                "final_score": final_score,
+                "record": record
+            })
 
-    scored.sort(key=lambda x: x["final_score"], reverse=True)
-    retrieved = scored[:top_k]
-    safe_increment_rag_counter(year, success=bool(retrieved))
-    return retrieved
+        scored.sort(key=lambda x: x["final_score"], reverse=True)
+        retrieved = scored[:top_k]
+        safe_increment_rag_counter(year, success=bool(retrieved))
+        return retrieved
 
 def _generate_control_info_with_llama3(info_context: dict, year: int = 2026) -> dict:
     control_id = _normalize_text(info_context.get("control_id"))
@@ -1728,25 +1758,31 @@ Output Requirements:
   • MUST describe vulnerability types instead (e.g., "unpatched systems", "weak authentication", "exposed services")
 """.strip()
 
-    response = SESSION.post(
-        OLLAMA_GEN_URL,
-        json={
-            "model": LLM_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",
-            "keep_alive": "10m",
-            "options": {
-                "temperature": 0.2,
-                "top_p": 0.9,
-                "num_predict": 400
-            }
-        },
-        timeout=180
-    )
-    response.raise_for_status()
-
-    response_data = response.json()
+    payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "format": "json",
+        "keep_alive": "10m",
+        "options": {
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "num_predict": 400
+        }
+    }
+    with performance_span(
+        year=year,
+        operation_id="annex.control_info",
+        llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=payload),
+    ) as span:
+        response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json=payload,
+            timeout=180
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        span.set_ollama_metrics(response_data)
     safe_increment_llm_counter(year, ollama_total_tokens(response_data))
     raw = response_data.get("response", "")
     parsed = _safe_json_loads(raw)
@@ -2019,14 +2055,19 @@ Rules for "justification":
         },
     }
 
-    response = SESSION.post(
-        OLLAMA_GEN_URL,
-        json=request_payload,
-        timeout=180,
-    )
-    response.raise_for_status()
-
-    response_data = response.json()
+    with performance_span(
+        year=year,
+        operation_id="annex.row_justification_primary",
+        llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=request_payload),
+    ) as span:
+        response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json=request_payload,
+            timeout=180,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        span.set_ollama_metrics(response_data)
     safe_increment_llm_counter(year, ollama_total_tokens(response_data))
     raw_response = response_data.get("response", "")
     parsed = _extract_json_object_from_text(raw_response)
@@ -2057,13 +2098,19 @@ Use vulnerability type names only.
                 "num_predict": 600,
             },
         }
-        retry_response = SESSION.post(
-            OLLAMA_GEN_URL,
-            json=retry_payload,
-            timeout=180,
-        )
-        retry_response.raise_for_status()
-        retry_data = retry_response.json()
+        with performance_span(
+            year=year,
+            operation_id="annex.row_justification_json_retry",
+            llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=retry_payload),
+        ) as span:
+            retry_response = SESSION.post(
+                OLLAMA_GEN_URL,
+                json=retry_payload,
+                timeout=180,
+            )
+            retry_response.raise_for_status()
+            retry_data = retry_response.json()
+            span.set_ollama_metrics(retry_data)
         safe_increment_llm_counter(year, ollama_total_tokens(retry_data))
         raw_response = retry_data.get("response", "")
 
@@ -2102,23 +2149,30 @@ Requirements:
 - Use vulnerability type names only, such as remote code execution, privilege escalation, exposed services, malware execution, weak configuration, and technical vulnerability management.
 - Explain why the control is applicable in this audit context.
 """.strip()
-        repair_response = SESSION.post(
-            OLLAMA_GEN_URL,
-            json={
-                "model": LLM_MODEL,
-                "prompt": repair_prompt,
-                "stream": False,
-                "keep_alive": "10m",
-                "options": {
-                    "temperature": 0.25,
-                    "top_p": 0.9,
-                    "num_predict": 600,
-                },
+        repair_payload = {
+            "model": LLM_MODEL,
+            "prompt": repair_prompt,
+            "stream": False,
+            "keep_alive": "10m",
+            "options": {
+                "temperature": 0.25,
+                "top_p": 0.9,
+                "num_predict": 600,
             },
-            timeout=180,
-        )
-        repair_response.raise_for_status()
-        repair_data = repair_response.json()
+        }
+        with performance_span(
+            year=year,
+            operation_id="annex.row_justification_repair",
+            llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=repair_payload),
+        ) as span:
+            repair_response = SESSION.post(
+                OLLAMA_GEN_URL,
+                json=repair_payload,
+                timeout=180,
+            )
+            repair_response.raise_for_status()
+            repair_data = repair_response.json()
+            span.set_ollama_metrics(repair_data)
         safe_increment_llm_counter(year, ollama_total_tokens(repair_data))
         raw_response = repair_data.get("response", "")
         repair_json = _extract_json_object_from_text(raw_response)
@@ -2149,23 +2203,30 @@ Requirements:
             f"{vulnerability_summary}. Explain why this control applies. Do not mention CVE IDs "
             "or vulnerability identifiers. Return only the paragraph."
         )
-        simple_response = SESSION.post(
-            OLLAMA_GEN_URL,
-            json={
-                "model": LLM_MODEL,
-                "prompt": simple_prompt,
-                "stream": False,
-                "keep_alive": "10m",
-                "options": {
-                    "temperature": 0.2,
-                    "top_p": 0.9,
-                    "num_predict": 600,
-                },
+        simple_payload = {
+            "model": LLM_MODEL,
+            "prompt": simple_prompt,
+            "stream": False,
+            "keep_alive": "10m",
+            "options": {
+                "temperature": 0.2,
+                "top_p": 0.9,
+                "num_predict": 600,
             },
-            timeout=180,
-        )
-        simple_response.raise_for_status()
-        simple_data = simple_response.json()
+        }
+        with performance_span(
+            year=year,
+            operation_id="annex.row_justification_simple",
+            llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=simple_payload),
+        ) as span:
+            simple_response = SESSION.post(
+                OLLAMA_GEN_URL,
+                json=simple_payload,
+                timeout=180,
+            )
+            simple_response.raise_for_status()
+            simple_data = simple_response.json()
+            span.set_ollama_metrics(simple_data)
         safe_increment_llm_counter(year, ollama_total_tokens(simple_data))
         raw_response = simple_data.get("response", "")
         simple_json = _extract_json_object_from_text(raw_response)
@@ -2236,20 +2297,26 @@ Allowed controls:
 Return valid JSON only.
 """
 
-    response = SESSION.post(
-        OLLAMA_GEN_URL,
-        json={
-            "model": LLM_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",
-            "keep_alive": "10m"
-        },
-        timeout=180
-    )
-    response.raise_for_status()
-
-    response_data = response.json()
+    payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "format": "json",
+        "keep_alive": "10m"
+    }
+    with performance_span(
+        year=year,
+        operation_id="annex.select_controls",
+        llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=payload),
+    ) as span:
+        response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json=payload,
+            timeout=180
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        span.set_ollama_metrics(response_data)
     safe_increment_llm_counter(year, ollama_total_tokens(response_data))
     raw = response_data.get("response", "")
     parsed = _safe_json_loads(raw)

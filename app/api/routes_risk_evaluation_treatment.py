@@ -6,6 +6,7 @@ import requests
 from pydantic import BaseModel
 
 from app.api.aiml_kpi_telemetry import ollama_total_tokens, safe_increment_llm_counter
+from app.api.performance_telemetry import performance_span, safe_llm_configuration
 from app.api.workflow_gate import ensure_previous_steps_completed
 
 router = APIRouter(
@@ -512,25 +513,31 @@ cwe: {", ".join(cve_info.get("cwe", []))}
 vector: {cve_info.get("vector", "")}
 """
 
-    response = SESSION.post(
-        OLLAMA_GEN_URL,
-        json={
-            "model": LLM_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",
-            "keep_alive": "10m",
-            "options": {
-                "temperature": 0.2,
-                "top_p": 0.9,
-                "num_predict": 300
-            }
-        },
-        timeout=180,
-    )
-    response.raise_for_status()
-
-    response_data = response.json()
+    payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "format": "json",
+        "keep_alive": "10m",
+        "options": {
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "num_predict": 300
+        }
+    }
+    with performance_span(
+        year=year,
+        operation_id="risk_eval.monitoring_fields",
+        llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=payload),
+    ) as span:
+        response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json=payload,
+            timeout=180,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        span.set_ollama_metrics(response_data)
     safe_increment_llm_counter(year, ollama_total_tokens(response_data))
     raw = response_data.get("response", "{}")
     try:
@@ -574,25 +581,31 @@ The paragraph must explain detection, exposure review, remediation tracking, evi
 Do not return an empty string.
 """
 
-    response = SESSION.post(
-        OLLAMA_GEN_URL,
-        json={
-            "model": LLM_MODEL,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",
-            "keep_alive": "10m",
-            "options": {
-                "temperature": 0.15,
-                "top_p": 0.85,
-                "num_predict": 220,
-            },
+    payload = {
+        "model": LLM_MODEL,
+        "prompt": prompt,
+        "stream": False,
+        "format": "json",
+        "keep_alive": "10m",
+        "options": {
+            "temperature": 0.15,
+            "top_p": 0.85,
+            "num_predict": 220,
         },
-        timeout=180,
-    )
-    response.raise_for_status()
-
-    response_data = response.json()
+    }
+    with performance_span(
+        year=year,
+        operation_id="risk_eval.monitoring_justification",
+        llm_configuration=safe_llm_configuration(model=LLM_MODEL, payload=payload),
+    ) as span:
+        response = SESSION.post(
+            OLLAMA_GEN_URL,
+            json=payload,
+            timeout=180,
+        )
+        response.raise_for_status()
+        response_data = response.json()
+        span.set_ollama_metrics(response_data)
     safe_increment_llm_counter(year, ollama_total_tokens(response_data))
     raw = response_data.get("response", "{}")
     try:

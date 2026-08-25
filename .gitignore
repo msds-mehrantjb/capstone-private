@@ -38,6 +38,9 @@ app/src/pages/chroma_control_to_cve/
 # ===============================
 *.ipynb_checkpoints/
 .ipynb_checkpoints/
+data/work/*/PerformanceTelemetry.json
+data/work/*/PerformanceTelemetry.json*.tmp
+data/work/*/PerformanceTelemetry.json.malformed.*.bak
 
 # ===============================
 # Logs
