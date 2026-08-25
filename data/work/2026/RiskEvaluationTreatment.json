@@ -34,7 +34,7 @@
       "riskid": "R-003",
       "risk": "High",
       "evaluation": "Treat",
-      "treatment": "Mitigate"
+      "treatment": "Transfer"
     },
     {
       "hostname": "WS-01",

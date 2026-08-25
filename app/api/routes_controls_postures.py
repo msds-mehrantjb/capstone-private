@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any
 import json
 import re
+import socket
 import subprocess
 import sys
 from fastapi import APIRouter, HTTPException, Query
@@ -537,25 +538,12 @@ def _is_vm_target_reachable(ip_address: str, hostname: str = "") -> bool:
         candidates.append(str(ip_address).strip())
 
     for target in candidates:
-        try:
-            result = subprocess.run(
-                [
-                    "powershell",
-                    "-NoProfile",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command",
-                    f"try {{ Test-WSMan -ComputerName '{target}' | Out-Null; exit 0 }} catch {{ exit 1 }}",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-        except Exception:
-            continue
-
-        if result.returncode == 0:
-            return True
+        for port in (5985, 5986):
+            try:
+                with socket.create_connection((target, port), timeout=3):
+                    return True
+            except OSError:
+                continue
 
     return False
 

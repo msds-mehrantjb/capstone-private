@@ -3,18 +3,18 @@
     {
       "guide_id": "AIG-2026-0001",
       "evidence_id": "EVID-2026-0002",
-      "hostname": "SRV-03",
-      "role": "File Server",
-      "department": "Finance",
-      "os_version": "Windows Server 2016",
+      "hostname": "SRV-01",
+      "role": "Domain Controller (Active Directory)",
+      "department": "IT",
+      "os_version": "Windows Server 2019",
       "control_id": "6.7",
       "control_name": "Remote working",
-      "cve_id": "CVE-2017-0144",
-      "vulnerability_name": "SMB Remote Code Execution",
+      "cve_id": "CVE-2020-1350",
+      "vulnerability_name": "Windows DNS Server Remote Code Execution",
       "severity": "",
-      "treatment_action": "Recommended treatment actions:  \n- Implement and enforce secure remote access protocols (e.g., TLS 1.2 or higher, multi-factor authentication) for all remote connections to SRV-03 and SRV-04  \n- Apply patches and updates to address the identified vulnerabilities (CVE-2017-0144, CVE-2021-44228, CVE-2021-31166) on SRV-03 and SRV-04  \n- Restrict remote management access (e.g., WinRM) to trusted networks and use firewall rules to limit exposure  \n- Develop and enforce a remote working policy that includes secure configuration and usage guidelines for remote access technologies",
-      "evidence_name": "The host SRV-03 under control 6.7 demonstrates secure remote access protocols...",
-      "evidence_description": "The host SRV-03 under control 6.7 demonstrates secure remote access protocols (TLS 1.2, MFA) and applied patches for CVE-2017-0144, ensuring mitigation of remote code execution risks through structured remote working policies.",
+      "treatment_action": "Recommended treatment actions:  \n- Implement and enforce multi-factor authentication for all remote access to SRV-01 and SRV-03  \n- Apply the latest security patches to address CVE-2020-1350 and CVE-2021-31166 on affected hosts  \n- Deploy endpoint detection and response (EDR) solutions to monitor and detect suspicious activities on remote endpoints  \n- Configure firewall rules to restrict remote access to SRV-01 and SRV-03 to only authorized IP ranges and ports",
+      "evidence_name": "Multi-factor authentication is enforced for all remote access to host SRV-01,...",
+      "evidence_description": "Multi-factor authentication is enforced for all remote access to host SRV-01, a domain controller, under control 6.7, ensuring secure access management and mitigating risks from unauthorized remote access attempts.",
       "evidence_format": "PDF + Logs + Firewall Export",
       "references": [
         {
@@ -23,11 +23,11 @@
         },
         {
           "ref_id": "NVD-01",
-          "source": "NVD CVE-2017-0144 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2017-0144"
+          "source": "NVD CVE-2020-1350 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2020-1350"
         },
         {
           "ref_id": "MSRC-01",
-          "source": "Microsoft Security Response Center guidance for CVE-2017-0144"
+          "source": "Microsoft Security Response Center guidance for CVE-2020-1350"
         },
         {
           "ref_id": "MS-Baseline",
@@ -43,116 +43,69 @@
       "implementation_steps": [
         {
           "step_no": 1,
-          "title": "Review Host Baseline And Exposure",
-          "description": "Review the current configuration, running services, and exposed ports on SRV-03 to confirm how SMB Remote Code Execution (CVE-2017-0144) affects the File Server role.",
+          "title": "Confirm DNS Service Exposure",
+          "description": "Confirm that SRV-01 is operating the Windows DNS Server role and identify DNS listener exposure before applying the treatment for Windows DNS Server Remote Code Execution (CVE-2020-1350).",
           "commands": [
-            "hostname",
-            "Get-Service | Where-Object {$_.Status -eq \"Running\"}",
-            "Get-NetTCPConnection | Select-Object LocalAddress,LocalPort,State,OwningProcess"
+            "Get-Service DNS",
+            "Get-NetTCPConnection -LocalPort 53 -ErrorAction SilentlyContinue",
+            "Get-NetUDPEndpoint -LocalPort 53 -ErrorAction SilentlyContinue",
+            "Get-DnsServerDiagnostics"
           ],
-          "expected_result": "A current technical baseline is captured for SRV-03, including active services and exposed network paths relevant to SMB Remote Code Execution.",
-          "output_type": "Command output / service status / port exposure list",
-          "evidence_capture": "Capture the command output showing active services and open ports on SRV-03 before treatment is applied."
+          "expected_result": "DNS service status, TCP/UDP 53 listeners, and DNS diagnostic configuration are captured for SRV-01.",
+          "output_type": "DNS service status / listener list / DNS diagnostics",
+          "evidence_capture": "Save the DNS service output, port 53 listener output, and DNS diagnostics from SRV-01."
         },
         {
           "step_no": 2,
-          "title": "Apply Treatment Action",
-          "description": "Implement the approved treatment for 6.7 (Remote working) on SRV-03. Follow this action: Recommended treatment actions:  \n- Implement and enforce secure remote access protocols (e.g., TLS 1.2 or higher, multi-factor authentication) for all remote connections to SRV-03 and SRV-04  \n- Apply patches and updates to address the identified vulnerabilities (CVE-2017-0144, CVE-2021-44228, CVE-2021-31166) on SRV-03 and SRV-04  \n- Restrict remote management access (e.g., WinRM) to trusted networks and use firewall rules to limit exposure  \n- Develop and enforce a remote working policy that includes secure configuration and usage guidelines for remote access technologies",
-          "commands": [],
-          "expected_result": "The treatment action is applied on SRV-03 and the technical state reflects the intended hardening or remediation for SMB Remote Code Execution.",
-          "output_type": "Configuration change / patch result / admin record",
-          "evidence_capture": "Capture screenshots, exported settings, patch output, or administrator records that prove the treatment was applied on SRV-03."
+          "title": "Validate DNS Server Security Updates",
+          "description": "Check whether SRV-01 has the Windows security updates required to remediate Windows DNS Server Remote Code Execution (CVE-2020-1350); patch the server through the approved maintenance process if gaps remain.",
+          "commands": [
+            "Get-ComputerInfo | Select-Object OsName,OsVersion,WindowsVersion",
+            "Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 20",
+            "Get-WindowsUpdate -MicrosoftUpdate -ErrorAction SilentlyContinue"
+          ],
+          "expected_result": "Patch state for SRV-01 is known and missing DNS Server security updates are identified or installed.",
+          "output_type": "Patch inventory / update scan output",
+          "evidence_capture": "Capture installed hotfix output and the update scan or change ticket showing DNS Server patch status."
         },
         {
           "step_no": 3,
-          "title": "Verify Control Effectiveness",
-          "description": "Run post-change validation on SRV-03 to confirm the implemented control reduces exposure to SMB Remote Code Execution (CVE-2017-0144) and that the host remains operational.",
+          "title": "Apply DNS-Specific Mitigation",
+          "description": "If the approved treatment requires interim mitigation for Windows DNS Server Remote Code Execution, apply the DNS Server packet-size mitigation and restart DNS during the approved change window.",
           "commands": [
-            "Get-HotFix",
-            "Get-NetFirewallRule | Select-Object DisplayName,Enabled,Direction,Action",
-            "Get-WinEvent -LogName Security -MaxEvents 20"
+            "reg add \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\" /v TcpReceivePacketSize /t REG_DWORD /d 65280 /f",
+            "Restart-Service DNS -Force",
+            "reg query \"HKLM\\SYSTEM\\CurrentControlSet\\Services\\DNS\\Parameters\" /v TcpReceivePacketSize"
           ],
-          "expected_result": "Post-change validation shows the host is operational and the applied control provides measurable reduction of exposure for SMB Remote Code Execution.",
-          "output_type": "Validation output / firewall rule list / event log excerpt",
-          "evidence_capture": "Capture post-change validation output, firewall or policy results, and relevant logs for SRV-03."
-        }
-      ]
-    },
-    {
-      "guide_id": "AIG-2026-0002",
-      "evidence_id": "EVID-2026-0004",
-      "hostname": "SRV-03",
-      "role": "File Server",
-      "department": "Finance",
-      "os_version": "Windows Server 2016",
-      "control_id": "6.7",
-      "control_name": "Remote working",
-      "cve_id": "CVE-2021-31166",
-      "vulnerability_name": "WinRM Remote Command Execution Exposure",
-      "severity": "",
-      "treatment_action": "Recommended treatment actions:  \n- Implement and enforce secure remote access protocols (e.g., TLS 1.2 or higher, multi-factor authentication) for all remote connections to SRV-03 and SRV-04  \n- Apply patches and updates to address the identified vulnerabilities (CVE-2017-0144, CVE-2021-44228, CVE-2021-31166) on SRV-03 and SRV-04  \n- Restrict remote management access (e.g., WinRM) to trusted networks and use firewall rules to limit exposure  \n- Develop and enforce a remote working policy that includes secure configuration and usage guidelines for remote access technologies",
-      "evidence_name": "The host SRV-03 under control 6.7 demonstrates secure remote working practice...",
-      "evidence_description": "The host SRV-03 under control 6.7 demonstrates secure remote working practices by implementing TLS 1.2 and multi-factor authentication for remote access, applying patches to address the WinRM vulnerability (CVE-2021-31166), and restricting remote management access to trusted networks through firewall rules.",
-      "evidence_format": "PDF + Logs + Firewall Export",
-      "references": [
-        {
-          "ref_id": "ISO-27002",
-          "source": "ISO/IEC 27002:2022 guidance for control 6.7"
+          "expected_result": "The DNS mitigation value is present on SRV-01 and DNS service is restarted successfully.",
+          "output_type": "Registry value / service restart output",
+          "evidence_capture": "Capture the registry query result and DNS service restart output for SRV-01."
         },
         {
-          "ref_id": "NVD-01",
-          "source": "NVD CVE-2021-31166 Technical Details | https://nvd.nist.gov/vuln/detail/CVE-2021-31166"
-        },
-        {
-          "ref_id": "MSRC-01",
-          "source": "Microsoft Security Response Center guidance for CVE-2021-31166"
-        },
-        {
-          "ref_id": "MS-Baseline",
-          "source": "Microsoft Security Compliance Toolkit / Windows Security Baselines"
-        },
-        {
-          "ref_id": "CISA-01",
-          "source": "CISA Known Exploited Vulnerabilities Catalog"
-        }
-      ],
-      "generation_quality": "fallback",
-      "generation_method": "deterministic_fallback",
-      "implementation_steps": [
-        {
-          "step_no": 1,
-          "title": "Review Host Baseline And Exposure",
-          "description": "Review the current configuration, running services, and exposed ports on SRV-03 to confirm how WinRM Remote Command Execution Exposure (CVE-2021-31166) affects the File Server role.",
+          "step_no": 4,
+          "title": "Restrict DNS Network Access",
+          "description": "Restrict DNS traffic to approved resolver/client networks so SRV-01 is not broadly exposed while supporting required DNS operations.",
           "commands": [
-            "hostname",
-            "Get-Service | Where-Object {$_.Status -eq \"Running\"}",
-            "Get-NetTCPConnection | Select-Object LocalAddress,LocalPort,State,OwningProcess"
+            "Get-NetFirewallRule | Where-Object {$_.DisplayName -match \"DNS\"} | Select-Object DisplayName,Enabled,Direction,Action",
+            "Get-NetFirewallPortFilter | Where-Object {$_.LocalPort -eq \"53\"}",
+            "New-NetFirewallRule -DisplayName \"Allow DNS from approved subnets\" -Direction Inbound -Protocol UDP -LocalPort 53 -Action Allow"
           ],
-          "expected_result": "A current technical baseline is captured for SRV-03, including active services and exposed network paths relevant to WinRM Remote Command Execution Exposure.",
-          "output_type": "Command output / service status / port exposure list",
-          "evidence_capture": "Capture the command output showing active services and open ports on SRV-03 before treatment is applied."
+          "expected_result": "DNS firewall rules are reviewed and restricted to the approved network path for SRV-01.",
+          "output_type": "Firewall rule list / firewall change record",
+          "evidence_capture": "Export firewall rule evidence showing allowed DNS paths for SRV-01."
         },
         {
-          "step_no": 2,
-          "title": "Apply Treatment Action",
-          "description": "Implement the approved treatment for 6.7 (Remote working) on SRV-03. Follow this action: Recommended treatment actions:  \n- Implement and enforce secure remote access protocols (e.g., TLS 1.2 or higher, multi-factor authentication) for all remote connections to SRV-03 and SRV-04  \n- Apply patches and updates to address the identified vulnerabilities (CVE-2017-0144, CVE-2021-44228, CVE-2021-31166) on SRV-03 and SRV-04  \n- Restrict remote management access (e.g., WinRM) to trusted networks and use firewall rules to limit exposure  \n- Develop and enforce a remote working policy that includes secure configuration and usage guidelines for remote access technologies",
-          "commands": [],
-          "expected_result": "The treatment action is applied on SRV-03 and the technical state reflects the intended hardening or remediation for WinRM Remote Command Execution Exposure.",
-          "output_type": "Configuration change / patch result / admin record",
-          "evidence_capture": "Capture screenshots, exported settings, patch output, or administrator records that prove the treatment was applied on SRV-03."
-        },
-        {
-          "step_no": 3,
-          "title": "Verify Control Effectiveness",
-          "description": "Run post-change validation on SRV-03 to confirm the implemented control reduces exposure to WinRM Remote Command Execution Exposure (CVE-2021-31166) and that the host remains operational.",
+          "step_no": 5,
+          "title": "Verify DNS Resolution And Logs",
+          "description": "Validate that DNS service still resolves expected names after remediation and review DNS events for errors.",
           "commands": [
-            "Get-HotFix",
-            "Get-NetFirewallRule | Select-Object DisplayName,Enabled,Direction,Action",
-            "Get-WinEvent -LogName Security -MaxEvents 20"
+            "Resolve-DnsName SRV-01",
+            "Get-WinEvent -LogName 'DNS Server' -MaxEvents 30",
+            "Get-Service DNS"
           ],
-          "expected_result": "Post-change validation shows the host is operational and the applied control provides measurable reduction of exposure for WinRM Remote Command Execution Exposure.",
-          "output_type": "Validation output / firewall rule list / event log excerpt",
-          "evidence_capture": "Capture post-change validation output, firewall or policy results, and relevant logs for SRV-03."
+          "expected_result": "DNS resolution works, DNS service remains running, and no new critical DNS errors are observed.",
+          "output_type": "DNS query output / DNS event log excerpt / service status",
+          "evidence_capture": "Capture DNS query results, DNS event log excerpts, and final DNS service status for SRV-01."
         }
       ]
     }

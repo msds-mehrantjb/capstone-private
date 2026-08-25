@@ -1,7 +1,7 @@
 {
   "environment": "Production",
   "scope": {
-    "name": "2026 ISO 27001 Scope Statement - Healthcare Provider",
+    "name": "2026 ISO 27001 Scope Statement - Financial Services",
     "asset_count": 0
   },
   "kpis": {
@@ -31,16 +31,16 @@
     "title": "Scope & Context — Section 2 (Organizational Boundaries)",
     "bullets": [
       "Information Technology Department",
-      "Clinical Operations",
-      "Medical Records Department",
-      "Billing and Insurance Processing"
+      "Digital Banking Operations",
+      "Risk and Compliance Division",
+      "Customer Support Services"
     ]
   },
   "scopes": [
     {
-      "name": "2026 ISO 27001 Scope Statement - Healthcare Provider",
+      "name": "2026 ISO 27001 Scope Statement - Financial Services",
       "asset_count": 0
     }
   ],
-  "scope_file_name": "2026-Scope-v17.json"
+  "scope_file_name": "2026-Scope-v19.json"
 }

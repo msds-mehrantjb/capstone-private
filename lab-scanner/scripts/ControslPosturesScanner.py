@@ -23,11 +23,17 @@ try {{
 }}
 """
 
-    result = subprocess.run(
-        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command],
-        capture_output=True,
-        text=True
-    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", command],
+            capture_output=True,
+            text=True,
+            timeout=20,
+        )
+    except subprocess.TimeoutExpired:
+        print(f"\n--- DEBUG [{ip}] TIMEOUT ---")
+        print("PowerShell remote collection timed out.")
+        return None
 
     print(f"\n--- DEBUG [{ip}] STDOUT ---")
     print(result.stdout)

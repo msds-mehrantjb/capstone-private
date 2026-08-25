@@ -41,7 +41,7 @@ function Read-JsonFile {
         return $obj
     } catch {
         Write-Host "DEBUG ERROR: $($_.Exception.Message)"
-        throw   # 🔥 IMPORTANT: DO NOT SILENTLY RETURN
+        throw   
     }
 }
 
