@@ -181,7 +181,7 @@ The script **does not install Python, Ollama, or Docker Desktop automatically**.
 The application currently expects these local models:
 
 ```text
-qwen3.8:27b
+qwen3:14b
 nomic-embed-text
 ```
 
@@ -190,7 +190,7 @@ The startup script checks both models and automatically runs `ollama pull` if ei
 You can also install or verify them manually:
 
 ```powershell
-ollama pull qwen3.8:27b
+ollama pull qwen3:14b
 ollama pull nomic-embed-text
 ollama list
 ```
@@ -207,7 +207,7 @@ The launcher creates `app\.env` if it does not already exist. Its local defaults
 
 ```env
 OLLAMA_URL=http://127.0.0.1:11434/api/generate
-OLLAMA_MODEL=qwen3.8:27b
+OLLAMA_MODEL=qwen3:14b
 OLLAMA_EMBED_URL=http://127.0.0.1:11434/api/embeddings
 OLLAMA_EMBED_MODEL=nomic-embed-text
 VITE_API_BASE_URL=http://127.0.0.1:8003
@@ -409,7 +409,7 @@ http://127.0.0.1:8003/health
 After startup, verify:
 
 1. Ollama responds at `127.0.0.1:11434`.
-2. `qwen3.8:27b` and `nomic-embed-text` are installed.
+2. `qwen3:14b` and `nomic-embed-text` are installed.
 3. Docker Engine is running.
 4. FastAPI health succeeds at `http://127.0.0.1:8003/health`.
 5. FastAPI documentation opens at `http://127.0.0.1:8003/docs`.

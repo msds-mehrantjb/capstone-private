@@ -10,6 +10,6 @@ RUN apt-get update && \
     apt-get clean
 
 COPY gateway.init.sh /init.sh
-RUN chmod +x /init.sh
+RUN sed -i 's/\r$//' /init.sh && chmod +x /init.sh
 
 CMD ["/bin/bash", "/init.sh"]

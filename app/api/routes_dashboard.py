@@ -301,9 +301,9 @@ def _reset_aiml_files(year: int) -> None:
                 "text_embedding_model": "nomic-embed-text:latest",
             },
             "llm": {
-                "model": "Qwen3.8 27B",
-                "version": "Qwen3.8 27B",
-                "parameters": "27B",
+                "model": "Qwen3 14B",
+                "version": "Qwen3 14B",
+                "parameters": "14B",
                 "deployment_style": "Local LLM - Llama",
             },
         }
