@@ -146,7 +146,7 @@ OLLAMA_GEN_URL = "http://localhost:11434/api/generate"
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embed"
 
 EMBED_MODEL = "nomic-embed-text"
-LLM_MODEL = "qwen3:14b"
+LLM_MODEL = os.getenv("ANNEX_LLM_MODEL", "qwen3.8:27b")
 TOP_K = 6
 EMBED_BATCH_SIZE = 32
 
@@ -1778,7 +1778,7 @@ Output Requirements:
         response = SESSION.post(
             OLLAMA_GEN_URL,
             json=payload,
-            timeout=180
+            timeout=600
         )
         response.raise_for_status()
         response_data = response.json()
@@ -2063,7 +2063,7 @@ Rules for "justification":
         response = SESSION.post(
             OLLAMA_GEN_URL,
             json=request_payload,
-            timeout=180,
+            timeout=600,
         )
         response.raise_for_status()
         response_data = response.json()
@@ -2106,7 +2106,7 @@ Use vulnerability type names only.
             retry_response = SESSION.post(
                 OLLAMA_GEN_URL,
                 json=retry_payload,
-                timeout=180,
+                timeout=600,
             )
             retry_response.raise_for_status()
             retry_data = retry_response.json()
@@ -2168,7 +2168,7 @@ Requirements:
             repair_response = SESSION.post(
                 OLLAMA_GEN_URL,
                 json=repair_payload,
-                timeout=180,
+                timeout=600,
             )
             repair_response.raise_for_status()
             repair_data = repair_response.json()
@@ -2222,7 +2222,7 @@ Requirements:
             simple_response = SESSION.post(
                 OLLAMA_GEN_URL,
                 json=simple_payload,
-                timeout=180,
+                timeout=600,
             )
             simple_response.raise_for_status()
             simple_data = simple_response.json()
@@ -2312,7 +2312,7 @@ Return valid JSON only.
         response = SESSION.post(
             OLLAMA_GEN_URL,
             json=payload,
-            timeout=180
+            timeout=600
         )
         response.raise_for_status()
         response_data = response.json()

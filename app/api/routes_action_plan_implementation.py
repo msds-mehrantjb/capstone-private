@@ -208,7 +208,7 @@ def find_project_root() -> Path:
 BASE_DIR = find_project_root()
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/generate")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.8:27b")
 OLLAMA_EMBED_URL = os.getenv("OLLAMA_EMBED_URL", "http://127.0.0.1:11434/api/embeddings")
 OLLAMA_EMBED_MODEL = os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text")
 ENABLE_LLM_TREATMENT_ACTIONS = os.getenv("ENABLE_LLM_TREATMENT_ACTIONS", "true").strip().lower() not in {
@@ -1256,7 +1256,7 @@ ISO guidance:
         operation_id="action_plan.treatment_primary",
         llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
     ) as span:
-        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res = requests.post(OLLAMA_URL, json=payload, timeout=600)
         res.raise_for_status()
         data = res.json()
         span.set_ollama_metrics(data)
@@ -1342,7 +1342,7 @@ ISO guidance:
         operation_id="action_plan.treatment_repair",
         llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=repair_payload),
     ) as span:
-        repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=180)
+        repair_res = requests.post(OLLAMA_URL, json=repair_payload, timeout=600)
         repair_res.raise_for_status()
         repair_data = repair_res.json()
         span.set_ollama_metrics(repair_data)
@@ -1543,7 +1543,7 @@ Relevant ISO Guidance:
         operation_id="action_plan.evidence_recommendations",
         llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
     ) as span:
-        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res = requests.post(OLLAMA_URL, json=payload, timeout=600)
         res.raise_for_status()
         data = res.json()
         span.set_ollama_metrics(data)
@@ -1758,7 +1758,7 @@ Relevant ISO Guidance:
         operation_id="action_plan.evidence_description",
         llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
     ) as span:
-        res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+        res = requests.post(OLLAMA_URL, json=payload, timeout=600)
         res.raise_for_status()
         data = res.json()
         span.set_ollama_metrics(data)
@@ -2368,7 +2368,7 @@ Generate only the JSON array.
             operation_id="action_plan.implementation_steps",
             llm_configuration=safe_llm_configuration(model=OLLAMA_MODEL, payload=payload),
         ) as span:
-            res = requests.post(OLLAMA_URL, json=payload, timeout=180)
+            res = requests.post(OLLAMA_URL, json=payload, timeout=600)
             res.raise_for_status()
             data = res.json()
             span.set_ollama_metrics(data)

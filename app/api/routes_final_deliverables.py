@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from pathlib import Path
 from typing import Any
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -1169,8 +1170,24 @@ def get_final_delivery_section(
         "markdown": markdown,
     }
 
+def _find_wkhtmltopdf() -> str | None:
+    configured_path = os.getenv("WKHTMLTOPDF_PATH", "").strip()
+    candidates = [
+        configured_path,
+        shutil.which("wkhtmltopdf"),
+        str(Path(os.getenv("ProgramFiles", r"C:\Program Files")) / "wkhtmltopdf" / "bin" / "wkhtmltopdf.exe"),
+        str(Path(os.getenv("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "wkhtmltopdf" / "bin" / "wkhtmltopdf.exe"),
+    ]
+
+    for candidate in candidates:
+        if candidate and Path(candidate).is_file():
+            return str(Path(candidate))
+
+    return None
+
+
 def _render_html_to_pdf(html: str, output_pdf: Path) -> None:
-    wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+    wkhtmltopdf_path = _find_wkhtmltopdf()
 
     if not wkhtmltopdf_path:
         raise HTTPException(
@@ -1210,7 +1227,7 @@ def _render_html_to_pdf(html: str, output_pdf: Path) -> None:
 
 def _render_markdown_to_pdf(markdown: str, output_pdf: Path) -> None:
     pandoc_path = shutil.which("pandoc")
-    wkhtmltopdf_path = shutil.which("wkhtmltopdf")
+    wkhtmltopdf_path = _find_wkhtmltopdf()
 
     if not pandoc_path:
         raise HTTPException(

@@ -1,18 +1,18 @@
-# Qwen3 14B Performance Baseline
+# Qwen3.8 27B Performance Baseline
 
 Generated from the local Performance Dashboard telemetry for year 2026.
 
 ## Scope
 
-This report summarizes the current `qwen3:14b` LLM reasoning and retry/repair telemetry captured by the application.
+This report summarizes the current `qwen3.8:27b` LLM reasoning and retry/repair telemetry captured by the application.
 
-Important note: these events were captured before the newest token/model-summary fields were added to telemetry. The code configuration verifies that these LLM paths use `qwen3:14b`, but token counts are not available for this captured run.
+Important note: these events were captured before the newest token/model-summary fields were added to telemetry. The code configuration verifies that these LLM paths use `qwen3.8:27b`, but token counts are not available for this captured run.
 
 ## Overall Baseline
 
 | Metric | Value |
 |---|---:|
-| Model | `qwen3:14b` |
+| Model | `qwen3.8:27b` |
 | Provider | Ollama |
 | Total LLM/retry calls | 71 |
 | Successful calls | 71 |
@@ -61,15 +61,15 @@ The biggest bottleneck in this baseline is Action Plan evidence description, whi
 
 ## Configuration Verification
 
-The current worktree verifies the primary LLM model as `qwen3:14b`.
+The current worktree verifies the primary LLM model as `qwen3.8:27b`.
 
 Observed Qwen model declarations:
 
 | Area | Declaration |
 |---|---|
-| Threats & Vulnerabilities | `LLM_MODEL = "qwen3:14b"` |
-| Risk Evaluation & Treatment | `LLM_MODEL = "qwen3:14b"` |
-| Annex A & SoA | `LLM_MODEL = "qwen3:14b"` |
-| Action Plan & Implementation | `OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")` |
-| Monitoring & Improvement | `OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3:14b")` |
+| Threats & Vulnerabilities | `LLM_MODEL = "qwen3.8:27b"` |
+| Risk Evaluation & Treatment | `LLM_MODEL = "qwen3.8:27b"` |
+| Annex A & SoA | `LLM_MODEL = "qwen3.8:27b"` |
+| Action Plan & Implementation | `OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.8:27b")` |
+| Monitoring & Improvement | `OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.8:27b")` |
 

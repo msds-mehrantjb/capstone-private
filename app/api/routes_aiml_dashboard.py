@@ -2561,9 +2561,9 @@ def _latest_previous_snapshot(data: dict, year: int) -> dict:
 def _llm_display_info(raw: Any = None) -> dict:
     data = raw if isinstance(raw, dict) else {}
     return {
-        "model": "Qwen3 14B",
-        "version": "Qwen3 14B",
-        "parameters": "14B",
+        "model": "Qwen3.8 27B",
+        "version": "Qwen3.8 27B",
+        "parameters": "27B",
         "deployment_style": "Local LLM - Llama",
     }
 

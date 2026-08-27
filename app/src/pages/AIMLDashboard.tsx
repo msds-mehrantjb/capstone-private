@@ -1044,8 +1044,8 @@ function DashboardSections({ aimlData }: { aimlData: AimlDashboardDTO | null }) 
                     icon={<Sparkles className="h-5 w-5" />}
                     lines={[
                       `LLM: ${llmDeploymentLabel}`,
-                      `Model: ${llm.model ?? "Qwen3 14B"}`,
-                      `Parameters: ${llm.parameters ?? "14B"}`,
+                      `Model: ${llm.model ?? "Qwen3.8 27B"}`,
+                      `Parameters: ${llm.parameters ?? "27B"}`,
                       
                     ]}
                   />

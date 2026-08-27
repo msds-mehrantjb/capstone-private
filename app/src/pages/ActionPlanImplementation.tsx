@@ -1443,7 +1443,7 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          `Please wait, while system is using RAG over ISO 27001:2022 controls and ${"Qwen3 14B"} reasoning to generate treatment action for selected control ${control.control}.`,
+          `Please wait, while system is using RAG over ISO 27001:2022 controls and ${"Qwen3.8 27B"} reasoning to generate treatment action for selected control ${control.control}.`,
       },
     ]);
 
@@ -1803,7 +1803,7 @@ export default function ActionPlanImplentation() {
       {
         role: "assistant",
         content:
-          "Please wait, while system is using Qwen3 14B reasoning and RAG technology to find most accurate controls",
+          "Please wait, while system is using Qwen3.8 27B reasoning and RAG technology to find most accurate controls",
       },
     ]);
 
